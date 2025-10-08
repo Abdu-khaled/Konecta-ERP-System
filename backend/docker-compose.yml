@@ -1,0 +1,77 @@
+version: "3.9"
+services:
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    image: erp-auth-service:dev
+    ports:
+      - "8081:8080" 
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/auth-service
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 1234
+      SPRING_PROFILES_ACTIVE: docker
+
+  hr-service:
+    build:
+      context: .
+      dockerfile: hr-service/Dockerfile
+    image: erp-hr-service:dev
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/hr-service
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 1234
+      SPRING_PROFILES_ACTIVE: docker
+
+  finance-service:
+    build:
+      context: .
+      dockerfile: finance-service/Dockerfile
+    image: erp-finance-service:dev
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/finance-service
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 1234
+      SPRING_PROFILES_ACTIVE: docker
+
+  discovery-server:
+    build:
+      context: .
+      dockerfile: discovery-server/Dockerfile
+    image: erp-discovery-server:dev
+    ports:
+      - "8761:8080"
+
+  gateway-service:
+    build:
+      context: .
+      dockerfile: gateway-service/Dockerfile
+    image: erp-gateway-service:dev
+    ports:
+      - "8080:8080"
+
+  config-server:
+    build:
+      context: .
+      dockerfile: config-server/Dockerfile
+    image: erp-config-server:dev
+    ports:
+      - "8888:8080"
+
+  reporting-service:
+    build:
+      context: .
+      dockerfile: reporting-service/ReportingService/Dockerfile
+    image: erp-reporting-service:dev
+    ports:
+      - "5156:8080"
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Host=host.docker.internal;Port=5432;Database=reporting-service;Username=postgres;Password=1234
+
+      
