@@ -6,7 +6,7 @@ services:
       dockerfile: auth-service/Dockerfile
     image: erp-auth-service:dev
     ports:
-      - "8081:8080" 
+      - "8081:8081" 
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/auth-service
       SPRING_DATASOURCE_USERNAME: postgres
