@@ -21,46 +21,42 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Detect changed backend services dynamically
-        id: set-matrix
-        shell: bash
+      - name: Detect changed services
+        id: detect
         run: |
-          echo "Detecting changed backend services..."
-          
-          BASE_REF=${{ github.base_ref }}
-          if [ -z "$BASE_REF" ]; then
-            BASE_REF=$(git rev-parse HEAD~1 || echo "")
+          # Detect base commit depending on event type
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA=${{ github.event.pull_request.base.sha }}
+          else
+            BASE_SHA=$(git rev-parse HEAD^ || echo "")
           fi
 
-          git fetch origin $BASE_REF || true
+          echo "Comparing changes between $BASE_SHA and ${{ github.sha }}"
+          git fetch --quiet origin
 
-          CHANGED_FILES=$(git diff --name-only "$BASE_REF"...${{ github.sha }} || true)
+          # Get list of changed files between base and current commit
+          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "${{ github.sha }}" || true)
           echo "Changed files:"
           echo "$CHANGED_FILES"
 
-          SERVICES=()
+          # Detect which backend services changed
+          SERVICES=""
           for dir in $(ls backend); do
-            if [ -d "backend/$dir" ]; then
-              if echo "$CHANGED_FILES" | grep -q "backend/$dir/"; then
-                SERVICES+=("\"$dir\"")
-              fi
+            if echo "$CHANGED_FILES" | grep -q "^backend/$dir/"; then
+              SERVICES="$SERVICES,$dir"
             fi
           done
 
-          if [ ${#SERVICES[@]} -eq 0 ]; then
-            echo "No changed services detected — running all."
-            for dir in $(ls backend); do
-              if [ -d "backend/$dir" ]; then
-                SERVICES+=("\"$dir\"")
-              fi
-            done
+          # If nothing detected, fallback to all
+          if [ -z "$SERVICES" ]; then
+            echo "No specific services changed, building all."
+            SERVICES=$(ls backend | tr '\n' ',' | sed 's/,$//')
+          else
+            SERVICES=$(echo "$SERVICES" | sed 's/^,//')
           fi
 
-          MATRIX_JSON="{\"service\":[${SERVICES[*]}]}"
-          MATRIX_JSON=$(echo "$MATRIX_JSON" | sed 's/ /,/g')
+          echo "services=$SERVICES" >> $GITHUB_OUTPUT
 
-          echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
-          echo "Detected services matrix: $MATRIX_JSON"
 
   build-test-push:
     name: Build, Test & Push Changed Services
