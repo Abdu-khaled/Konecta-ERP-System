@@ -17,27 +17,28 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Detect changed backend services dynamically
         id: set-matrix
         shell: bash
         run: |
           echo "Detecting changed backend services..."
-          git fetch origin --quiet
+          git fetch origin --depth=2
 
-          # Determine base commit depending on event type
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE_SHA=${{ github.event.pull_request.base.sha }}
           else
-            BASE_SHA=$(git rev-parse HEAD^ || echo "")
+            BASE_SHA=$(git rev-parse HEAD^)
           fi
 
-          echo "Comparing between $BASE_SHA and ${{ github.sha }}"
-
-          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "${{ github.sha }}" || true)
+          echo "Base SHA: $BASE_SHA"
+          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" HEAD || true)
           echo "Changed files:"
           echo "$CHANGED_FILES"
 
@@ -51,15 +52,12 @@ jobs:
           done
 
           if [ ${#SERVICES[@]} -eq 0 ]; then
-            echo "No changed services detected — running all."
-            for dir in $(ls backend); do
-              if [ -d "backend/$dir" ]; then
-                SERVICES+=("\"$dir\"")
-              fi
-            done
+            echo "No changed backend services detected — skipping build."
+            MATRIX_JSON="{\"service\":[]}"
+          else
+            MATRIX_JSON="{\"service\":[$(IFS=,; echo "${SERVICES[*]}")]}"
           fi
 
-          MATRIX_JSON="{\"service\":[$(IFS=,; echo "${SERVICES[*]}")]}"
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
           echo "Detected services matrix: $MATRIX_JSON"
 
@@ -67,9 +65,10 @@ jobs:
     name: Build, Test & Push Changed Services
     needs: detect-changes
     runs-on: ubuntu-latest
+    if: ${{ fromJson(needs.detect-changes.outputs.matrix).service != '' }}
     strategy:
-      fail-fast: false
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+      fail-fast: false
 
     steps:
       - name: Checkout code
