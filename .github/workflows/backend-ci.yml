@@ -12,6 +12,28 @@ on:
   workflow_dispatch:
 
 jobs:
+  secret-scan:
+    name: Secret Scanning with Gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for accurate secret detection
+
+      - name: Run Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: detect --source . --no-git --redact --report=gitleaks-report.json --report-format=json --exit-code 1
+
+      - name: Upload Gitleaks report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: gitleaks-report
+          path: gitleaks-report.json
+
+
   detect-changes:
     name: Detect Changed Backend Services
     runs-on: ubuntu-latest
