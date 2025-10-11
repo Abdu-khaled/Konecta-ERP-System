@@ -59,7 +59,7 @@ jobs:
             done
           fi
 
-          MATRIX_JSON="{\"service\":[${SERVICES[*]}]}"
+          MATRIX_JSON="{\"service\":[$(IFS=,; echo "${SERVICES[*]}")]}"
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
           echo "Detected services matrix: $MATRIX_JSON"
 
