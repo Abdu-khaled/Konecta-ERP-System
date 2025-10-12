@@ -7,13 +7,9 @@ import auth_service.repository.UserRepository;
 import auth_service.security.JwtService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,16 +19,13 @@ public class AuthController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
     public AuthController(UserRepository userRepository,
                           PasswordEncoder passwordEncoder,
-                          AuthenticationManager authenticationManager,
                           JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
     }
 
@@ -44,12 +37,11 @@ public class AuthController {
         if (userRepository.existsByEmail(req.getEmail())) {
             return ResponseEntity.badRequest().body(Map.of("message", "email already exists"));
         }
-        Role role = req.getRole() == null ? Role.EMPLOYEE : req.getRole();
         User user = User.builder()
                 .username(req.getUsername())
                 .email(req.getEmail())
                 .password(passwordEncoder.encode(req.getPassword()))
-                .role(role)
+                .role(Role.EMPLOYEE)
                 .build();
         userRepository.save(user);
         return ResponseEntity.ok(Map.of("message", "registered"));
@@ -57,10 +49,10 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest req) {
-        Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(req.getUsername(), req.getPassword())
-        );
-        User user = userRepository.findByUsername(req.getUsername()).orElseThrow();
+        User user = userRepository.findByEmail(req.getEmail()).orElseThrow();
+        if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
+            return ResponseEntity.badRequest().build();
+        }
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", user.getRole().name());
         claims.put("uid", user.getId());
