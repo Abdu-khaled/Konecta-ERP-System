@@ -131,12 +131,15 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: Run SonarQube Analysis
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: SonarQube Analysis for backend services
         run: |
-          mvn clean verify sonar:sonar \
-            -Dsonar.projectKey=konecta-erp-system \
-            -Dsonar.host.url=http://ec2-63-179-243-110.eu-central-1.compute.amazonaws.com:9000 \
-            -Dsonar.login=$SONAR_TOKEN \
-            -Dsonar.qualitygate.wait=true
+          for SERVICE in backend/*; do
+            if [ -f "$SERVICE/pom.xml" ]; then
+              echo "Running SonarQube scan for $SERVICE"
+              mvn -f "$SERVICE/pom.xml" clean verify sonar:sonar \
+                -Dsonar.projectKey=konecta-erp-system-$(basename $SERVICE) \
+                -Dsonar.host.url=http://ec2-63-179-243-110.eu-central-1.compute.amazonaws.com:9000\
+                -Dsonar.login=$SONAR_TOKEN \
+                -Dsonar.qualitygate.wait=true
+            fi
+          done
