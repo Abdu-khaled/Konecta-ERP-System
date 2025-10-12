@@ -62,7 +62,7 @@ import { useLogin } from './useLogin.hook';
           type="submit"
           class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg text-base font-medium transition-colors shadow-md"
         >
-          Sign in
+          Login
         </button>
 
         <button

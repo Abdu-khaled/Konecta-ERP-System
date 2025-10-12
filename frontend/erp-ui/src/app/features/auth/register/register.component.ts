@@ -79,7 +79,7 @@ import { useRegister } from './useRegister.hook';
         <p class="text-center text-gray-600 text-sm mt-3">
           Already have an account?
           <a (click)="goToLogin()" class="text-blue-600 hover:underline font-medium cursor-pointer">
-            Sign in
+            Login
           </a>
         </p>
       </form>
