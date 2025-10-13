@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "KLdl4N5VnxM=",
+  "dgSpecHash": "t+qIJBANWjw=",
   "success": true,
-  "projectFilePath": "D:\\OneDrive\\Desktop\\ERP System\\Backend\\reporting-service\\ReportingService\\ReportingService.csproj",
+  "projectFilePath": "D:\\OneDrive\\Desktop\\Konecta-ERP System\\Konecta-ERP-System\\backend\\reporting-service\\ReportingService\\ReportingService.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\lenovo\\.nuget\\packages\\microsoft.aspnetcore.openapi\\8.0.20\\microsoft.aspnetcore.openapi.8.0.20.nupkg.sha512",
     "C:\\Users\\lenovo\\.nuget\\packages\\microsoft.entityframeworkcore\\9.0.9\\microsoft.entityframeworkcore.9.0.9.nupkg.sha512",

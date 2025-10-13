@@ -1,3 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Global layout helpers */
+:root {
+  /* Tune to match your navbar height */
+  --navbar-height: 64px;
+}

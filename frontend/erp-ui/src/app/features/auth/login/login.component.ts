@@ -11,9 +11,9 @@ import { useLogin } from './useLogin.hook';
   template: `
   <div
     *ngIf="showSuccess"
-    class="fixed top-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in"
+    class="fixed right-5 top-[calc(var(--navbar-height)+1rem)] z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in"
   >
-    <span> Login successful!</span>
+    <span>{{ successText }}</span>
   </div>
 
   <div class="flex items-start justify-center min-h-[calc(100vh-64px)] pt-10">
@@ -99,21 +99,24 @@ export class LoginComponent {
   emailError = '';
   passwordError = '';
   showSuccess = false;
+  successText = 'Login successful!';
 
   login = useLogin();
 
   constructor(private router: Router) {}
 
-  onSubmit() {
-    const validation = this.login.validateInputs(this.email, this.password);
-    this.emailError = validation.emailError;
-    this.passwordError = validation.passwordError;
-
-    if (!this.emailError && !this.passwordError) {
-      this.login.handleLogin(this.email, this.password, this.remember);
-      this.showSuccess = true;
-      setTimeout(() => (this.showSuccess = false), 3000);
+  async onSubmit() {
+    const res = await this.login.submit(this.email, this.password, this.remember);
+    if (!res.ok) {
+      this.emailError = res.errors?.emailError ?? '';
+      this.passwordError = res.errors?.passwordError ?? '';
+      return;
     }
+    this.emailError = '';
+    this.passwordError = '';
+    this.successText = res.message ?? this.successText;
+    this.showSuccess = true;
+    setTimeout(() => (this.showSuccess = false), 1200);
   }
 
   validateLive() {
