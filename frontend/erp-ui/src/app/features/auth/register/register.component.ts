@@ -11,7 +11,7 @@ import { useRegister } from './useRegister.hook';
   template: `
   <div
     *ngIf="showSuccess"
-    class="fixed top-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in"
+    class="fixed right-5 top-[calc(var(--navbar-height)+1rem)] z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in"
   >
     <span>Registration successful!</span>
   </div>
@@ -108,16 +108,22 @@ export class RegisterComponent {
 
   constructor(private router: Router) {}
 
-  onSubmit() {
+  async onSubmit() {
     const validation = this.register.validateInputs(this.username, this.email, this.password);
     this.usernameError = validation.usernameError;
     this.emailError = validation.emailError;
     this.passwordError = validation.passwordError;
 
     if (!this.usernameError && !this.emailError && !this.passwordError) {
-      this.register.handleRegister(this.username, this.email, this.password);
-      this.showSuccess = true;
-      setTimeout(() => (this.showSuccess = false), 3000);
+      try {
+        await this.register.handleRegister(this.username, this.email, this.password);
+        // Show success alert below the navbar
+        this.showSuccess = true;
+        setTimeout(() => {
+          this.router.navigate(['/auth/login'], { queryParams: { registered: '1' } });
+        }, 1200);
+      } catch (e) {
+      }
     }
   }
 

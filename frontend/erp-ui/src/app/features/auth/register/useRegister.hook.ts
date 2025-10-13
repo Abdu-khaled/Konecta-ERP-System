@@ -1,4 +1,10 @@
+import { inject } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { AuthService } from '../services/auth.service';
+
 export function useRegister() {
+  const auth = inject(AuthService);
+
   const validateInputs = (username: string, email: string, password: string) => {
     let usernameError = '';
     let emailError = '';
@@ -17,7 +23,7 @@ export function useRegister() {
       emailError = 'Please enter a valid email address';
     }
 
-    const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,12}$/;
+    const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,12}$/;
     if (!password.trim()) {
       passwordError = 'Password is required';
     } else if (!passwordPattern.test(password)) {
@@ -28,8 +34,10 @@ export function useRegister() {
     return { usernameError, emailError, passwordError };
   };
 
-  const handleRegister = (username: string, email: string, password: string) => {
-    console.log( { username, email, password });
+  const handleRegister = async (username: string, email: string, password: string) => {
+    await firstValueFrom(
+      auth.register({ username, email, password })
+    );
   };
 
   return { handleRegister, validateInputs };

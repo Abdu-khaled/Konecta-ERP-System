@@ -2014,11 +2014,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\OneDrive\\Desktop\\ERP System\\Backend\\reporting-service\\ReportingService\\ReportingService.csproj",
+      "projectUniqueName": "D:\\OneDrive\\Desktop\\Konecta-ERP System\\Konecta-ERP-System\\backend\\reporting-service\\ReportingService\\ReportingService.csproj",
       "projectName": "ReportingService",
-      "projectPath": "D:\\OneDrive\\Desktop\\ERP System\\Backend\\reporting-service\\ReportingService\\ReportingService.csproj",
+      "projectPath": "D:\\OneDrive\\Desktop\\Konecta-ERP System\\Konecta-ERP-System\\backend\\reporting-service\\ReportingService\\ReportingService.csproj",
       "packagesPath": "C:\\Users\\lenovo\\.nuget\\packages\\",
-      "outputPath": "D:\\OneDrive\\Desktop\\ERP System\\Backend\\reporting-service\\ReportingService\\obj\\",
+      "outputPath": "D:\\OneDrive\\Desktop\\Konecta-ERP System\\Konecta-ERP-System\\backend\\reporting-service\\ReportingService\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\lenovo\\AppData\\Roaming\\NuGet\\NuGet.Config"
