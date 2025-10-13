@@ -121,8 +121,8 @@ jobs:
     needs: [detect-changes]
     if: ${{ fromJson(needs.detect-changes.outputs.matrix).service != '' }}
     strategy:
-      matrix:
-        service: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
