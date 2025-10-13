@@ -10,19 +10,19 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
     <aside
       id="primary-navigation"
       class="flex flex-col border-r border-slate-300 bg-slate-200 text-slate-700 transition-all duration-300 h-full min-h-full"
-      [ngClass]="isOpen ? 'w-56' : 'w-20'"
+      [ngClass]="isOpen ? 'w-56' : 'w-15'"
       [attr.aria-expanded]="isOpen"
     >
-      <ul class="flex flex-1 flex-col gap-2 px-3 py-6 overflow-hidden min-h-full">
+      <ul class="flex flex-1 flex-col gap-1 px-2 py-4 overflow-hidden min-h-full">
         <li *ngFor="let item of items">
           <ng-container *ngIf="item.path; else staticItem">
             <a
-              class="group flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-white hover:text-slate-900"
+              class="group flex items-center gap-2.5 rounded-2xl px-2.5 py-1.5 text-[13px] font-semibold text-slate-600 transition hover:bg-white hover:text-slate-900"
               [routerLink]="item.path"
               routerLinkActive="bg-white text-slate-900 shadow-sm"
               [routerLinkActiveOptions]="{ exact: true }"
             >
-              <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 text-slate-600 shadow-sm transition group-hover:bg-white">
+              <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 text-slate-600 shadow-sm transition group-hover:bg-white">
                 <svg viewBox="0 0 24 24" aria-hidden="true" class="h-5 w-5">
                   <ng-container [ngSwitch]="item.icon">
                     <path *ngSwitchCase="'home'" d="M4 11.5L12 4l8 7.5v7.5h-5.5v-5.5h-5V19H4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
@@ -45,8 +45,8 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
             </a>
           </ng-container>
           <ng-template #staticItem>
-            <button type="button" class="group flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-white hover:text-slate-900">
-              <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 text-slate-600 shadow-sm transition group-hover:bg-white">
+            <button type="button" class="group flex w-full items-center gap-2.5 rounded-2xl px-2.5 py-1.5 text-[13px] font-semibold text-slate-600 transition hover:bg-white hover:text-slate-900">
+              <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 text-slate-600 shadow-sm transition group-hover:bg-white">
                 <svg viewBox="0 0 24 24" aria-hidden="true" class="h-5 w-5">
                   <path d="M4 5h7v7H4zM13 5h7v7h-7zM4 14h7v7H4zM13 14h7v7h-7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
                 </svg>
