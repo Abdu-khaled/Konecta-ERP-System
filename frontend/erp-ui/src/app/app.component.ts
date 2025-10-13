@@ -1,8 +1,10 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy, inject } from '@angular/core';
 import { NgClass, NgFor, NgIf, NgSwitch, NgSwitchCase, NgSwitchDefault } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { NavbarComponent } from './features/navbar/navbar.component';
 import { SidebarComponent } from './features/sidebar/sidebar.component';
+import { AuthState } from './features/auth/services/auth.state';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -32,7 +34,7 @@ import { SidebarComponent } from './features/sidebar/sidebar.component';
 </div>
   `
 })
-export class AppComponent {
+export class AppComponent implements OnInit, OnDestroy {
   readonly sidebarItems = [
     { label: 'Home', icon: 'home', path: '/' },
     { label: 'Favorites', icon: 'star' },
@@ -44,10 +46,8 @@ export class AppComponent {
   isSidebarOpen = false;
   isProfileMenuOpen = false;
 
-  user: { initials: string; email: string } | null = {
-    initials: 'BI',
-    email: 'bi@example.com'
-  };
+  user: { initials: string; email: string } | null = null;
+  private sub?: Subscription;
 
   toggleSidebar(): void {
     this.isSidebarOpen = !this.isSidebarOpen;
@@ -69,9 +69,28 @@ export class AppComponent {
     }
   }
 
+  private readonly state = inject(AuthState);
   constructor(private router: Router) {}
 
+  ngOnInit(): void {
+    this.sub = this.state.profile$.subscribe((p) => {
+      if (p) {
+        this.user = {
+          initials: (p.username?.[0] || 'U').toUpperCase(),
+          email: p.email
+        };
+      } else {
+        this.user = null;
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.sub?.unsubscribe();
+  }
+
   onSignOut(): void {
+    this.state.clear();
     this.user = null;
     this.router.navigate(['/auth/login']);
   }

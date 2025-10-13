@@ -104,15 +104,22 @@ export class LoginComponent {
 
   constructor(private router: Router) {}
 
-  onSubmit() {
+  async onSubmit() {
     const validation = this.login.validateInputs(this.email, this.password);
     this.emailError = validation.emailError;
     this.passwordError = validation.passwordError;
 
     if (!this.emailError && !this.passwordError) {
-      this.login.handleLogin(this.email, this.password, this.remember);
-      this.showSuccess = true;
-      setTimeout(() => (this.showSuccess = false), 3000);
+      try {
+        await this.login.handleLogin(this.email, this.password, this.remember);
+        this.showSuccess = true;
+        setTimeout(() => {
+          this.showSuccess = false;
+          this.router.navigate(['/']);
+        }, 800);
+      } catch {
+        this.passwordError = 'Invalid email or password';
+      }
     }
   }
 
