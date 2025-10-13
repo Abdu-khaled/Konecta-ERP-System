@@ -1,9 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { useLogin } from './useLogin.hook';
-import { AuthState } from '../services/auth.state';
 
 @Component({
   selector: 'app-login',
@@ -103,29 +102,21 @@ export class LoginComponent {
   successText = 'Login successful!';
 
   login = useLogin();
-  private readonly state = inject(AuthState);
 
   constructor(private router: Router) {}
 
   async onSubmit() {
-    const validation = this.login.validateInputs(this.email, this.password);
-    this.emailError = validation.emailError;
-    this.passwordError = validation.passwordError;
-
-    if (!this.emailError && !this.passwordError) {
-      try {
-        await this.login.handleLogin(this.email, this.password, this.remember);
-        const role = (this.state.profile?.role || '').toString().toLowerCase();
-        this.successText = role ? `Welcome ${role}` : 'Login successful!';
-        this.showSuccess = true;
-        setTimeout(() => {
-          this.showSuccess = false;
-          this.router.navigate(['/']);
-        }, 1000);
-      } catch {
-        this.passwordError = 'Invalid email or password';
-      }
+    const res = await this.login.submit(this.email, this.password, this.remember);
+    if (!res.ok) {
+      this.emailError = res.errors?.emailError ?? '';
+      this.passwordError = res.errors?.passwordError ?? '';
+      return;
     }
+    this.emailError = '';
+    this.passwordError = '';
+    this.successText = res.message ?? this.successText;
+    this.showSuccess = true;
+    setTimeout(() => (this.showSuccess = false), 1200);
   }
 
   validateLive() {

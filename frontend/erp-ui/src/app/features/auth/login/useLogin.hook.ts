@@ -2,10 +2,12 @@ import { inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { AuthState } from '../services/auth.state';
+import { Router } from '@angular/router';
 
 export function useLogin() {
   const api = inject(AuthService);
   const state = inject(AuthState);
+  const router = inject(Router);
 
   const validateInputs = (email: string, password: string) => {
     let emailError = '';
@@ -41,6 +43,22 @@ export function useLogin() {
     console.log('Google login clicked');
   };
 
-  return { handleLogin, signInWithGoogle, validateInputs };
-}
+  const submit = async (email: string, password: string, remember: boolean) => {
+    const { emailError, passwordError } = validateInputs(email, password);
+    if (emailError || passwordError) {
+      return { ok: false, errors: { emailError, passwordError } } as const;
+    }
 
+    await handleLogin(email, password, remember);
+
+    const role = (state.profile?.role || '').toString().toLowerCase();
+    const message = role ? `Welcome ${role}` : 'Login successful!';
+
+    // Route to home after a short delay to allow the UI to show the toast
+    setTimeout(() => router.navigate(['/']), 1000);
+
+    return { ok: true, message } as const;
+  };
+
+  return { handleLogin, signInWithGoogle, validateInputs, submit };
+}

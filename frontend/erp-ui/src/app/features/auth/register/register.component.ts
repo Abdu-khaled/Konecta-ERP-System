@@ -13,7 +13,7 @@ import { useRegister } from './useRegister.hook';
     *ngIf="showSuccess"
     class="fixed right-5 top-[calc(var(--navbar-height)+1rem)] z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in"
   >
-    <span>Registration successful!</span>
+    <span>{{ successText }}</span>
   </div>
 
   <!-- Registration form -->
@@ -103,28 +103,26 @@ export class RegisterComponent {
   emailError = '';
   passwordError = '';
   showSuccess = false;
+  successText = 'Registration successful!';
 
   register = useRegister();
 
   constructor(private router: Router) {}
 
   async onSubmit() {
-    const validation = this.register.validateInputs(this.username, this.email, this.password);
-    this.usernameError = validation.usernameError;
-    this.emailError = validation.emailError;
-    this.passwordError = validation.passwordError;
-
-    if (!this.usernameError && !this.emailError && !this.passwordError) {
-      try {
-        await this.register.handleRegister(this.username, this.email, this.password);
-        // Show success alert below the navbar
-        this.showSuccess = true;
-        setTimeout(() => {
-          this.router.navigate(['/auth/login'], { queryParams: { registered: '1' } });
-        }, 1200);
-      } catch (e) {
-      }
+    const res = await this.register.submit(this.username, this.email, this.password);
+    if (!res.ok) {
+      this.usernameError = res.errors?.usernameError ?? '';
+      this.emailError = res.errors?.emailError ?? '';
+      this.passwordError = res.errors?.passwordError ?? '';
+      return;
     }
+    this.usernameError = '';
+    this.emailError = '';
+    this.passwordError = '';
+    this.successText = res.message ?? this.successText;
+    this.showSuccess = true;
+    setTimeout(() => (this.showSuccess = false), 1200);
   }
 
   validateLive() {
