@@ -47,6 +47,13 @@ import { RouterLink } from '@angular/router';
       </label>
 
       <div class="flex items-center justify-end gap-2.5">
+        <!-- Employee primary nav buttons (placeholders) -->
+        <div *ngIf="role === 'EMPLOYEE'" class="hidden md:flex items-center gap-2 mr-2">
+          <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Home</button>
+          <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Tasks</button>
+          <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Leave</button>
+          <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Training</button>
+        </div>
         <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20" aria-label="Open workspaces">
           <svg viewBox="0 0 24 24" aria-hidden="true" class="h-5 w-5">
             <path
@@ -132,6 +139,7 @@ import { RouterLink } from '@angular/router';
 })
 export class NavbarComponent {
   @Input() user: { initials: string; email: string } | null = null;
+  @Input() role: string | null = null;
   @Output() toggle = new EventEmitter<void>();
   @Output() signOut = new EventEmitter<void>();
   isProfileMenuOpen = false;
