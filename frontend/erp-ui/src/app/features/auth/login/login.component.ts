@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { useLogin } from './useLogin.hook';
+import { AuthState } from '../services/auth.state';
 
 @Component({
   selector: 'app-login',
@@ -13,7 +14,7 @@ import { useLogin } from './useLogin.hook';
     *ngIf="showSuccess"
     class="fixed right-5 top-[calc(var(--navbar-height)+1rem)] z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in"
   >
-    <span> Login successful!</span>
+    <span>{{ successText }}</span>
   </div>
 
   <div class="flex items-start justify-center min-h-[calc(100vh-64px)] pt-10">
@@ -99,8 +100,10 @@ export class LoginComponent {
   emailError = '';
   passwordError = '';
   showSuccess = false;
+  successText = 'Login successful!';
 
   login = useLogin();
+  private readonly state = inject(AuthState);
 
   constructor(private router: Router) {}
 
@@ -112,11 +115,13 @@ export class LoginComponent {
     if (!this.emailError && !this.passwordError) {
       try {
         await this.login.handleLogin(this.email, this.password, this.remember);
+        const role = (this.state.profile?.role || '').toString().toLowerCase();
+        this.successText = role ? `Welcome ${role}` : 'Login successful!';
         this.showSuccess = true;
         setTimeout(() => {
           this.showSuccess = false;
           this.router.navigate(['/']);
-        }, 800);
+        }, 1000);
       } catch {
         this.passwordError = 'Invalid email or password';
       }
