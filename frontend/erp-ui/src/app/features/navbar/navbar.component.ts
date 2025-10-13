@@ -54,47 +54,19 @@ import { RouterLink } from '@angular/router';
           <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Leave</button>
           <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Training</button>
         </div>
-        <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20" aria-label="Open workspaces">
-          <svg viewBox="0 0 24 24" aria-hidden="true" class="h-5 w-5">
-            <path
-              d="M4 5h7v7H4zM13 5h7v7h-7zM4 14h7v7H4zM13 14h7v7h-7z"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linejoin="round"
-            ></path>
-          </svg>
-        </button>
+        
         <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20" aria-label="View notifications">
-          <svg viewBox="0 0 24 24" aria-hidden="true" class="h-5 w-5">
-            <path
-              d="M12 22a2 2 0 002-2h-4a2 2 0 002 2zM18 16v-5a6 6 0 10-12 0v5l-2 2v1h16v-1l-2-2z"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            ></path>
-          </svg>
+          <span class="material-symbols-outlined text-[20px]">notifications</span>
         </button>
         <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20" aria-label="Open settings">
-          <svg viewBox="0 0 24 24" aria-hidden="true" class="h-5 w-5">
-            <path
-              d="M12 8.5a3.5 3.5 0 103.5 3.5A3.5 3.5 0 0012 8.5zm9 3.05l-1.8-.28a7.13 7.13 0 00-.68-1.64l1.07-1.44a.9.9 0 00-.1-1.16l-1.9-1.9a.9.9 0 00-1.16-.1l-1.44 1.07a7.13 7.13 0 00-1.64-.68L14.45 2a.9.9 0 00-.9-.75h-3.1a.9.9 0 00-.9.75l-.28 1.8a7.13 7.13 0 00-1.64.68L6.1 3.41a.9.9 0 00-1.16.1l-1.9 1.9a.9.9 0 00-.1 1.16l1.07 1.44a7.13 7.13 0 00-.68 1.64L2 11.55a.9.9 0 00-.75.9v3.1a.9.9 0 00.75.9l1.8.28a7.13 7.13 0 00.68 1.64l-1.07 1.44a.9.9 0 00.1 1.16l1.9 1.9a.9.9 0 001.16.1l1.44-1.07a7.13 7.13 0 001.64.68l.28 1.8a.9.9 0 00.9.75h3.1a.9.9 0 00.9-.75l.28-1.8a7.13 7.13 0 001.64-.68l1.44 1.07a.9.9 0 001.16-.1l1.9-1.9a.9.9 0 00.1-1.16l-1.07-1.44a7.13 7.13 0 00.68-1.64l1.8-.28a.9.9 0 00.75-.9v-3.1a.9.9 0 00-.75-.9z"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            ></path>
-          </svg>
+          <span class="material-symbols-outlined text-[20px]">settings</span>
         </button>
 
         <!-- Authenticated profile menu -->
         <div class="relative top-nav__profile-wrapper" *ngIf="user; else guestActions">
           <button
             type="button"
-            class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 text-xs font-semibold text-white shadow-lg"
+            class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 text-[16px] font-semibold text-white shadow-lg"
             (click)="toggleProfileMenu()"
             [attr.aria-expanded]="isProfileMenuOpen"
             aria-haspopup="true"
