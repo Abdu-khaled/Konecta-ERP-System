@@ -176,7 +176,7 @@ jobs:
           DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
           SERVICE: ${{ matrix.service }}
         run: |
-          # Determine build version and image tags
+          # Determine build version
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             VERSION=${GITHUB_REF_NAME}
           else
@@ -185,20 +185,19 @@ jobs:
             VERSION="${BRANCH}-${SHORT_SHA}"
           fi
 
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          # Construct image tags
+          IMAGE_TAG="${DOCKER_USER}/konecta-${SERVICE}:${VERSION}"
+          IMAGE_LATEST="${DOCKER_USER}/konecta-${SERVICE}:latest"
 
+          # Export outputs
           {
-            echo "docker_tag<<EOF"
-            echo "${DOCKER_USER}/konecta-${SERVICE}:$VERSION"
-            echo "EOF"
-            echo "docker_latest<<EOF"
-            echo "${DOCKER_USER}/konecta-${SERVICE}:latest"
-            echo "EOF"
+            echo "version=$VERSION"
+            echo "docker_tag=$IMAGE_TAG"
+            echo "docker_latest=$IMAGE_LATEST"
           } >> "$GITHUB_OUTPUT"
 
           echo " Determined version: $VERSION"
-          echo " docker_tag: ${DOCKER_USER}/konecta-${SERVICE}:$VERSION"
-
+          echo " docker_tag: $IMAGE_TAG"
 
       - name: Build Docker Image (no push yet)
         uses: docker/build-push-action@v6
@@ -240,7 +239,6 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.vars.outputs.version }}
 
-            
       - name: Scan Docker image (SARIF report)
         uses: aquasecurity/trivy-action@0.18.0
         with:
@@ -253,3 +251,4 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
+
