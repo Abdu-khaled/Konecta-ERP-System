@@ -193,12 +193,6 @@ jobs:
           SERVICE: ${{ matrix.service }}
           DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
         run: |
-          echo "DEBUG: DOCKER_USER='$DOCKER_USER'"
-          echo "DEBUG: SERVICE='$SERVICE'"
-          if [ -z "$DOCKER_USER" ]; then
-            echo "ERROR: DOCKER_USERNAME secret is empty or not set!"
-            exit 1
-          fi
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             VERSION=${GITHUB_REF_NAME}
           else
