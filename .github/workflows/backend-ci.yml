@@ -148,7 +148,6 @@ jobs:
             -Dsonar.qualitygate.wait=true
 
 
-
   build-push-images:
     name: Build, Scan & Push Docker Images
     runs-on: ubuntu-latest
@@ -172,14 +171,12 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Determine Image Tags
+        id: vars
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+          SERVICE: ${{ matrix.service }}
         run: |
-          DOCKER_USER="${{ secrets.DOCKER_USERNAME }}"
-          SERVICE="${{ matrix.service }}"
-
-          if [ -z "$DOCKER_USER" ]; then
-            echo "DOCKER_USER is empty — check your secrets!" && exit 1
-          fi
-
+          # Determine build version and image tags
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             VERSION=${GITHUB_REF_NAME}
           else
@@ -188,15 +185,19 @@ jobs:
             VERSION="${BRANCH}-${SHORT_SHA}"
           fi
 
-          IMAGE_TAG="${DOCKER_USER}/konecta-${SERVICE}:${VERSION}"
-          IMAGE_LATEST="${DOCKER_USER}/konecta-${SERVICE}:latest"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
-          echo "IMAGE_LATEST=$IMAGE_LATEST" >> $GITHUB_ENV
+          {
+            echo "docker_tag<<EOF"
+            echo "${DOCKER_USER}/konecta-${SERVICE}:${VERSION}"
+            echo "EOF"
+            echo "docker_latest<<EOF"
+            echo "${DOCKER_USER}/konecta-${SERVICE}:latest"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
           echo " Determined version: $VERSION"
-          echo " IMAGE_TAG: $IMAGE_TAG"
+          echo " Docker tag: ${DOCKER_USER}/konecta-${SERVICE}:${VERSION}"
 
       - name: Build Docker Image (no push yet)
         uses: docker/build-push-action@v6
@@ -205,17 +206,17 @@ jobs:
           file: backend/${{ matrix.service }}/Dockerfile
           push: false
           tags: |
-            ${{ env.IMAGE_TAG }}
+            ${{ steps.vars.outputs.docker_tag }}
           labels: |
             org.opencontainers.image.title=konecta-${{ matrix.service }}
             org.opencontainers.image.created=${{ github.run_id }}
             org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.version=${{ env.VERSION }}
+            org.opencontainers.image.version=${{ steps.vars.outputs.version }}
 
       - name: Scan Docker Image with Trivy
         uses: aquasecurity/trivy-action@0.18.0
         with:
-          image-ref: ${{ env.IMAGE_TAG }}
+          image-ref: ${{ steps.vars.outputs.docker_tag }}
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
@@ -230,18 +231,18 @@ jobs:
           file: backend/${{ matrix.service }}/Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_TAG }}
-            ${{ env.IMAGE_LATEST }}
+            ${{ steps.vars.outputs.docker_tag }}
+            ${{ steps.vars.outputs.docker_latest }}
           labels: |
             org.opencontainers.image.title=konecta-${{ matrix.service }}
             org.opencontainers.image.created=${{ github.run_id }}
             org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.version=${{ env.VERSION }}
+            org.opencontainers.image.version=${{ steps.vars.outputs.version }}
 
-      - name: Scan Docker image (SARIF report)
+      - name: Scan Docker Image (SARIF report)
         uses: aquasecurity/trivy-action@0.18.0
         with:
-          image-ref: ${{ env.IMAGE_TAG }}
+          image-ref: ${{ steps.vars.outputs.docker_tag }}
           format: 'sarif'
           output: 'trivy-results.sarif'
         continue-on-error: true
