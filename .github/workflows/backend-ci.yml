@@ -148,6 +148,7 @@ jobs:
             -Dsonar.qualitygate.wait=true
 
 
+
   build-push-images:
     name: Build, Scan & Push Docker Images
     runs-on: ubuntu-latest
@@ -171,12 +172,14 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Determine Image Tags
-        id: vars
-        env:
-          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
-          SERVICE: ${{ matrix.service }}
         run: |
-          # Determine build version
+          DOCKER_USER="${{ secrets.DOCKER_USERNAME }}"
+          SERVICE="${{ matrix.service }}"
+
+          if [ -z "$DOCKER_USER" ]; then
+            echo "DOCKER_USER is empty — check your secrets!" && exit 1
+          fi
+
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             VERSION=${GITHUB_REF_NAME}
           else
@@ -185,28 +188,15 @@ jobs:
             VERSION="${BRANCH}-${SHORT_SHA}"
           fi
 
-          # Construct image tags
           IMAGE_TAG="${DOCKER_USER}/konecta-${SERVICE}:${VERSION}"
           IMAGE_LATEST="${DOCKER_USER}/konecta-${SERVICE}:latest"
 
-          # Export outputs
-          {
-            echo "version=$VERSION"
-            echo "docker_tag=$IMAGE_TAG"
-            echo "docker_latest=$IMAGE_LATEST"
-          } >> "$GITHUB_OUTPUT"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          echo "IMAGE_LATEST=$IMAGE_LATEST" >> $GITHUB_ENV
 
           echo " Determined version: $VERSION"
-          echo " docker_tag: $IMAGE_TAG"
-          echo " docker_latest: $IMAGE_LATEST"
-
-      - name: Debug image tag (safe)
-        run: |
-          SAFE_USER=$(echo "${{ secrets.DOCKER_USERNAME }}" | sed -E 's/(.{1}).*(.{1})/\1***\2/')
-          echo " Safe Docker username: ${SAFE_USER}"
-          echo " Determined version: ${{ steps.vars.outputs.version }}"
-          echo " Image tag: ${{ steps.vars.outputs.docker_tag }}"
-          echo " Latest tag: ${{ steps.vars.outputs.docker_latest }}"
+          echo " IMAGE_TAG: $IMAGE_TAG"
 
       - name: Build Docker Image (no push yet)
         uses: docker/build-push-action@v6
@@ -215,17 +205,17 @@ jobs:
           file: backend/${{ matrix.service }}/Dockerfile
           push: false
           tags: |
-            ${{ steps.vars.outputs.docker_tag }}
+            ${{ env.IMAGE_TAG }}
           labels: |
             org.opencontainers.image.title=konecta-${{ matrix.service }}
             org.opencontainers.image.created=${{ github.run_id }}
             org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.version=${{ steps.vars.outputs.version }}
+            org.opencontainers.image.version=${{ env.VERSION }}
 
       - name: Scan Docker Image with Trivy
         uses: aquasecurity/trivy-action@0.18.0
         with:
-          image-ref: ${{ steps.vars.outputs.docker_tag }}
+          image-ref: ${{ env.IMAGE_TAG }}
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
@@ -240,18 +230,18 @@ jobs:
           file: backend/${{ matrix.service }}/Dockerfile
           push: true
           tags: |
-            ${{ steps.vars.outputs.docker_tag }}
-            ${{ steps.vars.outputs.docker_latest }}
+            ${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_LATEST }}
           labels: |
             org.opencontainers.image.title=konecta-${{ matrix.service }}
             org.opencontainers.image.created=${{ github.run_id }}
             org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.version=${{ steps.vars.outputs.version }}
+            org.opencontainers.image.version=${{ env.VERSION }}
 
       - name: Scan Docker image (SARIF report)
         uses: aquasecurity/trivy-action@0.18.0
         with:
-          image-ref: ${{ steps.vars.outputs.docker_tag }}
+          image-ref: ${{ env.IMAGE_TAG }}
           format: 'sarif'
           output: 'trivy-results.sarif'
         continue-on-error: true
