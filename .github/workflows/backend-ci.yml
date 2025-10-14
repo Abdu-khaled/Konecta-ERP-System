@@ -205,7 +205,7 @@ jobs:
       - name: Build Docker Image (no push yet)
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: backend/
           file: backend/${{ matrix.service }}/Dockerfile
           push: false
           tags: ${{ steps.vars.outputs.docker_tag }}
@@ -229,7 +229,7 @@ jobs:
         if: success()
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: backend/
           file: backend/${{ matrix.service }}/Dockerfile
           push: true
           tags: |
