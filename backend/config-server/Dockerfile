@@ -15,22 +15,13 @@
 # Stage 1: Build all modules
 FROM maven:3.9.6-eclipse-temurin-21 AS builder
 WORKDIR /workspace
-
-# Copy the entire repo
 COPY . .
-
-# Build all modules (including parent POM)
-RUN mvn -B clean package -DskipTests
+RUN mvn -B clean package -DskipTests -pl config-server
 
 # Stage 2: Prepare runtime image
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-
-# Copy only the config-server jar
 COPY --from=builder /workspace/config-server/target/*.jar ./app.jar
-
-# Expose port
 EXPOSE 8080
-
-# Run the jar
 ENTRYPOINT ["java","-jar","/app/app.jar"]
+
