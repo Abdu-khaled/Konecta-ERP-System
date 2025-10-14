@@ -154,7 +154,6 @@ type Trend = 'up' | 'down' | 'flat';
             </article>
           </section>
         </ng-container>
-        </ng-template>
 
         <ng-template #notHr>
           <ng-container *ngIf="role === 'EMPLOYEE'; else defaultDashboard">

@@ -102,6 +102,22 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private buildSidebarForRole(role: string | null): Array<{ label: string; icon: string; path?: string; children?: Array<{ label: string; icon: string; path?: string }> }> {
+    if (role === 'IT' || role === 'OPERATIONS' || role === 'IT_OPS') {
+      return [
+        { label: 'Dashboard', icon: 'space_dashboard', path: '/it' },
+        { label: 'System Monitoring', icon: 'monitoring', children: [
+          { label: 'Service Status', icon: 'monitoring' },
+          { label: 'Network / Cloud Health', icon: 'cloud' }
+        ] },
+        { label: 'Access Requests', icon: 'vpn_key', children: [
+          { label: 'Approve New Logins / Devices', icon: 'devices' }
+        ] },
+        { label: 'Maintenance Logs', icon: 'construction' },
+        { label: 'Incident Reports', icon: 'report' },
+        { label: 'Backup & Recovery', icon: 'backup' },
+        { label: 'Cloud Costs Overview', icon: 'savings' },
+      ];
+    }
     if (role === 'ADMIN') {
       return [
         { label: 'Dashboard Overview', icon: 'space_dashboard' },
@@ -129,6 +145,21 @@ export class AppComponent implements OnInit, OnDestroy {
         { label: 'Reports (HR Analytics)', icon: 'insights' }
       ];
     }
+    if (role === 'FINANCE') {
+      return [
+        { label: 'Dashboard', icon: 'space_dashboard' },
+        { label: 'Manage Transactions', icon: 'receipt_long', children: [
+          { label: 'Add / Approve Expenses', icon: 'add_card' },
+          { label: 'View All Invoices', icon: 'request_quote' }
+        ] },
+        { label: 'Budget Monitoring', icon: 'monitoring', children: [
+          { label: 'Departmental Budgets', icon: 'account_balance' },
+          { label: 'Spending Reports', icon: 'bar_chart' }
+        ] },
+        { label: 'Payroll Overview (HR data)', icon: 'payments' },
+        { label: 'Forecasting (AI Integration)', icon: 'trending_up' }
+      ];
+    }
     if (role === 'EMPLOYEE') {
       return [
         { label: 'Dashboard', icon: 'home' },
@@ -151,9 +182,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
 }
-
-
-
 
 
 

@@ -67,6 +67,21 @@ import { RouterLink } from '@angular/router';
           <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Leave Requests</button>
           <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Training</button>
         </div>
+        <!-- Finance primary nav buttons (placeholders) -->
+        <div *ngIf="role === 'FINANCE'" class="hidden md:flex items-center gap-2 mr-2">
+          <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Home</button>
+          <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Budgets</button>
+          <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Transactions</button>
+          <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Reports</button>
+        </div>
+
+        <!-- IT / Operations primary nav (static) -->
+        <div *ngIf="role === 'IT' || role === 'OPERATIONS' || role === 'IT_OPS'" class="hidden md:flex items-center gap-2 mr-2">
+          <a routerLink="/it" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Home</a>
+          <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Infrastructure</button>
+          <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Tickets</button>
+          <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Monitoring</button>
+        </div>
         
         <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20" aria-label="View notifications">
           <span class="material-symbols-outlined text-[20px]">notifications</span>
