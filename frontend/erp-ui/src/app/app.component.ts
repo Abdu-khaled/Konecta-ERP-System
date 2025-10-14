@@ -129,6 +129,21 @@ export class AppComponent implements OnInit, OnDestroy {
         { label: 'Reports (HR Analytics)', icon: 'insights' }
       ];
     }
+    if (role === 'FINANCE') {
+      return [
+        { label: 'Dashboard', icon: 'space_dashboard' },
+        { label: 'Manage Transactions', icon: 'receipt_long', children: [
+          { label: 'Add / Approve Expenses', icon: 'add_card' },
+          { label: 'View All Invoices', icon: 'request_quote' }
+        ] },
+        { label: 'Budget Monitoring', icon: 'monitoring', children: [
+          { label: 'Departmental Budgets', icon: 'account_balance' },
+          { label: 'Spending Reports', icon: 'bar_chart' }
+        ] },
+        { label: 'Payroll Overview (HR data)', icon: 'payments' },
+        { label: 'Forecasting (AI Integration)', icon: 'trending_up' }
+      ];
+    }
     if (role === 'EMPLOYEE') {
       return [
         { label: 'Dashboard', icon: 'home' },
@@ -151,7 +166,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
 }
-
 
 
 

@@ -29,6 +29,26 @@ public class AuthController {
         this.jwtService = jwtService;
     }
 
+    @PutMapping("/users/{id}/role")
+    public ResponseEntity<?> updateUserRole(@PathVariable Long id, @RequestBody UpdateRoleRequest req) {
+        if (req == null || req.getRole() == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "role is required"));
+        }
+        return userRepository.findById(id)
+                .map(user -> {
+                    user.setRole(req.getRole());
+                    userRepository.save(user);
+                    return ResponseEntity.ok(Map.of(
+                            "message", "role updated",
+                            "id", user.getId(),
+                            "username", user.getUsername(),
+                            "email", user.getEmail(),
+                            "role", user.getRole().name()
+                    ));
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
         if (userRepository.existsByUsername(req.getUsername())) {
