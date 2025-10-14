@@ -35,12 +35,12 @@ import { Subscription } from 'rxjs';
   `
 })
 export class AppComponent implements OnInit, OnDestroy {
-  sidebarItems: Array<{ label: string; icon: string; path?: string }> = [
+  sidebarItems: Array<{ label: string; icon: string; path?: string; children?: Array<{ label: string; icon: string; path?: string }> }> = [
     { label: 'Home', icon: 'home', path: '/' },
     { label: 'Favorites', icon: 'star' },
-    { label: 'Recent', icon: 'clock' },
-    { label: 'Workspaces', icon: 'boards' },
-    { label: 'Modules', icon: 'boards' }
+    { label: 'Recent', icon: 'schedule' },
+    { label: 'Workspaces', icon: 'dashboard' },
+    { label: 'Modules', icon: 'apps' }
   ];
 
   isSidebarOpen = false;
@@ -101,32 +101,42 @@ export class AppComponent implements OnInit, OnDestroy {
     this.router.navigate(['/auth/login']);
   }
 
-  private buildSidebarForRole(role: string | null): Array<{ label: string; icon: string; path?: string }> {
+  private buildSidebarForRole(role: string | null): Array<{ label: string; icon: string; path?: string; children?: Array<{ label: string; icon: string; path?: string }> }> {
+    if (role === 'ADMIN') {
+      return [
+        { label: 'Dashboard Overview', icon: 'space_dashboard' },
+        { label: 'Manage Users & Roles', icon: 'manage_accounts', children: [
+          { label: 'Add / Remove Users', icon: 'group_add' },
+          { label: 'Assign Roles', icon: 'badge' }
+        ] },
+        { label: 'System Activity Log', icon: 'history' },
+        { label: 'Modules Overview', icon: 'view_module' },
+        { label: 'Settings / Access Control', icon: 'settings' },
+        { label: 'Audit Reports', icon: 'assignment' }
+      ];
+    }
     if (role === 'EMPLOYEE') {
       return [
         { label: 'Dashboard', icon: 'home' },
-        { label: ' Attendance', icon: 'clock' },
-        { label: ' Leave Requests', icon: 'star' },
-        { label: ' Performance', icon: 'star' },
-        { label: ' Payroll', icon: 'boards' },
-        { label: 'Training & Learning', icon: 'boards' },
-        { label: 'Help / Support', icon: 'boards' }
+        { label: 'My Attendance', icon: 'schedule' },
+        { label: 'My Leave Requests', icon: 'event_note' },
+        { label: 'My Performance', icon: 'workspace_premium' },
+        { label: 'My Payroll', icon: 'request_quote' },
+        { label: 'Training & Learning', icon: 'school' },
+        { label: 'Help / Support', icon: 'support_agent' }
       ];
     }
-    // default/basic sidebar when not signed in or other roles (can customize later)
+    // default/basic sidebar when not signed in or other roles
     return [
       { label: 'Home', icon: 'home', path: '/' },
       { label: 'Favorites', icon: 'star' },
-      { label: 'Recent', icon: 'clock' },
-      { label: 'Workspaces', icon: 'boards' },
-      { label: 'Modules', icon: 'boards' }
+      { label: 'Recent', icon: 'schedule' },
+      { label: 'Workspaces', icon: 'dashboard' },
+      { label: 'Modules', icon: 'apps' }
     ];
   }
+
 }
-
-
-
-
 
 
 

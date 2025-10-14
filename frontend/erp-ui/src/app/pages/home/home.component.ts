@@ -11,10 +11,55 @@ type Trend = 'up' | 'down' | 'flat';
   imports: [NgFor, NgClass, NgIf, DecimalPipe],
   template: `
     <section class="flex flex-col gap-7 py-4">
-      <ng-container *ngIf="role === 'EMPLOYEE'; else defaultDashboard">
+      <ng-container *ngIf="role === 'ADMIN'; else notAdmin">
         <header class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div class="space-y-1">
+            <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Admin Dashboard</h1>
+            <p class="text-sm text-slate-500">Global statistics and controls.</p>
           </div>
+          <div class="flex gap-2">
+            <button type="button" class="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">Manage Roles</button>
+            <button type="button" class="rounded-full bg-slate-800 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-900">System Settings</button>
+          </div>
+        </header>
+
+        <section class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <article class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70">
+            <h3 class="text-sm font-semibold text-slate-600 mb-3">Users</h3>
+            <div class="text-3xl font-semibold text-slate-900">Total: —</div>
+            <p class="text-sm text-slate-500">Active employees: — • Departments: —</p>
+          </article>
+
+          <article class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70">
+            <h3 class="text-sm font-semibold text-slate-600 mb-3">System Uptime</h3>
+            <div class="text-3xl font-semibold text-slate-900">—</div>
+            <p class="text-sm text-slate-500">Recent logins: —</p>
+          </article>
+
+          <article class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70">
+            <h3 class="text-sm font-semibold text-slate-600 mb-3">Requests & Registrations</h3>
+            <p class="text-3xl font-semibold text-slate-900">Pending: —</p>
+            <p class="text-sm text-slate-500">New registrations: —</p>
+          </article>
+
+          <article class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70 md:col-span-2 xl:col-span-1">
+            <h3 class="text-sm font-semibold text-slate-600 mb-3">Notifications</h3>
+            <ul class="text-sm text-slate-700 space-y-2">
+              <li>System: Backup completed</li>
+              <li>Security: Review access changes</li>
+              <li>HR: New department created</li>
+            </ul>
+          </article>
+        </section>
+      </ng-container>
+
+      <ng-template #notAdmin>
+        <ng-container *ngIf="role === 'EMPLOYEE'; else defaultDashboard">
+          <header class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div class="space-y-1">
+              <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Welcome {{ firstName }}!</h1>
+              <p class="text-sm text-slate-500">Here’s your overview for today.</p>
+            </div>
           <div class="flex gap-2">
             <button type="button" class="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">Request Leave</button>
             <button type="button" class="rounded-full bg-slate-800 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-900">Update Profile</button>
@@ -59,7 +104,8 @@ type Trend = 'up' | 'down' | 'flat';
             </ul>
           </article>
         </section>
-      </ng-container>
+        </ng-container>
+      </ng-template>
 
       <ng-template #defaultDashboard>
         <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
