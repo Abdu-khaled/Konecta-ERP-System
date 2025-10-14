@@ -149,7 +149,7 @@ jobs:
 
 
   build-push-images:
-    name: Build & Push Docker Images
+    name: Build, Scan & Push Docker Images
     runs-on: ubuntu-latest
     needs: detect-changes
     if: ${{ fromJson(needs.detect-changes.outputs.matrix).service != '' }}
@@ -172,7 +172,11 @@ jobs:
 
       - name: Determine Image Tags
         id: vars
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+          SERVICE: ${{ matrix.service }}
         run: |
+          # Determine build version and image tags
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             VERSION=${GITHUB_REF_NAME}
           else
@@ -182,11 +186,36 @@ jobs:
           fi
 
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "docker_tag=${{ secrets.DOCKER_USERNAME }}/konecta-${{ matrix.service }}:$VERSION" >> $GITHUB_OUTPUT
-          echo "docker_latest=${{ secrets.DOCKER_USERNAME }}/konecta-${{ matrix.service }}:latest" >> $GITHUB_OUTPUT
+          echo "docker_tag=${DOCKER_USER}/konecta-${SERVICE}:$VERSION" >> $GITHUB_OUTPUT
+          echo "docker_latest=${DOCKER_USER}/konecta-${SERVICE}:latest" >> $GITHUB_OUTPUT
           echo "Determined version: $VERSION"
 
-      - name: Build & Push Docker Image
+      - name: Build Docker Image (no push yet)
+        uses: docker/build-push-action@v6
+        with:
+          context: backend/${{ matrix.service }}
+          file: backend/${{ matrix.service }}/Dockerfile
+          push: false
+          tags: |
+            ${{ steps.vars.outputs.docker_tag }}
+          labels: |
+            org.opencontainers.image.title=konecta-${{ matrix.service }}
+            org.opencontainers.image.created=${{ github.run_id }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.vars.outputs.version }}
+
+      - name: Scan Docker Image with Trivy
+        uses: aquasecurity/trivy-action@0.18.0
+        with:
+          image-ref: ${{ steps.vars.outputs.docker_tag }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Push Docker Image (only if scan passed)
+        if: success()
         uses: docker/build-push-action@v6
         with:
           context: backend/${{ matrix.service }}
