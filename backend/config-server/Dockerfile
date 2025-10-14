@@ -12,16 +12,15 @@
 # ENTRYPOINT ["java","-jar","/app/app.jar"]
 
 
-# Stage 1: Build all modules
+# Stage 1: Build
 FROM maven:3.9.6-eclipse-temurin-21 AS builder
 WORKDIR /workspace
 COPY . .
-RUN mvn -B clean package -DskipTests -pl config-server
+RUN mvn -B clean package -DskipTests -pl config-server -am
 
-# Stage 2: Prepare runtime image
+# Stage 2: Runtime image
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY --from=builder /workspace/config-server/target/*.jar ./app.jar
+COPY --from=builder /workspace/config-server/target/*.jar /app/app.jar
 EXPOSE 8080
 ENTRYPOINT ["java","-jar","/app/app.jar"]
-
