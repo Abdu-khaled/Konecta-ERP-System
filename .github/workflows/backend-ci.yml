@@ -241,6 +241,7 @@ jobs:
       - name: Push Latest Tag (only if scan passed)
         if: success()
         run: |
+          docker pull ${{ steps.vars.outputs.docker_tag }}
           docker tag ${{ steps.vars.outputs.docker_tag }} ${{ steps.vars.outputs.docker_latest }}
           docker push ${{ steps.vars.outputs.docker_latest }}
 
