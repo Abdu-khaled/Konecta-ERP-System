@@ -50,12 +50,27 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
             <!-- Children -->
             <ul *ngIf="item.children && isExpanded(i) && isOpen" class="mt-1 ml-11 flex flex-col gap-1">
               <li *ngFor="let child of item.children">
-                <button type="button" class="group flex w-full items-center gap-2 rounded-2xl px-2 py-1.5 text-[13px] font-medium text-slate-600 transition hover:bg-white hover:text-slate-900">
-                  <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 text-slate-700 shadow-sm">
-                    <span class="material-symbols-outlined text-[18px]">{{ materialIcon(child.icon) }}</span>
-                  </span>
-                  <span class="whitespace-nowrap text-sm">{{ child.label }}</span>
-                </button>
+                <ng-container *ngIf="child.path; else nonLinkChild">
+                  <a
+                    class="group flex w-full items-center gap-2 rounded-2xl px-2 py-1.5 text-[13px] font-medium text-slate-600 transition hover:bg-white hover:text-slate-900"
+                    [routerLink]="child.path"
+                    routerLinkActive="bg-white text-slate-900 shadow-sm"
+                    [routerLinkActiveOptions]="{ exact: true }"
+                  >
+                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 text-slate-700 shadow-sm">
+                      <span class="material-symbols-outlined text-[18px]">{{ materialIcon(child.icon) }}</span>
+                    </span>
+                    <span class="whitespace-nowrap text-sm">{{ child.label }}</span>
+                  </a>
+                </ng-container>
+                <ng-template #nonLinkChild>
+                  <button type="button" class="group flex w-full items-center gap-2 rounded-2xl px-2 py-1.5 text-[13px] font-medium text-slate-600 transition hover:bg-white hover:text-slate-900">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 text-slate-700 shadow-sm">
+                      <span class="material-symbols-outlined text-[18px]">{{ materialIcon(child.icon) }}</span>
+                    </span>
+                    <span class="whitespace-nowrap text-sm">{{ child.label }}</span>
+                  </button>
+                </ng-template>
               </li>
             </ul>
           </ng-template>
@@ -76,6 +91,22 @@ export class SidebarComponent {
   }
 
   private buildSidebarForRole(role: string | null): Array<{ label: string; icon: string; path?: string; children?: Array<{ label: string; icon: string; path?: string }> }> {
+    if (role === 'IT' || role === 'OPERATIONS' || role === 'IT_OPS') {
+      return [
+        { label: 'Dashboard', icon: 'space_dashboard', path: '/it' },
+        { label: 'System Monitoring', icon: 'monitoring', children: [
+          { label: 'Service Status', icon: 'monitoring' },
+          { label: 'Network / Cloud Health', icon: 'cloud' }
+        ]},
+        { label: 'Access Requests', icon: 'vpn_key', children: [
+          { label: 'Approve New Logins / Devices', icon: 'devices' }
+        ]},
+        { label: 'Maintenance Logs', icon: 'construction' },
+        { label: 'Incident Reports', icon: 'report' },
+        { label: 'Backup & Recovery', icon: 'backup' },
+        { label: 'Cloud Costs Overview', icon: 'savings' },
+      ];
+    }
     if (role === 'ADMIN') {
       return [
         { label: 'Dashboard Overview', icon: 'space_dashboard' },

@@ -7,6 +7,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/home/home.component').then(m => m.HomeComponent)
   },
+  
+  // IT / Operations main route only (static content)
+  {
+    path: 'it',
+    pathMatch: 'full',
+    loadComponent: () =>
+      import('./dashboard/it-dashboard/it-dashboard.component').then(m => m.ItDashboardComponent)
+  },
 
   {
     path: 'auth',
