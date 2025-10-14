@@ -144,7 +144,7 @@ jobs:
           mvn -f "backend/$SERVICE/pom.xml" clean verify sonar:sonar \
             -DskipTests=true \
             -Dsonar.projectKey=konecta-erp-system-$SERVICE \
-            -Dsonar.host.url=http://ec2-3-78-186-45.eu-central-1.compute.amazonaws.com:9000 \
+            -Dsonar.host.url=http://ec2-3-70-137-2.eu-central-1.compute.amazonaws.com:9000 \
             -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
             -Dsonar.qualitygate.wait=true
 
