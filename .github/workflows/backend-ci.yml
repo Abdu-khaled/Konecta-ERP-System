@@ -148,8 +148,7 @@ jobs:
             -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
             -Dsonar.qualitygate.wait=true
 
-       
-            
+        
   build-push-images:
     name: Build, Scan & Push Docker Images
     runs-on: ubuntu-latest
@@ -162,6 +161,22 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Debug Secrets
+        run: |
+          echo "DOCKER_USERNAME length: ${#DOCKER_USERNAME}"
+          echo "DOCKER_PASSWORD length: ${#DOCKER_PASSWORD}"
+          if [ -z "$DOCKER_USERNAME" ]; then
+            echo "ERROR: DOCKER_USERNAME is empty!"
+            exit 1
+          fi
+          if [ -z "$DOCKER_PASSWORD" ]; then
+            echo "ERROR: DOCKER_PASSWORD is empty!"
+            exit 1
+          fi
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -176,13 +191,14 @@ jobs:
         id: vars
         env:
           SERVICE: ${{ matrix.service }}
+          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
         run: |
-          DOCKER_USER="${{ secrets.DOCKER_USERNAME }}"
+          echo "DEBUG: DOCKER_USER='$DOCKER_USER'"
+          echo "DEBUG: SERVICE='$SERVICE'"
           if [ -z "$DOCKER_USER" ]; then
-            echo "Error: DOCKER_USERNAME secret is empty or inaccessible!"
+            echo "ERROR: DOCKER_USERNAME secret is empty or not set!"
             exit 1
           fi
-
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             VERSION=${GITHUB_REF_NAME}
           else
@@ -190,24 +206,21 @@ jobs:
             BRANCH=$(echo "${GITHUB_REF_NAME}" | sed 's/\//-/g')
             VERSION="${BRANCH}-${SHORT_SHA}"
           fi
-
           DOCKER_TAG="${DOCKER_USER}/konecta-${SERVICE}:${VERSION}"
           DOCKER_LATEST="${DOCKER_USER}/konecta-${SERVICE}:latest"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "docker_tag=${DOCKER_TAG}" >> $GITHUB_OUTPUT
+          echo "docker_latest=${DOCKER_LATEST}" >> $GITHUB_OUTPUT
+          echo "DEBUG: Determined version: $VERSION"
+          echo "DEBUG: Docker tag: $DOCKER_TAG"
+          echo "DEBUG: Docker latest: $DOCKER_LATEST"
 
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "docker_tag=$DOCKER_TAG" >> $GITHUB_OUTPUT
-          echo "docker_latest=$DOCKER_LATEST" >> $GITHUB_OUTPUT
-
-          echo "Determined version: $VERSION"
-          echo "Docker tag: $DOCKER_TAG"
-          echo "Docker latest: $DOCKER_LATEST"
-
-      - name: Build Docker Image (no push yet)
+      - name: Build and Scan Docker Image
         uses: docker/build-push-action@v6
         with:
           context: backend/
           file: backend/${{ matrix.service }}/Dockerfile
-          push: false
+          push: true
           tags: ${{ steps.vars.outputs.docker_tag }}
           labels: |
             org.opencontainers.image.title=konecta-${{ matrix.service }}
@@ -225,21 +238,11 @@ jobs:
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
 
-      - name: Push Docker Image (only if scan passed)
+      - name: Push Latest Tag (only if scan passed)
         if: success()
-        uses: docker/build-push-action@v6
-        with:
-          context: backend/
-          file: backend/${{ matrix.service }}/Dockerfile
-          push: true
-          tags: |
-            ${{ steps.vars.outputs.docker_tag }}
-            ${{ steps.vars.outputs.docker_latest }}
-          labels: |
-            org.opencontainers.image.title=konecta-${{ matrix.service }}
-            org.opencontainers.image.created=${{ github.run_id }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.version=${{ steps.vars.outputs.version }}
+        run: |
+          docker tag ${{ steps.vars.outputs.docker_tag }} ${{ steps.vars.outputs.docker_latest }}
+          docker push ${{ steps.vars.outputs.docker_latest }}
 
       - name: Scan Docker image (SARIF report)
         uses: aquasecurity/trivy-action@0.18.0
