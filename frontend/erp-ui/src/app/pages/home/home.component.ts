@@ -54,7 +54,61 @@ type Trend = 'up' | 'down' | 'flat';
       </ng-container>
 
       <ng-template #notAdmin>
-        <ng-container *ngIf="role === 'EMPLOYEE'; else defaultDashboard">
+        <ng-container *ngIf="role === 'HR'; else notHr">
+          <header class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div class="space-y-1">
+              <h1 class="text-2xl font-semibold tracking-tight text-slate-900">HR Dashboard</h1>
+              <p class="text-sm text-slate-500">Workforce and attendance insights.</p>
+            </div>
+            <div class="flex gap-2">
+              <button type="button" class="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">Manage Employees</button>
+              <button type="button" class="rounded-full bg-slate-800 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-900">HR Settings</button>
+            </div>
+          </header>
+
+          <section class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <article class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70">
+              <h3 class="text-sm font-semibold text-slate-600 mb-3">Total Employees</h3>
+              <div class="text-3xl font-semibold text-slate-900">—</div>
+              <p class="text-sm text-slate-500">Current headcount across departments.</p>
+            </article>
+
+            <article class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70">
+              <h3 class="text-sm font-semibold text-slate-600 mb-3">Attendance Today</h3>
+              <div class="text-3xl font-semibold text-slate-900">—</div>
+              <p class="text-sm text-slate-500">Check-ins recorded for today.</p>
+            </article>
+
+            <article class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70">
+              <h3 class="text-sm font-semibold text-slate-600 mb-3">Leave Requests Pending</h3>
+              <p class="text-3xl font-semibold text-slate-900">—</p>
+              <p class="text-sm text-slate-500">Awaiting approval.</p>
+            </article>
+
+            <article class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70">
+              <h3 class="text-sm font-semibold text-slate-600 mb-3">Training Sessions This Month</h3>
+              <div class="text-3xl font-semibold text-slate-900">—</div>
+              <p class="text-sm text-slate-500">Planned or completed.</p>
+            </article>
+
+            <article class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70">
+              <h3 class="text-sm font-semibold text-slate-600 mb-3">Top Performers</h3>
+              <div class="text-3xl font-semibold text-slate-900">—</div>
+              <p class="text-sm text-slate-500">Based on latest reviews.</p>
+            </article>
+
+            <article class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70 md:col-span-2 xl:col-span-1">
+              <h3 class="text-sm font-semibold text-slate-600 mb-3">AI Insights (Coming Soon)</h3>
+              <ul class="text-sm text-slate-700 space-y-2">
+                <li>Attrition Risk: —</li>
+                <li>Training Needs: —</li>
+              </ul>
+            </article>
+          </section>
+        </ng-container>
+
+        <ng-template #notHr>
+          <ng-container *ngIf="role === 'EMPLOYEE'; else defaultDashboard">
           <header class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div class="space-y-1">
               <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Welcome {{ firstName }}!</h1>
@@ -104,7 +158,8 @@ type Trend = 'up' | 'down' | 'flat';
             </ul>
           </article>
         </section>
-        </ng-container>
+          </ng-container>
+        </ng-template>
       </ng-template>
 
       <ng-template #defaultDashboard>

@@ -60,6 +60,13 @@ import { RouterLink } from '@angular/router';
           <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Users Management</button>
           <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Reports Overview</button>
         </div>
+        <!-- HR primary nav buttons (placeholders) -->
+        <div *ngIf="role === 'HR'" class="hidden md:flex items-center gap-2 mr-2">
+          <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Home</button>
+          <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Employee List</button>
+          <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Leave Requests</button>
+          <button type="button" class="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold hover:bg-white/20">Training</button>
+        </div>
         
         <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20" aria-label="View notifications">
           <span class="material-symbols-outlined text-[20px]">notifications</span>

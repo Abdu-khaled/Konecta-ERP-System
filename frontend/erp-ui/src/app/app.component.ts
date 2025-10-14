@@ -115,6 +115,20 @@ export class AppComponent implements OnInit, OnDestroy {
         { label: 'Audit Reports', icon: 'assignment' }
       ];
     }
+    if (role === 'HR') {
+      return [
+        { label: 'Dashboard', icon: 'space_dashboard' },
+        { label: 'Manage Employees', icon: 'group', children: [
+          { label: 'Add Employee', icon: 'person_add' },
+          { label: 'Update / Delete Employee', icon: 'edit' }
+        ] },
+        { label: 'Attendance Tracking', icon: 'schedule' },
+        { label: 'Performance Evaluation', icon: 'workspace_premium' },
+        { label: 'Training Management', icon: 'school' },
+        { label: 'Leave Management', icon: 'event_note' },
+        { label: 'Reports (HR Analytics)', icon: 'insights' }
+      ];
+    }
     if (role === 'EMPLOYEE') {
       return [
         { label: 'Dashboard', icon: 'home' },
@@ -137,7 +151,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
 }
-
 
 
 
