@@ -174,10 +174,15 @@ jobs:
 
       - name: Determine Image Tags
         id: vars
+        env:
+          SERVICE: ${{ matrix.service }}
         run: |
-          SERVICE=${{ matrix.service }}
+          DOCKER_USER="${{ secrets.DOCKER_USERNAME }}"
+          if [ -z "$DOCKER_USER" ]; then
+            echo "Error: DOCKER_USERNAME secret is empty or inaccessible!"
+            exit 1
+          fi
 
-          # Determine version
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             VERSION=${GITHUB_REF_NAME}
           else
@@ -186,17 +191,16 @@ jobs:
             VERSION="${BRANCH}-${SHORT_SHA}"
           fi
 
-          # Set outputs properly
+          DOCKER_TAG="${DOCKER_USER}/konecta-${SERVICE}:${VERSION}"
+          DOCKER_LATEST="${DOCKER_USER}/konecta-${SERVICE}:latest"
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "docker_tag<<EOF" >> $GITHUB_OUTPUT
-          echo "${{ secrets.DOCKER_USERNAME }}/konecta-${SERVICE}:$VERSION" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          echo "docker_latest<<EOF" >> $GITHUB_OUTPUT
-          echo "${{ secrets.DOCKER_USERNAME }}/konecta-${SERVICE}:latest" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "docker_tag=$DOCKER_TAG" >> $GITHUB_OUTPUT
+          echo "docker_latest=$DOCKER_LATEST" >> $GITHUB_OUTPUT
 
           echo "Determined version: $VERSION"
-          echo "docker_tag: ${{ secrets.DOCKER_USERNAME }}/konecta-${SERVICE}:$VERSION"
+          echo "Docker tag: $DOCKER_TAG"
+          echo "Docker latest: $DOCKER_LATEST"
 
       - name: Build Docker Image (no push yet)
         uses: docker/build-push-action@v6
