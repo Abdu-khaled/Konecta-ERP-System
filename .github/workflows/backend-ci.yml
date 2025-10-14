@@ -176,7 +176,13 @@ jobs:
           DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
           SERVICE: ${{ matrix.service }}
         run: |
-          # Determine build version and image tags
+          # Validate secret
+          if [[ -z "$DOCKER_USER" ]]; then
+            echo "❌ ERROR: DOCKER_USERNAME secret is missing or empty"
+            exit 1
+          fi
+
+          # Determine version (branch/tag)
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             VERSION=${GITHUB_REF_NAME}
           else
@@ -186,18 +192,11 @@ jobs:
           fi
 
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-          {
-            echo "docker_tag<<EOF"
-            echo "${DOCKER_USER}/konecta-${SERVICE}:${VERSION}"
-            echo "EOF"
-            echo "docker_latest<<EOF"
-            echo "${DOCKER_USER}/konecta-${SERVICE}:latest"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          echo "docker_tag=${DOCKER_USER}/konecta-${SERVICE}:$VERSION" >> $GITHUB_OUTPUT
+          echo "docker_latest=${DOCKER_USER}/konecta-${SERVICE}:latest" >> $GITHUB_OUTPUT
 
           echo " Determined version: $VERSION"
-          echo " Docker tag: ${DOCKER_USER}/konecta-${SERVICE}:${VERSION}"
+          echo " Docker tag: ${DOCKER_USER}/konecta-${SERVICE}:$VERSION"
 
       - name: Build Docker Image (no push yet)
         uses: docker/build-push-action@v6
@@ -239,7 +238,7 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.vars.outputs.version }}
 
-      - name: Scan Docker Image (SARIF report)
+      - name: Scan Docker image (SARIF report)
         uses: aquasecurity/trivy-action@0.18.0
         with:
           image-ref: ${{ steps.vars.outputs.docker_tag }}
