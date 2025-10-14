@@ -83,6 +83,7 @@ jobs:
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
           echo "Detected services matrix: $MATRIX_JSON"
 
+
   build-test-push:
     name: Build, Test & Push Changed Services
     needs: detect-changes
@@ -147,7 +148,8 @@ jobs:
             -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
             -Dsonar.qualitygate.wait=true
 
-
+       
+            
   build-push-images:
     name: Build, Scan & Push Docker Images
     runs-on: ubuntu-latest
@@ -172,17 +174,10 @@ jobs:
 
       - name: Determine Image Tags
         id: vars
-        env:
-          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
-          SERVICE: ${{ matrix.service }}
         run: |
-          # Validate secret
-          if [[ -z "$DOCKER_USER" ]]; then
-            echo "❌ ERROR: DOCKER_USERNAME secret is missing or empty"
-            exit 1
-          fi
+          SERVICE=${{ matrix.service }}
 
-          # Determine version (branch/tag)
+          # Determine version
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             VERSION=${GITHUB_REF_NAME}
           else
@@ -191,12 +186,17 @@ jobs:
             VERSION="${BRANCH}-${SHORT_SHA}"
           fi
 
+          # Set outputs properly
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "docker_tag=${DOCKER_USER}/konecta-${SERVICE}:$VERSION" >> $GITHUB_OUTPUT
-          echo "docker_latest=${DOCKER_USER}/konecta-${SERVICE}:latest" >> $GITHUB_OUTPUT
+          echo "docker_tag<<EOF" >> $GITHUB_OUTPUT
+          echo "${{ secrets.DOCKER_USERNAME }}/konecta-${SERVICE}:$VERSION" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "docker_latest<<EOF" >> $GITHUB_OUTPUT
+          echo "${{ secrets.DOCKER_USERNAME }}/konecta-${SERVICE}:latest" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
-          echo " Determined version: $VERSION"
-          echo " Docker tag: ${DOCKER_USER}/konecta-${SERVICE}:$VERSION"
+          echo "Determined version: $VERSION"
+          echo "docker_tag: ${{ secrets.DOCKER_USERNAME }}/konecta-${SERVICE}:$VERSION"
 
       - name: Build Docker Image (no push yet)
         uses: docker/build-push-action@v6
@@ -204,8 +204,7 @@ jobs:
           context: backend/${{ matrix.service }}
           file: backend/${{ matrix.service }}/Dockerfile
           push: false
-          tags: |
-            ${{ steps.vars.outputs.docker_tag }}
+          tags: ${{ steps.vars.outputs.docker_tag }}
           labels: |
             org.opencontainers.image.title=konecta-${{ matrix.service }}
             org.opencontainers.image.created=${{ github.run_id }}
