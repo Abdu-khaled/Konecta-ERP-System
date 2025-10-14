@@ -198,6 +198,15 @@ jobs:
 
           echo " Determined version: $VERSION"
           echo " docker_tag: $IMAGE_TAG"
+          echo " docker_latest: $IMAGE_LATEST"
+
+      - name: Debug image tag (safe)
+        run: |
+          SAFE_USER=$(echo "${{ secrets.DOCKER_USERNAME }}" | sed -E 's/(.{1}).*(.{1})/\1***\2/')
+          echo " Safe Docker username: ${SAFE_USER}"
+          echo " Determined version: ${{ steps.vars.outputs.version }}"
+          echo " Image tag: ${{ steps.vars.outputs.docker_tag }}"
+          echo " Latest tag: ${{ steps.vars.outputs.docker_latest }}"
 
       - name: Build Docker Image (no push yet)
         uses: docker/build-push-action@v6
@@ -251,4 +260,3 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
-
