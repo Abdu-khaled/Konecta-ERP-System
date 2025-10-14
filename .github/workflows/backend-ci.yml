@@ -154,7 +154,7 @@ jobs:
     needs: detect-changes
     if: ${{ fromJson(needs.detect-changes.outputs.matrix).service != '' }}
     strategy:
-      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix).service }}
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
       fail-fast: false
 
     steps:
