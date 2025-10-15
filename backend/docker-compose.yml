@@ -39,6 +39,19 @@ services:
       SPRING_DATASOURCE_PASSWORD: 1234
       SPRING_PROFILES_ACTIVE: docker
 
+  operation-service:
+    build:
+      context: .
+      dockerfile: operation-service/Dockerfile
+    image: erp-operation-service:dev
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/operation-service
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 1234
+      SPRING_PROFILES_ACTIVE: docker
+
   discovery-server:
     build:
       context: .
