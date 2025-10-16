@@ -100,9 +100,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.changed == 'true' }}
-    permissions:
-      contents: read
-      security-events: write
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
       fail-fast: false
