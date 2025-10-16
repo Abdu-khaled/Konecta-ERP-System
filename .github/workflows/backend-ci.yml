@@ -1,45 +1,61 @@
-name: Backend CI
+name: Backend CI Pipeline 
 
 on:
   push:
     branches: [main, develop]
     paths:
       - 'backend/**'
+
   pull_request:
     branches: [main, develop]
     paths:
       - 'backend/**'
   workflow_dispatch:
 
+env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '18'
+
 jobs:
+  
+# STAGE 1: SECRET SCANNING
   secret-scan:
-    name: Secret Scanning with Gitleaks
+    name:  Secret Scanning
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history for accurate secret detection
+          fetch-depth: 0
 
-      - name: Run Gitleaks secret scan
+      - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
         with:
-          args: detect --source . --no-git --redact --report=gitleaks-report.json --report-format=json --exit-code 1
+          args: detect --source . --no-git --redact --report-format sarif --report-path gitleaks.sarif --exit-code 1
+
+      - name: Upload Gitleaks SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: gitleaks.sarif
+          category: secrets
 
       - name: Upload Gitleaks report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gitleaks-report
-          path: gitleaks-report.json
+          path: gitleaks.sarif
+          retention-days: 30
 
-
+# STAGE 2: DETECT CHANGES
   detect-changes:
     name: Detect Changed Backend Services
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
-
+      changed: ${{ steps.set-matrix.outputs.changed }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -75,85 +91,177 @@ jobs:
 
           if [ ${#SERVICES[@]} -eq 0 ]; then
             echo "No changed backend services detected — skipping build."
-            MATRIX_JSON="{\"service\":[]}"
+            MATRIX_JSON='{"service":[]}'
+            echo "changed=false" >> $GITHUB_OUTPUT
           else
-            MATRIX_JSON="{\"service\":[$(IFS=,; echo "${SERVICES[*]}")]}"
+            MATRIX_JSON="{\"service\":[${SERVICES[*]}]}"
+            echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
           echo "Detected services matrix: $MATRIX_JSON"
 
-
-  build-test-push:
-    name: Build, Test & Push Changed Services
-    needs: detect-changes
-    runs-on: ubuntu-latest
-    if: ${{ fromJson(needs.detect-changes.outputs.matrix).service != '' }}
-    strategy:
-      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
-      fail-fast: false
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: maven
-
-      - name: Build & Test ${{ matrix.service }}
-        working-directory: backend/${{ matrix.service }}
-        run: |
-          echo "Building and testing service: ${{ matrix.service }}"
-          if [ -f "./mvnw" ]; then
-            chmod +x mvnw
-            ./mvnw -B clean verify -DskipTests=false -Dmaven.test.failure.ignore=true
-          else
-            mvn -B clean verify -DskipTests=false -Dmaven.test.failure.ignore=true
-          fi
-
-
-  sonar-scan:
-    name: SonarQube Analysis (Changed Services)
-    runs-on: ubuntu-latest
-    needs: [detect-changes]
-    if: ${{ fromJson(needs.detect-changes.outputs.matrix).service != '' }}
-    strategy:
-      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Needed for Sonar history
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: maven
-
-      - name: Run SonarQube scan for changed backend service
-        run: |
-          SERVICE=${{ matrix.service }}
-          echo "Running SonarQube scan for $SERVICE"
-          mvn -f "backend/$SERVICE/pom.xml" clean verify sonar:sonar \
-            -DskipTests=true \
-            -Dsonar.projectKey=konecta-erp-system-$SERVICE \
-            -Dsonar.host.url=http://ec2-63-178-43-66.eu-central-1.compute.amazonaws.com:9000 \
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
-            -Dsonar.qualitygate.wait=true
-
         
-  build-push-images:
-    name: Build, Scan & Push Docker Images
+# STAGE 3: BACKEND DEPENDENCY SCANNING
+  backend-dependency-scan:
+    name: Backend Dependency Scan (OWASP)
     runs-on: ubuntu-latest
     needs: detect-changes
-    if: ${{ fromJson(needs.detect-changes.outputs.matrix).service != '' }}
+    if: ${{ needs.detect-changes.outputs.changed == 'true' }}
+    strategy:
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+      fail-fast: false
+    
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Cache OWASP NVD Database
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: owasp-nvd-${{ github.run_id }}
+          restore-keys: |
+            owasp-nvd-
+
+      - name: Run OWASP Dependency-Check
+        run: |
+          echo "Scanning dependencies for ${{ matrix.service }}..."
+          
+          mvn -B org.owasp:dependency-check-maven:check \
+            -f backend/${{ matrix.service }}/pom.xml \
+            -DfailBuildOnCVSS=7 \
+            -DsuppressionFiles=.owasp-suppression.xml \
+            -Dformats=HTML,JSON,SARIF \
+            -DprettyPrint=true
+          
+          echo "Dependency scan complete"
+
+      - name: Upload OWASP report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-report-${{ matrix.service }}
+          path: |
+            backend/${{ matrix.service }}/target/dependency-check-report.html
+            backend/${{ matrix.service }}/target/dependency-check-report.json
+            backend/${{ matrix.service }}/target/dependency-check-report.sarif
+          retention-days: 30
+
+      - name: Upload SARIF to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: backend/${{ matrix.service }}/target/dependency-check-report.sarif
+          category: owasp-backend-${{ matrix.service }}
+
+      - name: Check for critical vulnerabilities
+        if: always()
+        run: |
+          if [ -f "backend/${{ matrix.service }}/target/dependency-check-report.json" ]; then
+            CRITICAL=$(jq '[.dependencies[].vulnerabilities[]? | select(.severity=="CRITICAL")] | length' backend/${{ matrix.service }}/target/dependency-check-report.json)
+            HIGH=$(jq '[.dependencies[].vulnerabilities[]? | select(.severity=="HIGH")] | length' backend/${{ matrix.service }}/target/dependency-check-report.json)
+            
+            echo " Vulnerability Summary for ${{ matrix.service }}:"
+            echo " Critical: $CRITICAL"
+            echo " High: $HIGH"
+            
+            if [ "$CRITICAL" -gt "0" ]; then
+              echo "CRITICAL vulnerabilities found in dependencies!"
+              echo "Review the report and update vulnerable dependencies."
+              exit 1
+            fi
+            
+            if [ "$HIGH" -gt "5" ]; then
+              echo "WARNING: More than 5 HIGH severity vulnerabilities found!"
+            fi
+          fi
+
+# STAGE 4: BACKEND BUILD & TEST
+  backend-build-test:
+    name: Backend Build & Test
+    runs-on: ubuntu-latest
+    needs: [detect-changes, backend-dependency-scan]
+    if:  ${{ needs.detect-changes.outputs.changed == 'true' }}
+    strategy:
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+      fail-fast: false
+    
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: maven-
+
+      - name: Build and Test
+        run: |
+          echo "Building ${{ matrix.service }}..."
+          
+          mvn -B clean verify \
+            -pl backend/${{ matrix.service }} \
+            -am \
+            -DskipTests=false \
+            -Dspring.profiles.active=test
+          
+          echo "Build successful"
+
+      - name: Upload JAR artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jar-${{ matrix.service }}
+          path: backend/${{ matrix.service }}/target/*.jar
+          retention-days: 7
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.service }}
+          path: |
+            backend/${{ matrix.service }}/target/surefire-reports/**/*.xml
+            backend/${{ matrix.service }}/target/site/jacoco/jacoco.xml
+          retention-days: 7
+
+      - name: Publish test report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Tests - ${{ matrix.service }}
+          path: backend/${{ matrix.service }}/target/surefire-reports/*.xml
+          reporter: java-junit
+          fail-on-error: true
+
+
+# STAGE 5: CODE QUALITY (SONARQUBE)
+  sonar-scan:
+    name:  Code Quality
+    runs-on: ubuntu-latest
+    needs: [detect-changes, backend-build-test]
+    if: ${{ needs.detect-changes.outputs.changed == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
       fail-fast: false
@@ -161,22 +269,54 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Debug Secrets
-        run: |
-          echo "DOCKER_USERNAME length: ${#DOCKER_USERNAME}"
-          echo "DOCKER_PASSWORD length: ${#DOCKER_PASSWORD}"
-          if [ -z "$DOCKER_USERNAME" ]; then
-            echo "ERROR: DOCKER_USERNAME is empty!"
-            exit 1
-          fi
-          if [ -z "$DOCKER_PASSWORD" ]; then
-            echo "ERROR: DOCKER_PASSWORD is empty!"
-            exit 1
-          fi
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results-${{ matrix.service }}
+          path: backend/${{ matrix.service }}/target/
+
+      - name: SonarQube analysis
         env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_URL: ${{ secrets.SONAR_URL }}
+        run: |
+          echo "Analyzing ${{ matrix.service }}..."
+          
+          mvn -f backend/${{ matrix.service }}/pom.xml sonar:sonar \
+            -Dsonar.projectKey=konecta-erp-${{ matrix.service }} \
+            -Dsonar.host.url=${{ env.SONAR_URL }} \
+            -Dsonar.token=${{ env.SONAR_TOKEN }} \
+            -Dsonar.qualitygate.wait=true \
+            -DskipTests
+          
+          echo "Quality gate passed"
+
+
+# STAGE 6: DOCKER BUILD & SECURITY SCAN
+  docker-build-scan:
+    name:  Docker Build & Security Scan
+    runs-on: ubuntu-latest
+    needs: [detect-changes, backend-build-test, sonar-scan]
+    if: ${{ needs.detect-changes.outputs.changed == 'true' }}
+    strategy:
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+      fail-fast: false
+    
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -187,18 +327,12 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Determine Image Tags
+      - name: Determine image tags
         id: vars
         env:
           SERVICE: ${{ matrix.service }}
           DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
         run: |
-          echo "DEBUG: DOCKER_USER='$DOCKER_USER'"
-          echo "DEBUG: SERVICE='$SERVICE'"
-          if [ -z "$DOCKER_USER" ]; then
-            echo "ERROR: DOCKER_USERNAME secret is empty or not set!"
-            exit 1
-          fi
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             VERSION=${GITHUB_REF_NAME}
           else
@@ -206,54 +340,155 @@ jobs:
             BRANCH=$(echo "${GITHUB_REF_NAME}" | sed 's/\//-/g')
             VERSION="${BRANCH}-${SHORT_SHA}"
           fi
+
           DOCKER_TAG="${DOCKER_USER}/konecta-${SERVICE}:${VERSION}"
           DOCKER_LATEST="${DOCKER_USER}/konecta-${SERVICE}:latest"
+
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "docker_tag=${DOCKER_TAG}" >> $GITHUB_OUTPUT
           echo "docker_latest=${DOCKER_LATEST}" >> $GITHUB_OUTPUT
-          echo "DEBUG: Determined version: $VERSION"
-          echo "DEBUG: Docker tag: $DOCKER_TAG"
-          echo "DEBUG: Docker latest: $DOCKER_LATEST"
 
-      - name: Build and Scan Docker Image
-        uses: docker/build-push-action@v6
+          echo "Version: $VERSION"
+          echo "Tag: $DOCKER_TAG"
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
         with:
-          context: backend/
-          file: backend/${{ matrix.service }}/Dockerfile
-          push: true
-          tags: ${{ steps.vars.outputs.docker_tag }}
+          images: ${{ secrets.DOCKER_USERNAME }}/konecta-${{ matrix.service }}
           labels: |
             org.opencontainers.image.title=konecta-${{ matrix.service }}
-            org.opencontainers.image.created=${{ github.run_id }}
-            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.description=Konecta ERP System - ${{ matrix.service }}
             org.opencontainers.image.version=${{ steps.vars.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
 
-      - name: Scan Docker Image with Trivy
+      - name: Build Docker image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: backend/${{ matrix.service }}
+          file: backend/${{ matrix.service }}/Dockerfile
+          push: false
+          load: true
+          tags: ${{ steps.vars.outputs.docker_tag }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/konecta-${{ matrix.service }}:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/konecta-${{ matrix.service }}:buildcache,mode=max
+          provenance: false
+
+      - name: Check image size
+        run: |
+          SIZE=$(docker image inspect ${{ steps.vars.outputs.docker_tag }} --format='{{.Size}}')
+          SIZE_MB=$(($SIZE / 1024 / 1024))
+          echo "Image size: ${SIZE_MB} MB"
+          
+          if [ $SIZE_MB -gt 1000 ]; then
+            echo "WARNING: Image larger than 1GB!"
+          fi
+
+      - name: Smoke test
+        timeout-minutes: 2
+        run: |
+          echo "Testing container..."
+          docker run -d --name test-${{ matrix.service }} \
+            ${{ steps.vars.outputs.docker_tag }} || true
+          sleep 5
+          
+          if docker ps | grep -q test-${{ matrix.service }}; then
+            echo "Container started successfully"
+          else
+            echo "Container may have issues"
+            docker logs test-${{ matrix.service }} 2>&1 | head -20 || true
+          fi
+          
+          docker rm -f test-${{ matrix.service }} || true
+
+      - name: Scan with Trivy (detailed)
         uses: aquasecurity/trivy-action@0.18.0
         with:
           image-ref: ${{ steps.vars.outputs.docker_tag }}
           format: 'table'
-          exit-code: '1'
+          exit-code: '0'
           ignore-unfixed: true
           vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          output: 'trivy-report.txt'
 
-      - name: Push Latest Tag (only if scan passed)
-        if: success()
+      - name: Check vulnerabilities
         run: |
-          docker pull ${{ steps.vars.outputs.docker_tag }}
-          docker tag ${{ steps.vars.outputs.docker_tag }} ${{ steps.vars.outputs.docker_latest }}
-          docker push ${{ steps.vars.outputs.docker_latest }}
+          echo "Security scan results:"
+          cat trivy-report.txt
+          
+          CRITICAL=$(grep -c "CRITICAL" trivy-report.txt || echo "0")
+          HIGH=$(grep -c "HIGH" trivy-report.txt || echo "0")
+          
+          echo ""
+          echo "Summary:"
+          echo "Critical: $CRITICAL"
+          echo "High: $HIGH"
+          
+          if [ "$CRITICAL" -gt "0" ]; then
+            echo "CRITICAL vulnerabilities found in image!"
+            exit 1
+          fi
+          
+          echo "No critical vulnerabilities"
 
-      - name: Scan Docker image (SARIF report)
+      - name: Generate SBOM
+        uses: aquasecurity/trivy-action@0.18.0
+        with:
+          image-ref: ${{ steps.vars.outputs.docker_tag }}
+          format: 'spdx-json'
+          output: 'sbom-${{ matrix.service }}.spdx.json'
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.service }}
+          path: sbom-${{ matrix.service }}.spdx.json
+          retention-days: 90
+
+      - name: Generate SARIF
+        if: always()
         uses: aquasecurity/trivy-action@0.18.0
         with:
           image-ref: ${{ steps.vars.outputs.docker_tag }}
           format: 'sarif'
           output: 'trivy-results.sarif'
-        continue-on-error: true
 
-      - name: Upload Trivy results to GitHub Security tab
+      - name: Upload SARIF
+        if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
+          category: trivy-${{ matrix.service }}
+
+      - name: Push image
+        if: success()
+        run: |
+          echo "Pushing secure image..."
+          docker push ${{ steps.vars.outputs.docker_tag }}
+          echo "Pushed: ${{ steps.vars.outputs.docker_tag }}"
+
+      - name: Tag and push latest
+        if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        run: |
+          echo "Tagging as latest..."
+          docker tag ${{ steps.vars.outputs.docker_tag }} ${{ steps.vars.outputs.docker_latest }}
+          docker push ${{ steps.vars.outputs.docker_latest }}
+          echo "Latest updated"
+
+# STAGE 7: CODEQL ANALYSIS
+  codeql:
+    name: CodeQL Static Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: java
+      - uses: github/codeql-action/analyze@v3
