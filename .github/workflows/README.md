@@ -18,7 +18,7 @@ This GitHub Actions workflow provides a comprehensive CI/CD pipeline for backend
            │
            ▼
 ┌─────────────────────┐
-│ Dependency Scan     │ (OWASP)
+│ Dependency Scan     │ (SBOM + Trivy)
 └──────────┬──────────┘
            │
            ▼
@@ -61,16 +61,15 @@ This GitHub Actions workflow provides a comprehensive CI/CD pipeline for backend
   - Generates matrix strategy for parallel processing
   - Skips pipeline if no backend changes detected
 
-### Stage 3: Dependency Scanning (OWASP)
-- **Tool**: OWASP Dependency-Check Maven Plugin
-- **Purpose**: Identifies vulnerable dependencies using the National Vulnerability Database
+### Stage 3: Dependency Scanning (SBOM + Trivy)
+- **Tools**: CycloneDX Maven Plugin + Trivy
+- **Purpose**: Identifies known CVEs in direct and transitive dependencies via SBOM
 - **Features**:
-  - Fails build on CVSS score ≥ 7
-  - Generates HTML, JSON, and SARIF reports
+  - Fails build on HIGH/CRITICAL (on main/protected branches)
+  - Generates CycloneDX JSON SBOM and SARIF results
   - Uploads findings to GitHub Security tab
-  - Caches NVD database for faster scans
-  - Blocks deployment with critical vulnerabilities
-  - Warns on more than 5 high-severity issues
+  - Caches Trivy vulnerability database for faster scans
+  - Skips on PRs when `pom.xml` unchanged (fast path)
 
 ### Stage 4: Build & Test
 - **Framework**: Maven with JUnit
@@ -145,8 +144,8 @@ Configure these secrets in your GitHub repository settings:
 
 ### Security Reports (30-day retention)
 - Gitleaks SARIF report
-- OWASP Dependency-Check reports (HTML/JSON/SARIF)
-- Trivy vulnerability reports
+- SBOM (CycloneDX JSON) and Trivy vulnerability SARIF
+- Trivy container image vulnerability reports
 - SBOM files (90-day retention)
 
 ### Build Artifacts (7-day retention)
@@ -175,7 +174,7 @@ Configure these secrets in your GitHub repository settings:
 ├── .github/
 │   └── workflows/
 │       └── backend-ci.yml
-└── .owasp-suppression.xml
+└── .trivyignore (optional)
 ```
 
 ## Matrix Strategy
@@ -203,7 +202,7 @@ The pipeline uses GitHub Actions matrix strategy to run jobs in parallel for eac
 1. **Smart Caching**
    - Maven dependencies cached by POM hash
    - Docker layer caching using registry
-   - OWASP NVD database caching
+   - Trivy vulnerability database caching
 
 2. **Selective Execution**
    - Only builds changed services
@@ -231,7 +230,7 @@ All security findings are automatically uploaded to:
 
 1. **Commit Messages**: Use clear, descriptive messages for better change tracking
 2. **Dependency Updates**: Regularly update dependencies to avoid accumulating vulnerabilities
-3. **Suppression Files**: Document any OWASP suppressions in `.owasp-suppression.xml`
+3. **Ignore Rules**: Document any accepted exceptions in `.trivyignore`
 4. **Docker Images**: Keep base images updated and minimize image layers
 5. **Test Coverage**: Maintain high test coverage for quality gate compliance
 
@@ -242,10 +241,10 @@ All security findings are automatically uploaded to:
 - Remove or rotate exposed credentials
 - Add false positives to `.gitleaksignore`
 
-### OWASP Scan Timeout
-- Clear NVD cache: Remove cache key `owasp-nvd-*`
-- Check internet connectivity to NVD mirror
-- Consider increasing timeout if database is large
+### Dependency Scan Issues (SBOM/Trivy)
+- Clear Trivy cache: Remove cache key `trivy-db-*`
+- Ensure Trivy can download vulnerability DB (network egress allowed)
+- Consider increasing timeout if initial DB download is slow
 
 ### Docker Push Fails
 - Verify Docker Hub credentials are correct

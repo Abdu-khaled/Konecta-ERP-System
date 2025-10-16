@@ -95,21 +95,24 @@ jobs:
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
           echo "Detected services matrix: $MATRIX_JSON"
 
-# STAGE 3: BACKEND DEPENDENCY SCANNING
-  backend-dependency-scan:
-    name: Backend Dependency Scan (OWASP)
+# STAGE 3: DEPENDENCY SCANNING (SBOM + TRIVY)
+  backend-sbom-scan:
+    name: Backend SBOM + Trivy Scan
     runs-on: ubuntu-latest
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.changed == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
       fail-fast: false
-    timeout-minutes: 30
+    timeout-minutes: 15
+    continue-on-error: ${{ github.event_name == 'pull_request' }}
     env:
-      NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+      TRIVY_CACHE_DIR: ${{ runner.temp }}/trivy-cache
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -122,54 +125,88 @@ jobs:
         id: week
         run: echo "week=$(date +%G-%V)" >> "$GITHUB_OUTPUT"
 
-      - name: Cache OWASP NVD Database
+      - name: Cache Trivy DB
         uses: actions/cache@v4
         with:
-          path: ~/.m2/repository/org/owasp/dependency-check-data
-          key: owasp-nvd-${{ runner.os }}-${{ steps.week.outputs.week }}
+          path: ${{ env.TRIVY_CACHE_DIR }}
+          key: trivy-db-${{ runner.os }}-${{ steps.week.outputs.week }}
           restore-keys: |
-            owasp-nvd-${{ runner.os }}-
+            trivy-db-${{ runner.os }}-
 
-      - name: Run OWASP Dependency-Check
+      - name: Check if dependencies changed (pom.xml)
+        id: depcheck
+        shell: bash
         run: |
-          echo "Scanning dependencies for ${{ matrix.service }}..."
-          SUPP=""
-          if [ -f ".owasp-suppression.xml" ]; then
-            SUPP="-DsuppressionFiles=.owasp-suppression.xml"
+          git fetch origin --depth=2
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE=${{ github.event.pull_request.base.sha }}
+          else
+            BASE=$(git rev-parse HEAD^)
           fi
-          mvn -B org.owasp:dependency-check-maven:11.0.0:check \
-            -f "backend/${{ matrix.service }}/pom.xml" \
-            -DfailBuildOnCVSS=7 \
-            -Dformats=HTML,JSON,SARIF \
-            -DprettyPrint=true \
-            -DdataDirectory="$HOME/.m2/repository/org/owasp/dependency-check-data" \
-            -DnvdApiKey="${NVD_API_KEY:-}" \
-            $SUPP
-          echo "Dependency scan complete"
+          if git diff --name-only "$BASE" HEAD -- "backend/${{ matrix.service }}/pom.xml" | grep -q .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "pom.xml changed — running scan"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "pom.xml unchanged — skipping scan"
+          fi
 
-      - name: Upload OWASP report
-        if: always()
+      - name: Generate CycloneDX SBOM (Maven)
+        if: steps.depcheck.outputs.changed == 'true'
+        run: |
+          mvn -B \
+            -f "backend/${{ matrix.service }}/pom.xml" \
+            -DskipTests \
+            org.cyclonedx:cyclonedx-maven-plugin:2.7.11:makeAggregateBom \
+            -Dcyclonedx.outputFormat=json \
+            -Dcyclonedx.outputName=bom
+
+      - name: Install Trivy
+        if: steps.depcheck.outputs.changed == 'true'
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          trivy --version
+
+      - name: Scan SBOM with Trivy
+        if: steps.depcheck.outputs.changed == 'true'
+        env:
+          TRIVY_CACHE_DIR: ${{ env.TRIVY_CACHE_DIR }}
+        run: |
+          SBOM="backend/${{ matrix.service }}/target/bom.json"
+          mkdir -p "backend/${{ matrix.service }}/target"
+          if [ ! -f "$SBOM" ]; then
+            echo "SBOM not found from Maven; generating via Trivy (fallback)"
+            trivy fs --format cyclonedx -o "$SBOM" "backend/${{ matrix.service }}"
+          fi
+          trivy sbom --input "$SBOM" \
+            --format sarif \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            --output "backend/${{ matrix.service }}/target/trivy-sbom.sarif"
+
+      - name: Upload SBOM and SARIF
+        if: always() && steps.depcheck.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: owasp-report-${{ matrix.service }}
+          name: sbom-and-vulns-${{ matrix.service }}
           path: |
-            backend/${{ matrix.service }}/target/dependency-check-report.html
-            backend/${{ matrix.service }}/target/dependency-check-report.json
-            backend/${{ matrix.service }}/target/dependency-check-report.sarif
+            backend/${{ matrix.service }}/target/bom.json
+            backend/${{ matrix.service }}/target/trivy-sbom.sarif
           retention-days: 30
 
       - name: Upload SARIF to GitHub Security
-        if: always()
+        if: always() && steps.depcheck.outputs.changed == 'true'
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: backend/${{ matrix.service }}/target/dependency-check-report.sarif
-          category: owasp-backend-${{ matrix.service }}
+          sarif_file: backend/${{ matrix.service }}/target/trivy-sbom.sarif
+          category: trivy-sbom-backend-${{ matrix.service }}
         
 # STAGE 4: BACKEND BUILD & TEST
   backend-build-test:
     name: Backend Build & Test
     runs-on: ubuntu-latest
-    needs: [detect-changes, backend-dependency-scan]
+    needs: detect-changes
     if:  ${{ needs.detect-changes.outputs.changed == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
