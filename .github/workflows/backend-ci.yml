@@ -77,7 +77,7 @@ jobs:
           for dir in $(ls backend); do
             if [ -d "backend/$dir" ]; then
               if echo "$CHANGED_FILES" | grep -q "^backend/$dir/"; then
-                SERVICES+=("\"$dir\"")
+                SERVICES+=("$dir")
               fi
             fi
           done
@@ -87,7 +87,8 @@ jobs:
             MATRIX_JSON='{"service":[]}'
             echo "changed=false" >> $GITHUB_OUTPUT
           else
-            MATRIX_JSON="{\"service\":[${SERVICES[*]}]}"
+            joined=$(printf '"%s",' "${SERVICES[@]}")
+            MATRIX_JSON="{\"service\":[${joined%,}]}"
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
