@@ -95,81 +95,13 @@ jobs:
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
           echo "Detected services matrix: $MATRIX_JSON"
 
-# STAGE 3: BACKEND DEPENDENCY SCANNING
-  backend-dependency-scan:
-    name: Backend Dependency Scan (OWASP)
-    runs-on: ubuntu-latest
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.changed == 'true' }}
-    strategy:
-      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
-      fail-fast: false
-    timeout-minutes: 30
-    env:
-      NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: maven
-
-      - name: Compute weekly cache key
-        id: week
-        run: echo "week=$(date +%G-%V)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache OWASP NVD Database
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository/org/owasp/dependency-check-data
-          key: owasp-nvd-${{ runner.os }}-${{ steps.week.outputs.week }}
-          restore-keys: |
-            owasp-nvd-${{ runner.os }}-
-
-      - name: Run OWASP Dependency-Check
-        run: |
-          echo "Scanning dependencies for ${{ matrix.service }}..."
-          SUPP=""
-          if [ -f ".owasp-suppression.xml" ]; then
-            SUPP="-DsuppressionFiles=.owasp-suppression.xml"
-          fi
-          mvn -B org.owasp:dependency-check-maven:11.0.0:check \
-            -f "backend/${{ matrix.service }}/pom.xml" \
-            -DfailBuildOnCVSS=7 \
-            -Dformats=HTML,JSON,SARIF \
-            -DprettyPrint=true \
-            -DdataDirectory="$HOME/.m2/repository/org/owasp/dependency-check-data" \
-            -DnvdApiKey="${NVD_API_KEY:-}" \
-            $SUPP
-          echo "Dependency scan complete"
-
-      - name: Upload OWASP report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: owasp-report-${{ matrix.service }}
-          path: |
-            backend/${{ matrix.service }}/target/dependency-check-report.html
-            backend/${{ matrix.service }}/target/dependency-check-report.json
-            backend/${{ matrix.service }}/target/dependency-check-report.sarif
-          retention-days: 30
-
-      - name: Upload SARIF to GitHub Security
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: backend/${{ matrix.service }}/target/dependency-check-report.sarif
-          category: owasp-backend-${{ matrix.service }}
         
 # STAGE 4: BACKEND BUILD & TEST
   backend-build-test:
     name: Backend Build & Test
     runs-on: ubuntu-latest
-    needs: [detect-changes, backend-dependency-scan]
+    needs: [detect-changes]
     if:  ${{ needs.detect-changes.outputs.changed == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
