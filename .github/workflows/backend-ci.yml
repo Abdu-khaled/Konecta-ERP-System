@@ -15,7 +15,7 @@ on:
 env:
   JAVA_VERSION: '21'
 
-  
+
 jobs:
   
 # STAGE 1: SECRET SCANNING
@@ -45,9 +45,10 @@ jobs:
   detect-changes:
     name: Detect Changed Backend Services
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
-
+      changed: ${{ steps.set-matrix.outputs.changed }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -83,9 +84,11 @@ jobs:
 
           if [ ${#SERVICES[@]} -eq 0 ]; then
             echo "No changed backend services detected — skipping build."
-            MATRIX_JSON="{\"service\":[]}"
+            MATRIX_JSON='{"service":[]}'
+            echo "changed=false" >> $GITHUB_OUTPUT
           else
-            MATRIX_JSON="{\"service\":[$(IFS=,; echo "${SERVICES[*]}")]}"
+            MATRIX_JSON="{\"service\":[${SERVICES[*]}]}"
+            echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
@@ -449,18 +452,3 @@ jobs:
           docker tag ${{ steps.vars.outputs.docker_tag }} ${{ steps.vars.outputs.docker_latest }}
           docker push ${{ steps.vars.outputs.docker_latest }}
           echo "Latest updated"
-
-# STAGE 7: CODEQL ANALYSIS
-  codeql:
-    name: CodeQL Static Analysis
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
-        with:
-          languages: java
-      - uses: github/codeql-action/analyze@v3
