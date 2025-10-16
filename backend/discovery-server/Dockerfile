@@ -10,4 +10,3 @@ COPY --from=builder /workspace/discovery-server/target/*.jar /app/app.jar
 # map externally to 8761 in compose if desired
 EXPOSE 8080
 ENTRYPOINT ["java","-jar","/app/app.jar"]
-
