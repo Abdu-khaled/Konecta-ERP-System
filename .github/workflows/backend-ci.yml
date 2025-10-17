@@ -127,16 +127,15 @@ jobs:
             owasp-nvd-
 
       - name: Run OWASP Dependency-Check
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: |
-          echo "Scanning dependencies for ${{ matrix.service }}..."
-          
           mvn -B org.owasp:dependency-check-maven:check \
             -f backend/${{ matrix.service }}/pom.xml \
+            -Dnvd.apiKey=${NVD_API_KEY} \
             -DfailBuildOnCVSS=7 \
-            -DsuppressionFiles=.owasp-suppression.xml \
-            -Dformats=HTML,JSON,SARIF \
-            -DprettyPrint=true
-          
+            -Dformats=HTML,JSON,SARIF
+
           echo "Dependency scan complete"
 
       - name: Upload OWASP report
