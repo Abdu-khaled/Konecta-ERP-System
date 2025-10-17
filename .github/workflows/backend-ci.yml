@@ -153,7 +153,9 @@ jobs:
 
       - name: Run Snyk Monitor (continuous monitoring)
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
-        run: snyk monitor --file=backend/${{ matrix.service }}/pom.xml --project-name=konecta-${{ matrix.service }}
+        run: |
+          cd backend/${{ matrix.service }}
+          snyk monitor --file=pom.xml --project-name=konecta-${{ matrix.service }}
 
       - name: Parse JSON results for summary
         run: |
