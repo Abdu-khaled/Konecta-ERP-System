@@ -10,3 +10,4 @@ COPY --from=builder /workspace/gateway-service/target/*.jar /app/app.jar
 # default Spring Boot port
 EXPOSE 8080
 ENTRYPOINT ["java","-jar","/app/app.jar"]
+
