@@ -124,12 +124,21 @@ jobs:
       - name: Authenticate Snyk
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
 
-      - name: Run Snyk scan (SARIF)
+      - name: Run Snyk scan (SARIF + JSON fallback)
         working-directory: backend/${{ matrix.service }}
         run: |
           echo "🔍 Running Snyk scan for ${{ matrix.service }}..."
-          snyk test --sarif > ../../snyk-backend-${{ matrix.service }}.sarif || true
-          echo "✅ SARIF file created at ../../snyk-backend-${{ matrix.service }}.sarif"
+
+          # Try SARIF format
+          if snyk test --sarif > ../../snyk-backend-${{ matrix.service }}.sarif 2> ../../snyk-error.log; then
+            echo "✅ SARIF file created successfully"
+          else
+            echo "⚠️ SARIF failed, falling back to JSON"
+            snyk test --json > ../../snyk-backend-${{ matrix.service }}.json || true
+            echo "Converted JSON to SARIF manually..."
+            jq -n --argjson data "$(cat ../../snyk-backend-${{ matrix.service }}.json)" '{ version: "2.1.0", runs: [ { tool: { driver: { name: "snyk" } }, results: [$data] } ] }' \
+              > ../../snyk-backend-${{ matrix.service }}.sarif
+          fi
 
       - name: Debug SARIF output
         if: always()
@@ -137,6 +146,9 @@ jobs:
           echo "---- SARIF FILE CONTENT START ----"
           cat snyk-backend-${{ matrix.service }}.sarif || echo "SARIF file not found!"
           echo "---- SARIF FILE CONTENT END ----"
+          echo ""
+          echo "---- Snyk Error Log ----"
+          cat snyk-error.log || echo "No errors logged"
 
       - name: Upload SARIF to GitHub Code Scanning
         if: hashFiles('snyk-backend-${{ matrix.service }}.sarif') != ''
