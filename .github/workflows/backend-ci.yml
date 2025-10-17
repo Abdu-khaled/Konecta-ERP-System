@@ -97,13 +97,14 @@ jobs:
 
 # STAGE 3: BACKEND DEPENDENCY SCANNING (SNYK)
   backend-snyk-scan:
-    name: Backend Security (Snyk)
+    name:  Backend Security (Snyk)
     runs-on: ubuntu-latest
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.changed == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
       fail-fast: false
+
     timeout-minutes: 10
 
     steps:
@@ -117,51 +118,47 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
 
-      # Install Snyk CLI manually so we can control output
       - name: Install Snyk CLI
         run: npm install -g snyk
 
       - name: Authenticate Snyk
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
 
-      - name: Run Snyk to check for vulnerabilities
+      - name: Run Snyk scan (SARIF)
+        working-directory: backend/${{ matrix.service }}
         run: |
-          snyk test \
-            --file=backend/${{ matrix.service }}/pom.xml \
-            --sarif > snyk.sarif || true
+          echo "🔍 Running Snyk scan for ${{ matrix.service }}..."
+          snyk test --sarif > ../../snyk-backend-${{ matrix.service }}.sarif || true
+          echo "✅ SARIF file created at ../../snyk-backend-${{ matrix.service }}.sarif"
 
-      - name: Upload SARIF to GitHub Security tab
+      - name: Debug SARIF output
+        if: always()
+        run: |
+          echo "---- SARIF FILE CONTENT START ----"
+          cat snyk-backend-${{ matrix.service }}.sarif || echo "SARIF file not found!"
+          echo "---- SARIF FILE CONTENT END ----"
+
+      - name: Upload SARIF to GitHub Code Scanning
+        if: hashFiles('snyk-backend-${{ matrix.service }}.sarif') != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: snyk.sarif
+          sarif_file: snyk-backend-${{ matrix.service }}.sarif
+          category: snyk-backend-${{ matrix.service }}
 
-      - name: Run Snyk monitor (for ongoing monitoring)
+      - name: Run Snyk monitor (for dashboard tracking)
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
-        run: |
-          snyk monitor \
-            --file=backend/${{ matrix.service }}/pom.xml \
-            --project-name=konecta-${{ matrix.service }}
+        working-directory: backend/${{ matrix.service }}
+        run: snyk monitor --project-name=konecta-${{ matrix.service }}
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      - name: Upload JSON report as artifact
+      - name: Upload SARIF as artifact (for manual review)
         if: always()
-        run: |
-          snyk test \
-            --file=backend/${{ matrix.service }}/pom.xml \
-            --json > snyk-backend-${{ matrix.service }}.json || true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-      - name: Upload report
         uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: snyk-backend-report-${{ matrix.service }}
-          path: snyk-backend-${{ matrix.service }}.json
-          retention-days: 30
-
-
+          name: snyk-report-${{ matrix.service }}
+          path: snyk-backend-${{ matrix.service }}.sarif
+          retention-days: 7
 
 # STAGE 4: BACKEND BUILD & TEST
   backend-build-test:
