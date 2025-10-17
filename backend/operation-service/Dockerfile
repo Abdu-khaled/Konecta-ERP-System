@@ -12,4 +12,3 @@ COPY --from=builder /workspace/operation-service/target/*.jar /app/app.jar
 # operation-service configured on 8085
 EXPOSE 8085
 ENTRYPOINT ["java","-jar","/app/app.jar"]
-
