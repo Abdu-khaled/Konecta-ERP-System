@@ -314,21 +314,21 @@ jobs:
         uses: aquasecurity/trivy-action@0.18.0
         with:
           image-ref: ${{ steps.vars.outputs.docker_tag }}
-          format: 'table'
+          format: 'json'
           exit-code: '0'
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH,MEDIUM'
-          output: 'trivy-report.txt'
+          output: 'trivy-report.json'
 
       - name: Check vulnerabilities
         run: |
           echo "Security scan results:"
-          cat trivy-report.txt
-          
-          CRITICAL=$(grep -c "CRITICAL" trivy-report.txt || echo "0")
-          HIGH=$(grep -c "HIGH" trivy-report.txt || echo "0")
-          
+          cat trivy-report.json | jq '.Results[]?.Vulnerabilities[]? | {VulnerabilityID, Severity, PkgName, InstalledVersion}'
+
+          CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' trivy-report.json)
+          HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length' trivy-report.json)
+
           echo ""
           echo "Summary:"
           echo "Critical: $CRITICAL"
