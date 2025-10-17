@@ -97,75 +97,42 @@ jobs:
 
 # STAGE 3: BACKEND DEPENDENCY SCANNING
   dependency-vulnerability-scan:
-    name: Dependency Vulnerability Scan (Maven)
+    name: Dependency Vulnerability Scan (SCA)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
+
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
+      - name: Run Trivy SCA on Source Code
+        uses: aquasecurity/trivy-action@0.18.0
         with:
-          distribution: temurin
-          java-version: '21'
+          scan-type: 'fs'                      # File system scan
+          scan-ref: ./backend                  # Path to backend (adjust if needed)
+          vuln-type: 'library'                 # Focus on dependencies
+          severity: 'CRITICAL,HIGH'            # Only major issues
+          ignore-unfixed: true                 # Ignore issues with no patch
+          format: 'table'
+          exit-code: '1'                       # Fail job if critical vulnerabilities found
 
-      # Clean old cached data (avoid NVD corruption)
-      - name: Clear Dependency-Check cache
-        run: rm -rf ~/.dependency-check || true
-
-      # Run OWASP Dependency-Check for Maven
-      - name: Run Dependency-Check
-        run: |
-          mvn org.owasp:dependency-check-maven:9.0.9:check \
-            -Dnvd.apiKey=${{ secrets.NVD_API_KEY }} \
-            -Dnvd.api.url=https://services.nvd.nist.gov/rest/json/cves/2.0 \
-            -Dformat=HTML \
-            -Dformat=JSON \
-            -Dformat=SARIF \
-            -DfailBuildOnCVSS=7 \
-            -DoutputDirectory=target
-        working-directory: backend/${{ matrix.service }}
-
-      # Upload generated reports (for later viewing)
-      - name: Upload Dependency Reports
-        uses: actions/upload-artifact@v4
+      - name: Generate SARIF report
+        uses: aquasecurity/trivy-action@0.18.0
         with:
-          name: dependency-check-${{ matrix.service }}
-          path: |
-            backend/${{ matrix.service }}/target/dependency-check-report.html
-            backend/${{ matrix.service }}/target/dependency-check-report.json
-            backend/${{ matrix.service }}/target/dependency-check-report.sarif
-          retention-days: 30
+          scan-type: 'fs'
+          scan-ref: ./backend
+          vuln-type: 'library'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          format: 'sarif'
+          output: 'trivy-dependency.sarif'
+        continue-on-error: true
 
-      # Upload SARIF to GitHub Security tab
-      - name: Upload SARIF results
+      - name: Upload Trivy SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: backend/${{ matrix.service }}/target/dependency-check-report.sarif
+          sarif_file: 'trivy-dependency.sarif'
 
-
-      - name: Check for critical vulnerabilities
-        if: always()
-        run: |
-          if [ -f "backend/${{ matrix.service }}/target/dependency-check-report.json" ]; then
-            CRITICAL=$(jq '[.dependencies[].vulnerabilities[]? | select(.severity=="CRITICAL")] | length' backend/${{ matrix.service }}/target/dependency-check-report.json)
-            HIGH=$(jq '[.dependencies[].vulnerabilities[]? | select(.severity=="HIGH")] | length' backend/${{ matrix.service }}/target/dependency-check-report.json)
-            
-            echo "Vulnerability Summary for ${{ matrix.service }}:"
-            echo "Critical: $CRITICAL"
-            echo "High: $HIGH"
-            
-            if [ "$CRITICAL" -gt "0" ]; then
-              echo "CRITICAL vulnerabilities found in dependencies!"
-              echo "Review the report and update vulnerable dependencies."
-              exit 1
-            fi
-            
-            if [ "$HIGH" -gt "5" ]; then
-              echo "WARNING: More than 5 HIGH severity vulnerabilities found!"
-            fi
-          fi
 
 # STAGE 4: BACKEND BUILD & TEST
   backend-build-test:
