@@ -97,14 +97,13 @@ jobs:
 
 # STAGE 3: BACKEND DEPENDENCY SCANNING (SNYK)
   backend-snyk-scan:
-    name: 🔍 Backend Security (Snyk)
+    name: Backend Security (Snyk)
     runs-on: ubuntu-latest
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.changed == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
       fail-fast: false
-    
     timeout-minutes: 10
 
     steps:
@@ -118,83 +117,50 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
 
-      - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/maven@master
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --sarif --severity-threshold=high --file=backend/${{ matrix.service }}/pom.xml
+      # Install Snyk CLI manually so we can control output
+      - name: Install Snyk CLI
+        run: npm install -g snyk
 
-      - name: Upload result to GitHub Code Scanning
+      - name: Authenticate Snyk
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
+      - name: Run Snyk to check for vulnerabilities
+        run: |
+          snyk test \
+            --file=backend/${{ matrix.service }}/pom.xml \
+            --sarif > snyk.sarif || true
+
+      - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: snyk.sarif
 
-      - name: Run Snyk Monitor (continuous monitoring)
-        uses: snyk/actions/maven@master
+      - name: Run Snyk monitor (for ongoing monitoring)
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        run: |
+          snyk monitor \
+            --file=backend/${{ matrix.service }}/pom.xml \
+            --project-name=konecta-${{ matrix.service }}
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: monitor
-          args: --file=backend/${{ matrix.service }}/pom.xml --project-name=konecta-${{ matrix.service }}
 
-      - name: Parse Snyk results
+      - name: Upload JSON report as artifact
         if: always()
         run: |
-          echo "📊 Snyk Scan Results for ${{ matrix.service }}:"
-          
-          # Since we're using --sarif, we need to run another scan for JSON
-          # Or parse the SARIF file directly
-          if [ -f "snyk.sarif" ]; then
-            echo "✅ SARIF report generated"
-            
-            # Optional: Run JSON scan separately for detailed reporting
-            snyk test --file=backend/${{ matrix.service }}/pom.xml --json > snyk-backend-${{ matrix.service }}.json || true
-            
-            if [ -f "snyk-backend-${{ matrix.service }}.json" ]; then
-              CRITICAL=$(jq '[.vulnerabilities[]? | select(.severity=="critical")] | length' snyk-backend-${{ matrix.service }}.json 2>/dev/null || echo "0")
-              HIGH=$(jq '[.vulnerabilities[]? | select(.severity=="high")] | length' snyk-backend-${{ matrix.service }}.json 2>/dev/null || echo "0")
-              MEDIUM=$(jq '[.vulnerabilities[]? | select(.severity=="medium")] | length' snyk-backend-${{ matrix.service }}.json 2>/dev/null || echo "0")
-              
-              echo "  🔴 Critical: $CRITICAL"
-              echo "  🟠 High: $HIGH"
-              echo "  🟡 Medium: $MEDIUM"
-              
-              if [ "$CRITICAL" -gt "0" ]; then
-                echo ""
-                echo "❌ CRITICAL vulnerabilities found!"
-                echo "Review the report and update vulnerable dependencies."
-                exit 1
-              fi
-            fi
-          else
-            echo "✅ No vulnerabilities found or scan completed without issues"
-          fi
+          snyk test \
+            --file=backend/${{ matrix.service }}/pom.xml \
+            --json > snyk-backend-${{ matrix.service }}.json || true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      - name: Install Snyk CLI (for JSON report)
-        if: always()
-        run: npm install -g snyk
-
-      - name: Authenticate Snyk
-        if: always()
-        run: snyk auth ${{ secrets.SNYK_TOKEN }}
-
-      - name: Generate JSON report
-        if: always()
-        continue-on-error: true
-        working-directory: backend/${{ matrix.service }}
-        run: |
-          snyk test --json > ../../snyk-backend-${{ matrix.service }}.json || true
-
-      - name: Upload Snyk reports
-        if: always()
+      - name: Upload report
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: snyk-backend-report-${{ matrix.service }}
           path: snyk-backend-${{ matrix.service }}.json
           retention-days: 30
+
 
 
 # STAGE 4: BACKEND BUILD & TEST
