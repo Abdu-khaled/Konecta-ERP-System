@@ -126,19 +126,10 @@ jobs:
         with:
           args: --sarif --severity-threshold=high --file=backend/${{ matrix.service }}/pom.xml
 
-      - name: Move SARIF to root (for upload)
-        if: always()
-        run: |
-          if [ -f "backend/${{ matrix.service }}/snyk.sarif" ]; then
-            mv backend/${{ matrix.service }}/snyk.sarif snyk-backend-${{ matrix.service }}.sarif
-          fi
-
-      - name: Upload Snyk report to GitHub Code Scanning
+      - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
-        if: always() && hashFiles('snyk-backend-${{ matrix.service }}.sarif') != ''
         with:
-          sarif_file: snyk-backend-${{ matrix.service }}.sarif
-          category: snyk-backend-${{ matrix.service }}
+          sarif_file: snyk.sarif
 
       - name: Run Snyk Monitor (continuous monitoring)
         uses: snyk/actions/maven@master
