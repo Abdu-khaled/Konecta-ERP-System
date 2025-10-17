@@ -137,13 +137,18 @@ jobs:
         if: always()
         run: |
           SARIF_FILE="backend/${{ matrix.service }}/snyk.sarif"
+          # Check if SARIF file exists before moving
           if [ -f "$SARIF_FILE" ]; then
-            mv "$SARIF_FILE" snyk-backend-${{ matrix.service }}.sarif
+            mv "$SARIF_FILE" "snyk-backend-${{ matrix.service }}.sarif"
+            echo "SARIF file moved: snyk-backend-${{ matrix.service }}.sarif"
+          else
+            echo "No SARIF file found for ${{ matrix.service }}. Skipping move."
           fi
 
       - name: Upload Snyk SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v3
+        # Only upload if the SARIF file exists
         if: always() && hashFiles('snyk-backend-${{ matrix.service }}.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: snyk-backend-${{ matrix.service }}.sarif
           category: snyk-backend-${{ matrix.service }}
