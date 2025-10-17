@@ -104,7 +104,7 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
       fail-fast: false
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
@@ -123,34 +123,45 @@ jobs:
       - name: Authenticate Snyk
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
 
-      - name: Run Snyk Test (JSON report)
+      - name: Run Snyk test (JSON)
         continue-on-error: true
         run: |
           snyk test --file=backend/${{ matrix.service }}/pom.xml --json > snyk-backend-${{ matrix.service }}.json || true
 
-      - name: Upload Snyk reports
+      - name: Upload Snyk JSON report
         uses: actions/upload-artifact@v4
         with:
           name: snyk-backend-report-${{ matrix.service }}
           path: snyk-backend-${{ matrix.service }}.json
           retention-days: 30
 
-      - name: Generate SARIF for GitHub Code Scanning
-        continue-on-error: true
-        run: |
-          snyk test --file=backend/${{ matrix.service }}/pom.xml --sarif > snyk-backend-${{ matrix.service }}.sarif || true
-
-      - name: Upload SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v3
-        if: hashFiles('snyk-backend-${{ matrix.service }}.sarif') != ''
-        with:
-          sarif_file: snyk-backend-${{ matrix.service }}.sarif
-          category: snyk-backend-${{ matrix.service }}
-
-      - name: Snyk Monitor (continuous monitoring)
+      - name: Run Snyk Monitor (continuous monitoring)
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
         run: |
           snyk monitor --file=backend/${{ matrix.service }}/pom.xml --project-name=konecta-${{ matrix.service }}
+
+      - name: Parse Snyk results
+        if: always()
+        run: |
+          echo "Snyk Scan Results for ${{ matrix.service }}:"
+          if [ -f "snyk-backend-${{ matrix.service }}.json" ]; then
+            CRITICAL=$(jq '[.vulnerabilities[]? | select(.severity=="critical")] | length' snyk-backend-${{ matrix.service }}.json 2>/dev/null || echo "0")
+            HIGH=$(jq '[.vulnerabilities[]? | select(.severity=="high")] | length' snyk-backend-${{ matrix.service }}.json 2>/dev/null || echo "0")
+            MEDIUM=$(jq '[.vulnerabilities[]? | select(.severity=="medium")] | length' snyk-backend-${{ matrix.service }}.json 2>/dev/null || echo "0")
+            
+            echo "Critical: $CRITICAL"
+            echo "High: $HIGH"
+            echo "Medium: $MEDIUM"
+            
+            if [ "$CRITICAL" -gt "0" ]; then
+              echo ""
+              echo "CRITICAL vulnerabilities found!"
+              echo "Review the report and update vulnerable dependencies."
+              exit 1
+            fi
+          else
+            echo "No vulnerabilities found or scan completed without issues"
+          fi
 
 
 # STAGE 4: BACKEND BUILD & TEST
