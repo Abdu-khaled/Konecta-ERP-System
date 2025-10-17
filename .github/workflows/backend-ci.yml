@@ -123,24 +123,21 @@ jobs:
       - name: Authenticate Snyk
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
 
-      - name: Snyk JSON Test
+      - name: Run Snyk test and generate reports
         run: |
-          cd backend/${{ matrix.service }}
-          snyk test --file=pom.xml --json > ../snyk-backend-${{ matrix.service }}.json || true
+          SERVICE=${{ matrix.service }}
+          POM_FILE="backend/${SERVICE}/pom.xml"
+          snyk test --file=$POM_FILE --json > snyk-backend-${SERVICE}.json || true
+          snyk test --file=$POM_FILE --sarif > snyk-backend-${SERVICE}.sarif || true
 
-      - name: Upload JSON artifact
+      - name: Upload Snyk JSON report
         uses: actions/upload-artifact@v4
         with:
           name: snyk-backend-report-${{ matrix.service }}
           path: snyk-backend-${{ matrix.service }}.json
           retention-days: 30
 
-      - name: Snyk SARIF Test
-        run: |
-          cd backend/${{ matrix.service }}
-          snyk test --file=pom.xml --sarif > ../snyk-backend-${{ matrix.service }}.sarif || true
-
-      - name: Upload SARIF to GitHub Code Scanning
+      - name: Upload Snyk SARIF report
         uses: github/codeql-action/upload-sarif@v3
         if: hashFiles('snyk-backend-${{ matrix.service }}.sarif') != ''
         with:
@@ -150,8 +147,29 @@ jobs:
       - name: Snyk Monitor
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
         run: |
-          cd backend/${{ matrix.service }}
-          snyk monitor --file=pom.xml --project-name=konecta-${{ matrix.service }}
+          snyk monitor --file=backend/${{ matrix.service }}/pom.xml --project-name=konecta-${{ matrix.service }} || true
+
+      - name: Parse Snyk JSON results
+        if: always()
+        run: |
+          SERVICE=${{ matrix.service }}
+          FILE="snyk-backend-${SERVICE}.json"
+          if [ -f "$FILE" ]; then
+            CRITICAL=$(jq '[.vulnerabilities[]? | select(.severity=="critical")] | length' $FILE 2>/dev/null || echo "0")
+            HIGH=$(jq '[.vulnerabilities[]? | select(.severity=="high")] | length' $FILE 2>/dev/null || echo "0")
+            MEDIUM=$(jq '[.vulnerabilities[]? | select(.severity=="medium")] | length' $FILE 2>/dev/null || echo "0")
+            echo "Snyk Scan Results for $SERVICE:"
+            echo "Critical: $CRITICAL"
+            echo "High: $HIGH"
+            echo "Medium: $MEDIUM"
+            if [ "$CRITICAL" -gt "0" ]; then
+              echo ""
+              echo "CRITICAL vulnerabilities found! Review and fix."
+              exit 1
+            fi
+          else
+            echo "No JSON report found, skipping parsing."
+          fi
 
 
 # STAGE 4: BACKEND BUILD & TEST
