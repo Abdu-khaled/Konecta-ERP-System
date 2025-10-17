@@ -104,7 +104,7 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
       fail-fast: false
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
@@ -117,42 +117,77 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
 
-      - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/maven@master
-        continue-on-error: true
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Authenticate Snyk
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --sarif --sarif-file-output=snyk-backend-${{ matrix.service }}.sarif --file=backend/${{ matrix.service }}/pom.xml --severity-threshold=high
 
-      - name: Upload Snyk SARIF report to GitHub Code Scanning
+      - name: Run Snyk Test (SARIF)
+        uses: snyk/actions/maven@master
+        with:
+          args: --sarif --file=backend/${{ matrix.service }}/pom.xml --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true
+
+      - name: Move SARIF to root for upload
+        if: always()
+        run: |
+          SARIF_FILE="backend/${{ matrix.service }}/snyk.sarif"
+          if [ -f "$SARIF_FILE" ]; then
+            mv "$SARIF_FILE" snyk-backend-${{ matrix.service }}.sarif
+          fi
+
+      - name: Upload Snyk SARIF to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
         if: always() && hashFiles('snyk-backend-${{ matrix.service }}.sarif') != ''
         with:
           sarif_file: snyk-backend-${{ matrix.service }}.sarif
           category: snyk-backend-${{ matrix.service }}
 
-      - name: Install Snyk CLI (for JSON report)
-        if: always()
-        run: npm install -g snyk
-
-      - name: Authenticate Snyk
-        if: always()
-        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+      - name: Snyk Monitor (continuous)
+        uses: snyk/actions/maven@master
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        with:
+          command: monitor
+          args: --file=backend/${{ matrix.service }}/pom.xml --project-name=konecta-${{ matrix.service }}
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
       - name: Generate JSON report
-        if: always()
-        continue-on-error: true
-        run: |
-          snyk test --file=backend/${{ matrix.service }}/pom.xml --json > snyk-backend-${{ matrix.service }}.json || true
+        run: snyk test --file=backend/${{ matrix.service }}/pom.xml --json > snyk-backend-${{ matrix.service }}.json || true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      - name: Upload Snyk JSON report artifact
-        if: always()
+      - name: Upload JSON report artifact
         uses: actions/upload-artifact@v4
         with:
           name: snyk-backend-report-${{ matrix.service }}
           path: snyk-backend-${{ matrix.service }}.json
           retention-days: 30
+
+      - name: Parse Snyk JSON results
+        if: always()
+        run: |
+          JSON_FILE="snyk-backend-${{ matrix.service }}.json"
+          if [ -f "$JSON_FILE" ]; then
+            CRITICAL=$(jq '[.vulnerabilities[]? | select(.severity=="critical")] | length' "$JSON_FILE" 2>/dev/null || echo "0")
+            HIGH=$(jq '[.vulnerabilities[]? | select(.severity=="high")] | length' "$JSON_FILE" 2>/dev/null || echo "0")
+
+            echo "Snyk Scan Results for ${{ matrix.service }}:"
+            echo "Critical: $CRITICAL"
+            echo "High: $HIGH"
+
+            if [ "$CRITICAL" -gt "0" ]; then
+              echo "CRITICAL vulnerabilities found!"
+              exit 1
+            fi
+          else
+            echo "No JSON report found. Skipping parsing."
+          fi
 
 
 # STAGE 4: BACKEND BUILD & TEST
