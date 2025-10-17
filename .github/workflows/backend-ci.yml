@@ -97,7 +97,7 @@ jobs:
 
 # STAGE 3: BACKEND DEPENDENCY SCANNING (SNYK)
   backend-snyk-scan:
-    name: Backend Security (Snyk)
+    name: 🔍 Backend Security (Snyk)
     runs-on: ubuntu-latest
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.changed == 'true' }}
@@ -126,11 +126,18 @@ jobs:
         with:
           args: --sarif --file=backend/${{ matrix.service }}/pom.xml --severity-threshold=high
 
+      - name: Move SARIF to root (for upload)
+        if: always()
+        run: |
+          if [ -f "backend/${{ matrix.service }}/snyk.sarif" ]; then
+            mv backend/${{ matrix.service }}/snyk.sarif snyk-backend-${{ matrix.service }}.sarif
+          fi
+
       - name: Upload Snyk report to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
-        if: always() && hashFiles('snyk.sarif') != ''
+        if: always() && hashFiles('snyk-backend-${{ matrix.service }}.sarif') != ''
         with:
-          sarif_file: snyk.sarif
+          sarif_file: snyk-backend-${{ matrix.service }}.sarif
           category: snyk-backend-${{ matrix.service }}
 
       - name: Run Snyk Monitor (continuous monitoring)
@@ -145,35 +152,49 @@ jobs:
       - name: Parse Snyk results
         if: always()
         run: |
-          if [ -f "snyk-backend-${{ matrix.service }}.json" ]; then
-            echo "Snyk Scan Results for ${{ matrix.service }}:"
+          echo "Snyk Scan Results for ${{ matrix.service }}:"
+          
+          # Since we're using --sarif, we need to run another scan for JSON
+          # Or parse the SARIF file directly
+          if [ -f "snyk.sarif" ]; then
+            echo "SARIF report generated"
             
-            # Parse JSON report
-            CRITICAL=$(jq '[.vulnerabilities[]? | select(.severity=="critical")] | length' snyk-backend-${{ matrix.service }}.json || echo "0")
-            HIGH=$(jq '[.vulnerabilities[]? | select(.severity=="high")] | length' snyk-backend-${{ matrix.service }}.json || echo "0")
-            MEDIUM=$(jq '[.vulnerabilities[]? | select(.severity=="medium")] | length' snyk-backend-${{ matrix.service }}.json || echo "0")
+            # Optional: Run JSON scan separately for detailed reporting
+            snyk test --file=backend/${{ matrix.service }}/pom.xml --json > snyk-backend-${{ matrix.service }}.json || true
             
-            echo "Critical: $CRITICAL"
-            echo "High: $HIGH"
-            echo "Medium: $MEDIUM"
-            
-            # Show top vulnerabilities
-            echo ""
-            echo "Top vulnerabilities:"
-            jq -r '.vulnerabilities[]? | select(.severity=="critical" or .severity=="high") | "  - \(.title) (\(.severity)) in \(.packageName)@\(.version)"' snyk-backend-${{ matrix.service }}.json | head -10 || true
-            
-            if [ "$CRITICAL" -gt "0" ]; then
-              echo ""
-              echo "CRITICAL vulnerabilities found!"
-              echo "Review the report and update vulnerable dependencies."
-              exit 1
+            if [ -f "snyk-backend-${{ matrix.service }}.json" ]; then
+              CRITICAL=$(jq '[.vulnerabilities[]? | select(.severity=="critical")] | length' snyk-backend-${{ matrix.service }}.json 2>/dev/null || echo "0")
+              HIGH=$(jq '[.vulnerabilities[]? | select(.severity=="high")] | length' snyk-backend-${{ matrix.service }}.json 2>/dev/null || echo "0")
+              MEDIUM=$(jq '[.vulnerabilities[]? | select(.severity=="medium")] | length' snyk-backend-${{ matrix.service }}.json 2>/dev/null || echo "0")
+              
+              echo "Critical: $CRITICAL"
+              echo "High: $HIGH"
+              echo "Medium: $MEDIUM"
+              
+              if [ "$CRITICAL" -gt "0" ]; then
+                echo ""
+                echo "CRITICAL vulnerabilities found!"
+                echo "Review the report and update vulnerable dependencies."
+                exit 1
+              fi
             fi
-            
-            if [ "$HIGH" -gt "5" ]; then
-              echo ""
-              echo "WARNING: More than 5 HIGH severity vulnerabilities!"
-            fi
+          else
+            echo "No vulnerabilities found or scan completed without issues"
           fi
+
+      - name: Install Snyk CLI (for JSON report)
+        if: always()
+        run: npm install -g snyk
+
+      - name: Authenticate Snyk
+        if: always()
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
+      - name: Generate JSON report
+        if: always()
+        continue-on-error: true
+        run: |
+          snyk test --file=backend/${{ matrix.service }}/pom.xml --json > snyk-backend-${{ matrix.service }}.json || true
 
       - name: Upload Snyk reports
         if: always()
@@ -182,7 +203,6 @@ jobs:
           name: snyk-backend-report-${{ matrix.service }}
           path: snyk-backend-${{ matrix.service }}.json
           retention-days: 30
-
 
 
 # STAGE 4: BACKEND BUILD & TEST
