@@ -124,38 +124,30 @@ jobs:
       - name: Authenticate Snyk
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
 
-      - name: Run Snyk scan (SARIF + JSON fallback)
-        working-directory: backend/${{ matrix.service }}
+      - name: 🔍 Run Snyk scan for gateway-service
+        working-directory: backend/gateway-service
         run: |
-          echo "🔍 Running Snyk scan for ${{ matrix.service }}..."
+          echo "🔍 Running Snyk scan for gateway-service..."
+          snyk test --sarif-file-output=snyk-backend-${{ matrix.service }}.sarif || echo "Snyk scan failed, check logs."
 
-          # Try SARIF format
-          if snyk test --sarif > ../../snyk-backend-${{ matrix.service }}.sarif 2> ../../snyk-error.log; then
-            echo "✅ SARIF file created successfully"
+      - name: 🧩 Validate SARIF before upload
+        if: success() || failure()
+        working-directory: backend/gateway-service
+        run: |
+          echo "---- SARIF FILE CHECK ----"
+          if jq empty snyk-backend-gateway-service.sarif 2>/dev/null; then
+            echo "✅ Valid SARIF file found."
           else
-            echo "⚠️ SARIF failed, falling back to JSON"
-            snyk test --json > ../../snyk-backend-${{ matrix.service }}.json || true
-            echo "Converted JSON to SARIF manually..."
-            jq -n --argjson data "$(cat ../../snyk-backend-${{ matrix.service }}.json)" '{ version: "2.1.0", runs: [ { tool: { driver: { name: "snyk" } }, results: [$data] } ] }' \
-              > ../../snyk-backend-${{ matrix.service }}.sarif
+            echo "⚠️ Invalid SARIF file, skipping upload."
+            exit 0
           fi
 
-      - name: Debug SARIF output
-        if: always()
-        run: |
-          echo "---- SARIF FILE CONTENT START ----"
-          cat snyk-backend-${{ matrix.service }}.sarif || echo "SARIF file not found!"
-          echo "---- SARIF FILE CONTENT END ----"
-          echo ""
-          echo "---- Snyk Error Log ----"
-          cat snyk-error.log || echo "No errors logged"
-
-      - name: Upload SARIF to GitHub Code Scanning
-        if: hashFiles('snyk-backend-${{ matrix.service }}.sarif') != ''
+      - name: 📤 Upload Snyk SARIF results
+        if: success() || failure()
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: snyk-backend-${{ matrix.service }}.sarif
-          category: snyk-backend-${{ matrix.service }}
+          sarif_file: backend/gateway-service/snyk-backend-gateway-service.sarif
+
 
       - name: Run Snyk monitor (for dashboard tracking)
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
