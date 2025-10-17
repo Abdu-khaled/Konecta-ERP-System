@@ -183,7 +183,7 @@ jobs:
   backend-build-test:
     name: Backend Build & Test
     runs-on: ubuntu-latest
-    needs: [detect-changes, backend-snyk-scan]
+    needs: [detect-changes, backend-dependency-scan]
     if: ${{ needs.detect-changes.outputs.changed == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
