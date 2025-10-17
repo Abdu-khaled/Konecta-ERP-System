@@ -95,9 +95,9 @@ jobs:
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
           echo "Detected services matrix: $MATRIX_JSON"
 
-# STAGE 3A: BACKEND DEPENDENCY SCANNING (SNYK)
+# STAGE 3: BACKEND DEPENDENCY SCANNING (SNYK)
   backend-snyk-scan:
-    name:  Backend Security (Snyk)
+    name: Backend Security (Snyk)
     runs-on: ubuntu-latest
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.changed == 'true' }}
@@ -124,11 +124,11 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high --file=backend/${{ matrix.service }}/pom.xml --json-file-output=snyk-backend-${{ matrix.service }}.json
+          args: --sarif --file=backend/${{ matrix.service }}/pom.xml --severity-threshold=high
 
       - name: Upload Snyk report to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: always() && hashFiles('snyk.sarif') != ''
         with:
           sarif_file: snyk.sarif
           category: snyk-backend-${{ matrix.service }}
@@ -184,11 +184,12 @@ jobs:
           retention-days: 30
 
 
+
 # STAGE 4: BACKEND BUILD & TEST
   backend-build-test:
     name: Backend Build & Test
     runs-on: ubuntu-latest
-    needs: [detect-changes]
+    needs: [detect-changes, backend-snyk-scan]
     if: ${{ needs.detect-changes.outputs.changed == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
