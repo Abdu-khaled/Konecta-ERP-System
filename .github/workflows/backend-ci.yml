@@ -97,14 +97,13 @@ jobs:
 
 # STAGE 3: BACKEND DEPENDENCY SCANNING (SNYK)
   backend-snyk-scan:
-    name: 🔍 Backend Security (Snyk)
+    name: Backend Security (Snyk)
     runs-on: ubuntu-latest
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.changed == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
       fail-fast: false
-    
     timeout-minutes: 10
 
     steps:
@@ -124,63 +123,14 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --sarif --file=backend/${{ matrix.service }}/pom.xml --severity-threshold=high
+          args: --sarif --sarif-file-output=snyk-backend-${{ matrix.service }}.sarif --file=backend/${{ matrix.service }}/pom.xml --severity-threshold=high
 
-      - name: Move SARIF to root (for upload)
-        if: always()
-        run: |
-          if [ -f "backend/${{ matrix.service }}/snyk.sarif" ]; then
-            mv backend/${{ matrix.service }}/snyk.sarif snyk-backend-${{ matrix.service }}.sarif
-          fi
-
-      - name: Upload Snyk report to GitHub Code Scanning
+      - name: Upload Snyk SARIF report to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
         if: always() && hashFiles('snyk-backend-${{ matrix.service }}.sarif') != ''
         with:
           sarif_file: snyk-backend-${{ matrix.service }}.sarif
           category: snyk-backend-${{ matrix.service }}
-
-      - name: Run Snyk Monitor (continuous monitoring)
-        uses: snyk/actions/maven@master
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: monitor
-          args: --file=backend/${{ matrix.service }}/pom.xml --project-name=konecta-${{ matrix.service }}
-
-      - name: Parse Snyk results
-        if: always()
-        run: |
-          echo "Snyk Scan Results for ${{ matrix.service }}:"
-          
-          # Since we're using --sarif, we need to run another scan for JSON
-          # Or parse the SARIF file directly
-          if [ -f "snyk.sarif" ]; then
-            echo "SARIF report generated"
-            
-            # Optional: Run JSON scan separately for detailed reporting
-            snyk test --file=backend/${{ matrix.service }}/pom.xml --json > snyk-backend-${{ matrix.service }}.json || true
-            
-            if [ -f "snyk-backend-${{ matrix.service }}.json" ]; then
-              CRITICAL=$(jq '[.vulnerabilities[]? | select(.severity=="critical")] | length' snyk-backend-${{ matrix.service }}.json 2>/dev/null || echo "0")
-              HIGH=$(jq '[.vulnerabilities[]? | select(.severity=="high")] | length' snyk-backend-${{ matrix.service }}.json 2>/dev/null || echo "0")
-              MEDIUM=$(jq '[.vulnerabilities[]? | select(.severity=="medium")] | length' snyk-backend-${{ matrix.service }}.json 2>/dev/null || echo "0")
-              
-              echo "Critical: $CRITICAL"
-              echo "High: $HIGH"
-              echo "Medium: $MEDIUM"
-              
-              if [ "$CRITICAL" -gt "0" ]; then
-                echo ""
-                echo "CRITICAL vulnerabilities found!"
-                echo "Review the report and update vulnerable dependencies."
-                exit 1
-              fi
-            fi
-          else
-            echo "No vulnerabilities found or scan completed without issues"
-          fi
 
       - name: Install Snyk CLI (for JSON report)
         if: always()
@@ -196,7 +146,7 @@ jobs:
         run: |
           snyk test --file=backend/${{ matrix.service }}/pom.xml --json > snyk-backend-${{ matrix.service }}.json || true
 
-      - name: Upload Snyk reports
+      - name: Upload Snyk JSON report artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
