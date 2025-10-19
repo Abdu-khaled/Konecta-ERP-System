@@ -1,1 +1,0 @@
-# Konecta-ERP-System
