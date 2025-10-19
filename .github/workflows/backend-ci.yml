@@ -237,14 +237,13 @@ jobs:
           SONAR_URL: ${{ secrets.SONAR_URL }}
         run: |
           echo "Analyzing ${{ matrix.service }}..."
-          mvn -f backend/${{ matrix.service }}/pom.xml sonar:sonar \
+          mvn -B -f backend/${{ matrix.service }}/pom.xml clean verify sonar:sonar \
             -Dsonar.projectKey=konecta-erp-${{ matrix.service }} \
             -Dsonar.host.url=${{ env.SONAR_URL }} \
             -Dsonar.token=${{ env.SONAR_TOKEN }} \
             -Dsonar.qualitygate.wait=true \
             -Dsonar.coverage.jacoco.xmlReportPaths=backend/${{ matrix.service }}/target/site/jacoco/jacoco.xml \
             -DskipTests
-
           echo "SonarQube analysis completed for ${{ matrix.service }}"
 
 
