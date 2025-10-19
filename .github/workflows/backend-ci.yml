@@ -20,20 +20,41 @@ jobs:
   
 # STAGE 1: SECRET SCANNING
   secret-scan:
-    name:  Secret Scanning
+    name: Secret Scanning
     runs-on: ubuntu-latest
-    steps:
+
+    steps: 
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        with:
-          args: detect --source . --no-git --redact --report-format sarif --report-path gitleaks.sarif --exit-code 1
+      # Install Gitleaks CLI
+      - name: Install Gitleaks
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64.tar.gz \
+          | tar -xz -C /usr/local/bin gitleaks
 
-      - name: Upload Gitleaks report
+      # Run Gitleaks scan
+      - name: Run Gitleaks
+        run: |
+          gitleaks detect \
+            --source . \
+            --no-git \
+            --redact \
+            --report-format sarif \
+            --report-path gitleaks.sarif \
+            --exit-code 1
+
+      # Upload SARIF file to GitHub Security tab
+      - name: Upload SARIF to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: gitleaks.sarif
+
+      # Upload the report as a downloadable artifact
+      - name: Upload Gitleaks report artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -41,6 +62,7 @@ jobs:
           path: gitleaks.sarif
           retention-days: 30
 
+          
 # STAGE 2: DETECT CHANGES
   detect-changes:
     name: Detect Changed Backend Services
