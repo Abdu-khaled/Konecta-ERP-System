@@ -69,9 +69,9 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest req) {
-        User user = userRepository.findByEmail(req.getEmail()).orElseThrow();
-        if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
-            return ResponseEntity.badRequest().build();
+        User user = userRepository.findByEmail(req.getEmail()).orElse(null);
+        if (user == null || !passwordEncoder.matches(req.getPassword(), user.getPassword())) {
+            return ResponseEntity.status(401).build();
         }
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", user.getRole().name());
@@ -82,9 +82,14 @@ public class AuthController {
 
     @GetMapping("/me")
     public ResponseEntity<ProfileResponse> me() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username).orElseThrow();
-        return ResponseEntity.ok(new ProfileResponse(user.getId(), user.getUsername(), user.getEmail(), user.getRole()));
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            return ResponseEntity.status(401).build();
+        }
+        String username = auth.getName();
+        return userRepository.findByUsername(username)
+                .map(user -> ResponseEntity.ok(new ProfileResponse(user.getId(), user.getUsername(), user.getEmail(), user.getRole())))
+                .orElseGet(() -> ResponseEntity.status(404).build());
     }
 
     @PostMapping("/validate")

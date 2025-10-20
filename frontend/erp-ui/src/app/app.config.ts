@@ -5,8 +5,9 @@ import { routes } from './app.routes';
 import { AUTH_API_BASE_URL } from './features/auth/services/auth.service';
 import { authInterceptor } from './features/auth/services/auth.interceptor';
 
-const isDevOn4200 = typeof window !== 'undefined' && window.location.port === '4200';
-const API_BASE = isDevOn4200 ? 'http://localhost:8081/api/auth' : '/api/auth';
+// Always use a relative API base so requests go through the reverse proxy
+// (Nginx in containers, dev-server proxy in local `ng serve`).
+const API_BASE = '/api/auth';
 
 export const appConfig: ApplicationConfig = {
   providers: [

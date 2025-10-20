@@ -1,90 +1,113 @@
-version: "3.9"
 services:
+  frontend:
+    build:
+      context: ./frontend/erp-ui
+      dockerfile: Dockerfile
+    image: erp-frontend:dev
+    container_name: erp-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - auth-service
+    networks:
+      - erp-net
+
   auth-service:
     build:
-      context: .
+      context: ./backend
       dockerfile: auth-service/Dockerfile
     image: erp-auth-service:dev
+    container_name: erp-auth-service
     ports:
-      - "8081:8081" 
+      - "8089:8081"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/auth-service
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: 1234
       SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - erp-net
 
   hr-service:
     build:
-      context: .
+      context: ./backend
       dockerfile: hr-service/Dockerfile
     image: erp-hr-service:dev
+    container_name: erp-hr-service
     ports:
-      - "8082:8082"
+      - "8088:8082"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/hr-service
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: 1234
       SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - erp-net
 
   finance-service:
     build:
-      context: .
+      context: ./backend
       dockerfile: finance-service/Dockerfile
     image: erp-finance-service:dev
+    container_name: erp-finance-service
     ports:
-      - "8083:8083"
+      - "8087:8083"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/finance-service
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: 1234
       SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - erp-net
 
-  operation-service:
-    build:
-      context: .
-      dockerfile: operation-service/Dockerfile
-    image: erp-operation-service:dev
-    ports:
-      - "8085:8085"
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/operation-service
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: 1234
-      SPRING_PROFILES_ACTIVE: docker
 
   discovery-server:
     build:
-      context: .
+      context: ./backend
       dockerfile: discovery-server/Dockerfile
     image: erp-discovery-server:dev
+    container_name: erp-discovery-server
     ports:
-      - "8761:8080"
+      - "8762:8080"
+    networks:
+      - erp-net
 
   gateway-service:
     build:
-      context: .
+      context: ./backend
       dockerfile: gateway-service/Dockerfile
     image: erp-gateway-service:dev
+    container_name: erp-gateway-service
     ports:
-      - "8080:8080"
+      - "8084:8080"
+    networks:
+      - erp-net
 
   config-server:
     build:
-      context: .
+      context: ./backend
       dockerfile: config-server/Dockerfile
     image: erp-config-server:dev
+    container_name: erp-config-server
     ports:
       - "8888:8080"
+    networks:
+      - erp-net
 
   reporting-service:
     build:
-      context: .
+      context: ./backend
       dockerfile: reporting-service/ReportingService/Dockerfile
     image: erp-reporting-service:dev
+    container_name: erp-reporting-service
     ports:
-      - "5156:8080"
+      - "5160:8080"
     environment:
       DOTNET_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: Host=host.docker.internal;Port=5432;Database=reporting-service;Username=postgres;Password=1234
+    networks:
+      - erp-net
 
-      
+networks:
+  erp-net:
+    driver: bridge

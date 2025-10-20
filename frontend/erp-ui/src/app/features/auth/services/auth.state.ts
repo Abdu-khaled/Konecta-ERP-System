@@ -30,7 +30,13 @@ export class AuthState {
       // Attempt a lazy profile fetch; ignore failure silently
       this.http.get<UserProfile>(`${this.baseUrl}/me`).subscribe({
         next: (p) => this.profileSubject.next(p),
-        error: () => void 0
+        error: (err) => {
+          // If token is invalid/expired, clear state so app treats user as logged out
+          const status = err?.status ?? 0;
+          if (status === 401 || status === 403) {
+            this.clear();
+          }
+        }
       });
     }
   }
@@ -59,4 +65,3 @@ export class AuthState {
     this.tokenSubject.next(null);
   }
 }
-

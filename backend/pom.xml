@@ -38,8 +38,8 @@
 		<module>gateway-service</module>
 		<module>config-server</module>
 		<module>discovery-server</module>
-		<module>operation-service</module>
 	</modules>
+
 
 
 </project>
