@@ -120,12 +120,18 @@ jobs:
 
           if [ ${#SERVICES[@]} -eq 0 ]; then
             echo "No changed backend services detected — skipping build."
-            MATRIX_JSON='{"service":[],"serviceType":[]}'
+            MATRIX_JSON='{"include":[]}'
             echo "changed=false" >> $GITHUB_OUTPUT
           else
-            joined=$(printf '"%s",' "${SERVICES[@]}")
-            types_joined=$(printf '"%s",' "${SERVICE_TYPES[@]}")
-            MATRIX_JSON="{\"service\":[${joined%,}],\"serviceType\":[${types_joined%,}]}"
+            # Create proper matrix with service and serviceType pairs
+            MATRIX_INCLUDES=""
+            for i in "${!SERVICES[@]}"; do
+              if [ $i -gt 0 ]; then
+                MATRIX_INCLUDES="$MATRIX_INCLUDES,"
+              fi
+              MATRIX_INCLUDES="$MATRIX_INCLUDES{\"service\":\"${SERVICES[$i]}\",\"serviceType\":\"${SERVICE_TYPES[$i]}\"}"
+            done
+            MATRIX_JSON="{\"include\":[$MATRIX_INCLUDES]}"
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
@@ -215,7 +221,7 @@ jobs:
           echo "Building C# service ${{ matrix.service }}..."
           dotnet restore backend/${{ matrix.service }}/ReportingService/ReportingService.csproj
           dotnet build backend/${{ matrix.service }}/ReportingService/ReportingService.csproj --configuration Release --no-restore
-          dotnet test backend/${{ matrix.service }}/ReportingService/ReportingService.csproj --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage"
+          dotnet test backend/${{ matrix.service }}/ReportingService/ReportingService.csproj --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --logger "trx;LogFileName=test-results.trx" --results-directory "TestResults"
 
       - name: Upload JAR artifacts
         if: (success() || always()) && matrix.serviceType == 'java'
