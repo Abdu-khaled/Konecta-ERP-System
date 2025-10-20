@@ -71,7 +71,7 @@ import { useRegister } from './useRegister.hook';
 
         <button
           type="submit"
-          class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg text-base font-medium transition-colors shadow-md"
+          class="w-full bg-primary-600 hover:bg-primary-700 text-white py-3 rounded-lg text-base font-medium transition-colors shadow-md"
         >
           Create Account
         </button>

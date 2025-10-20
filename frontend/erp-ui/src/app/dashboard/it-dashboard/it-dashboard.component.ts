@@ -19,8 +19,8 @@ interface ServiceItem {
           <p class="text-sm text-slate-500">System health, services, and operational status.</p>
         </div>
         <div class="flex gap-2">
-          <button type="button" class="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm">View Incidents</button>
-          <button type="button" class="rounded-full bg-slate-800 px-4 py-2 text-sm font-semibold text-white shadow-sm">Maintenance Logs</button>
+          <button type="button" class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm">View Incidents</button>
+          <button type="button" class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm">Maintenance Logs</button>
         </div>
       </header>
 

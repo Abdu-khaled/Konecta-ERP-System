@@ -18,8 +18,8 @@ type Trend = 'up' | 'down' | 'flat';
             <p class="text-sm text-slate-500">Global statistics and controls.</p>
           </div>
           <div class="flex gap-2">
-            <button type="button" class="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">Manage Roles</button>
-            <button type="button" class="rounded-full bg-slate-800 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-900">System Settings</button>
+            <button type="button" class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700">Manage Roles</button>
+            <button type="button" class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700">System Settings</button>
           </div>
         </header>
 
@@ -61,8 +61,8 @@ type Trend = 'up' | 'down' | 'flat';
               <p class="text-sm text-slate-500">Budget and transaction insights.</p>
             </div>
             <div class="flex gap-2">
-              <button type="button" class="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">Budgets</button>
-              <button type="button" class="rounded-full bg-slate-800 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-900">Transactions</button>
+              <button type="button" class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700">Budgets</button>
+              <button type="button" class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700">Transactions</button>
             </div>
           </header>
 
@@ -109,8 +109,8 @@ type Trend = 'up' | 'down' | 'flat';
               <p class="text-sm text-slate-500">Workforce and attendance insights.</p>
             </div>
             <div class="flex gap-2">
-              <button type="button" class="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">Manage Employees</button>
-              <button type="button" class="rounded-full bg-slate-800 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-900">HR Settings</button>
+              <button type="button" class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700">Manage Employees</button>
+              <button type="button" class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700">HR Settings</button>
             </div>
           </header>
 
@@ -164,8 +164,8 @@ type Trend = 'up' | 'down' | 'flat';
               <p class="text-sm text-slate-500">Here’s your overview for today.</p>
             </div>
           <div class="flex gap-2">
-            <button type="button" class="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">Request Leave</button>
-            <button type="button" class="rounded-full bg-slate-800 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-900">Update Profile</button>
+            <button type="button" class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700">Request Leave</button>
+            <button type="button" class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700">Update Profile</button>
           </div>
         </header>
 
@@ -217,7 +217,7 @@ type Trend = 'up' | 'down' | 'flat';
             <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
             <p class="text-sm text-slate-500">Snapshot of today's performance across key business areas.</p>
           </div>
-          <button type="button" class="inline-flex items-center justify-center self-start rounded-full border border-indigo-600 bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 sm:self-center" (click)="vm.refresh()">Refresh data</button>
+          <button type="button" class="inline-flex items-center justify-center self-start rounded-full border border-primary-600 bg-primary-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 sm:self-center" (click)="vm.refresh()">Refresh data</button>
         </header>
         <section class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           <article class="flex flex-col gap-3 rounded-2xl bg-white/90 p-6 shadow-md ring-1 ring-slate-200/70 backdrop-blur" *ngFor="let metric of vm.metrics(); trackBy: trackByMetric">

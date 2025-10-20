@@ -7,3 +7,26 @@
   /* Tune to match your navbar height */
   --navbar-height: 64px;
 }
+
+@layer base {
+  html, body {
+    @apply font-sans text-slate-900 bg-white;
+  }
+}
+
+/* Brand wordmark helper */
+.sync-wordmark {
+  @apply inline-flex items-center font-bold text-primary-600 select-none whitespace-nowrap;
+  letter-spacing: -0.03em; /* tighten overall spacing */
+}
+.sync-logo { height: 1.6em; vertical-align: -0.18em; display: inline-block; }
+/* Stylized N in SYNC */
+.sync-n {
+  height: 1.45em;
+  width: 1.8em;                  /* slightly wider, we’ll overlap more */
+  vertical-align: -0.22em;       /* sit on baseline */
+  display: inline-block;
+  margin-left: -0.55em;          /* overlap into Y */
+  margin-right: -0.48em;         /* overlap into C */
+  transform: translateY(-0.02em);/* tiny raise to visually center */
+}
