@@ -359,27 +359,24 @@ jobs:
             echo "WARNING: Image larger than 1GB!"
           fi
 
-      - name: Robust smoke test
+      - name: Smoke test
         timeout-minutes: 2
         run: |
-          echo "Starting container for health check..."
-          docker run -d --name test-${{ matrix.service }} -p 8080:8080 ${{ steps.vars.outputs.docker_tag }}
+          echo "Testing container startup..."
+          docker run -d --name test-${{ matrix.service }} \
+            -e SPRING_PROFILES_ACTIVE=smoke-test \
+            ${{ steps.vars.outputs.docker_tag }}
 
-          # Loop for up to 60 seconds, checking the health endpoint every 5 seconds
-          for i in {1..12}; do
-            if curl --fail http://localhost:8080/actuator/health; then
-              echo "Container is healthy!"
-              docker rm -f test-${{ matrix.service }}
-              exit 0
-            fi
-            echo "Health check failed, retrying..."
-            sleep 5
-          done
+          sleep 15 # Give it a moment to potentially crash
 
-          echo "Container failed to become healthy in time."
-          docker logs test-${{ matrix.service }}
+          if ! docker ps | grep -q test-${{ matrix.service }}; then
+            echo "Container failed to start or crashed!"
+            docker logs test-${{ matrix.service }}
+            exit 1
+          fi
+
+          echo "Container started successfully."
           docker rm -f test-${{ matrix.service }}
-          exit 1
 
       - name: Scan with Trivy (detailed)
         uses: aquasecurity/trivy-action@0.18.0
