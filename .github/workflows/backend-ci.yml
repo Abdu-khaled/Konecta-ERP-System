@@ -374,6 +374,13 @@ jobs:
             -DskipTests
           echo "SonarQube analysis completed for ${{ matrix.service }}"
 
+      - name: Install SonarQube Scanner for .NET
+        if: matrix.serviceType == 'csharp'
+        run: |
+          echo "Installing SonarQube Scanner for .NET..."
+          dotnet tool install --global dotnet-sonarscanner
+          echo "SonarQube Scanner installed successfully"
+
       - name: SonarQube analysis (C#)
         if: matrix.serviceType == 'csharp'
         env:
