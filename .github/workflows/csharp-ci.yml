@@ -1,0 +1,333 @@
+name: C# Reporting Service CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/reporting-service/**'
+
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'backend/reporting-service/**'
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '8.0.x'
+
+jobs:
+  
+  # STAGE 1: SECRET SCANNING
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: detect --source . --no-git --redact --report-format sarif --report-path gitleaks.sarif --exit-code 1
+
+      - name: Upload Gitleaks report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report-csharp
+          path: gitleaks.sarif
+          retention-days: 30
+
+  # STAGE 2: DEPENDENCY VULNERABILITY SCAN
+  dependency-vulnerability-scan:
+    name: Dependency Vulnerability Scan (SCA)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy SCA on Source Code
+        uses: aquasecurity/trivy-action@0.18.0
+        with:
+          scan-type: 'fs'
+          scan-ref: ./backend/reporting-service
+          vuln-type: 'library'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          format: 'table'
+          exit-code: '1'
+
+      - name: Generate SARIF report
+        uses: aquasecurity/trivy-action@0.18.0
+        with:
+          scan-type: 'fs'
+          scan-ref: ./backend/reporting-service
+          vuln-type: 'library'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          format: 'sarif'
+          output: 'trivy-dependency-csharp.sarif'
+        continue-on-error: true
+
+      - name: Upload Trivy SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-dependency-csharp.sarif'
+
+  # STAGE 3: BUILD & TEST
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore backend/reporting-service/ReportingService/ReportingService.csproj
+
+      - name: Build
+        run: dotnet build backend/reporting-service/ReportingService/ReportingService.csproj --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test backend/reporting-service/ReportingService/ReportingService.csproj --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-reporting-service
+          path: backend/reporting-service/ReportingService/TestResults/
+          retention-days: 7
+
+      - name: Upload build artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-reporting-service
+          path: backend/reporting-service/ReportingService/bin/Release/net8.0/
+          retention-days: 7
+
+  # STAGE 4: CODE QUALITY (SONARQUBE)
+  sonar-scan:
+    name: Code Quality (SonarQube)
+    runs-on: ubuntu-latest
+    needs: [build-test]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results-reporting-service
+          path: backend/reporting-service/ReportingService/TestResults/
+        continue-on-error: true
+
+      - name: SonarQube analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_URL: ${{ secrets.SONAR_URL }}
+        run: |
+          echo "Analyzing reporting-service..."
+          dotnet sonarscanner begin \
+            /k:"konecta-erp-reporting-service" \
+            /d:sonar.host.url="${{ env.SONAR_URL }}" \
+            /d:sonar.token="${{ env.SONAR_TOKEN }}" \
+            /d:sonar.cs.opencover.reportsPaths="backend/reporting-service/ReportingService/TestResults/**/coverage.opencover.xml" \
+            /d:sonar.coverage.exclusions="**/bin/**,**/obj/**,**/TestResults/**"
+
+          dotnet build backend/reporting-service/ReportingService/ReportingService.csproj --configuration Release
+
+          dotnet sonarscanner end /d:sonar.token="${{ env.SONAR_TOKEN }}"
+
+          echo "SonarQube analysis completed for reporting-service"
+
+  # STAGE 5: DOCKER BUILD & SECURITY SCAN
+  docker-build-scan:
+    name: Docker Build & Security Scan
+    runs-on: ubuntu-latest
+    needs: [build-test, sonar-scan]
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Determine image tags
+        id: vars
+        env:
+          SERVICE: reporting-service
+          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION=${GITHUB_REF_NAME}
+          else
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            BRANCH=$(echo "${GITHUB_REF_NAME}" | sed 's/\//-/g')
+            VERSION="${BRANCH}-${SHORT_SHA}"
+          fi
+
+          DOCKER_TAG="${DOCKER_USER}/konecta-${SERVICE}:${VERSION}"
+          DOCKER_LATEST="${DOCKER_USER}/konecta-${SERVICE}:latest"
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "docker_tag=${DOCKER_TAG}" >> $GITHUB_OUTPUT
+          echo "docker_latest=${DOCKER_LATEST}" >> $GITHUB_OUTPUT
+
+          echo "Version: $VERSION"
+          echo "Tag: $DOCKER_TAG"
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USERNAME }}/konecta-reporting-service
+          labels: |
+            org.opencontainers.image.title=konecta-reporting-service
+            org.opencontainers.image.description=Konecta ERP System - Reporting Service (.NET)
+            org.opencontainers.image.version=${{ steps.vars.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Build Docker image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: backend/
+          file: backend/reporting-service/ReportingService/Dockerfile
+          push: false
+          load: true
+          tags: ${{ steps.vars.outputs.docker_tag }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/konecta-reporting-service:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/konecta-reporting-service:buildcache,mode=max
+          provenance: false
+
+      - name: Check image size
+        run: |
+          SIZE=$(docker image inspect ${{ steps.vars.outputs.docker_tag }} --format='{{.Size}}')
+          SIZE_MB=$(($SIZE / 1024 / 1024))
+          echo "Image size: ${SIZE_MB} MB"
+          
+          if [ $SIZE_MB -gt 1000 ]; then
+            echo "WARNING: Image larger than 1GB!"
+          fi
+
+      - name: Smoke test
+        timeout-minutes: 2
+        run: |
+          echo "Testing container..."
+          docker run -d --name test-reporting-service \
+            ${{ steps.vars.outputs.docker_tag }} || true
+          sleep 5
+          
+          if docker ps | grep -q test-reporting-service; then
+            echo "Container started successfully"
+          else
+            echo "Container may have issues"
+            docker logs test-reporting-service 2>&1 | head -20 || true
+          fi
+          
+          docker rm -f test-reporting-service || true
+
+      - name: Scan with Trivy (detailed)
+        uses: aquasecurity/trivy-action@0.18.0
+        with:
+          image-ref: ${{ steps.vars.outputs.docker_tag }}
+          format: 'json'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          output: 'trivy-report.json'
+
+      - name: Check vulnerabilities
+        run: |
+          echo "Security scan results:"
+          cat trivy-report.json | jq '.Results[]?.Vulnerabilities[]? | {VulnerabilityID, Severity, PkgName, InstalledVersion}'
+
+          CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' trivy-report.json)
+          HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length' trivy-report.json)
+
+          echo ""
+          echo "Summary:"
+          echo "Critical: $CRITICAL"
+          echo "High: $HIGH"
+          
+          if [ "$CRITICAL" -gt "0" ]; then
+            echo "CRITICAL vulnerabilities found in image!"
+            exit 1
+          fi
+          
+          echo "No critical vulnerabilities"
+
+      - name: Generate SBOM
+        uses: aquasecurity/trivy-action@0.18.0
+        with:
+          image-ref: ${{ steps.vars.outputs.docker_tag }}
+          format: 'spdx-json'
+          output: 'sbom-reporting-service.spdx.json'
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-reporting-service
+          path: sbom-reporting-service.spdx.json
+          retention-days: 90
+
+      - name: Generate SARIF
+        if: always()
+        uses: aquasecurity/trivy-action@0.18.0
+        with:
+          image-ref: ${{ steps.vars.outputs.docker_tag }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: trivy-reporting-service
+
+      - name: Push image
+        if: success()
+        run: |
+          echo "Pushing secure image..."
+          docker push ${{ steps.vars.outputs.docker_tag }}
+          echo "Pushed: ${{ steps.vars.outputs.docker_tag }}"
+
+      - name: Tag and push latest
+        if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        run: |
+          echo "Tagging as latest..."
+          docker tag ${{ steps.vars.outputs.docker_tag }} ${{ steps.vars.outputs.docker_latest }}
+          docker push ${{ steps.vars.outputs.docker_latest }}
+          echo "Latest updated"
