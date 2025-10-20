@@ -91,13 +91,7 @@ import { RouterLink } from '@angular/router';
           <button type="button" class="text-slate-900 text-sm font-medium hover:text-primary-600 hover:underline underline-offset-4 decoration-2 decoration-primary-600">Reports</button>
         </div>
 
-        <!-- IT / Operations primary nav (static) -->
-        <div *ngIf="role === 'IT' || role === 'OPERATIONS' || role === 'IT_OPS'" class="hidden md:flex items-center gap-6 mr-2 border-l border-slate-200 pl-6">
-          <a routerLink="/it" class="text-slate-900 text-sm font-medium hover:text-primary-600 hover:underline underline-offset-4 decoration-2 decoration-primary-600">About us</a>
-          <button type="button" class="text-slate-900 text-sm font-medium hover:text-primary-600 hover:underline underline-offset-4 decoration-2 decoration-primary-600">Infrastructure</button>
-          <button type="button" class="text-slate-900 text-sm font-medium hover:text-primary-600 hover:underline underline-offset-4 decoration-2 decoration-primary-600">Tickets</button>
-          <button type="button" class="text-slate-900 text-sm font-medium hover:text-primary-600 hover:underline underline-offset-4 decoration-2 decoration-primary-600">Monitoring</button>
-        </div>
+        
         
         <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-900 transition hover:text-primary-600" aria-label="View notifications">
           <span class="material-symbols-outlined text-[20px]">notifications</span>
