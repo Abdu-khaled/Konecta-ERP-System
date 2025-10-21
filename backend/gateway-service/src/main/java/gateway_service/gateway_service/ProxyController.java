@@ -4,12 +4,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.*;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
-import java.time.Duration;
 import java.util.Enumeration;
 
 @RestController
@@ -20,10 +20,10 @@ public class ProxyController {
     private static final Logger log = LoggerFactory.getLogger(ProxyController.class);
 
     public ProxyController(RestTemplateBuilder builder) {
-        this.restTemplate = builder
-                .setConnectTimeout(Duration.ofSeconds(5))
-                .setReadTimeout(Duration.ofSeconds(30))
-                .build();
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5000);
+        factory.setReadTimeout(30000);
+        this.restTemplate = builder.requestFactory(() -> factory).build();
     }
 
     @RequestMapping(path = "/auth/**")
@@ -76,7 +76,8 @@ public class ProxyController {
         headers.remove(HttpHeaders.ACCEPT_ENCODING);
 
         HttpEntity<byte[]> entity = new HttpEntity<>(body, headers);
-        log.info("Proxy {} {} -> {}", method, fullPath + (query != null? ("?"+query):""), target);
+        String fullUrl = fullPath + (query != null ? ("?" + query) : "");
+        log.info("Proxy {} {} -> {}", method, fullUrl, target);
         ResponseEntity<byte[]> resp = restTemplate.exchange(URI.create(target), method, entity, byte[].class);
 
         HttpHeaders out = new HttpHeaders();
