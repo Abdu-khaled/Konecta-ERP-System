@@ -91,25 +91,25 @@ type Trend = 'up' | 'down' | 'flat';
         </header>
 
         <section class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40">
+          <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
             <h3 class="text-sm font-semibold mb-3">Users</h3>
-            <div class="text-3xl font-semibold"><span>Total:</span> <span class="text-accent-yellow">-</span></div>
-            <p class="text-sm">Active employees: <span class="text-accent-yellow">-</span> - Departments: <span class="text-accent-yellow">-</span></p>
+            <div class="text-3xl font-semibold"><span>Total:</span> <span class="text-black">-</span></div>
+            <p class="text-sm">Active employees: <span class="text-black">-</span> - Departments: <span class="text-black">-</span></p>
           </article>
 
-          <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40">
+          <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
             <h3 class="text-sm font-semibold mb-3">System Uptime</h3>
-            <div class="text-3xl font-semibold text-accent-yellow">-</div>
-            <p class="text-sm">Recent logins: <span class="text-accent-yellow">-</span></p>
+            <div class="text-3xl font-semibold text-black">-</div>
+            <p class="text-sm">Recent logins: <span class="text-black">-</span></p>
           </article>
 
-          <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40">
+          <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
             <h3 class="text-sm font-semibold mb-3">Requests & Registrations</h3>
-            <p class="text-3xl font-semibold">Pending: <span class="text-accent-yellow">-</span></p>
-            <p class="text-sm">New registrations: <span class="text-accent-yellow">-</span></p>
+            <p class="text-3xl font-semibold">Pending: <span class="text-black">-</span></p>
+            <p class="text-sm">New registrations: <span class="text-black">-</span></p>
           </article>
 
-          <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40 md:col-span-2 xl:col-span-1">
+          <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70 md:col-span-2 xl:col-span-1">
             <h3 class="text-sm font-semibold mb-3">Notifications</h3>
             <ul class="text-sm space-y-2">
               <li>System: Backup completed</li>
@@ -134,35 +134,35 @@ type Trend = 'up' | 'down' | 'flat';
           </header>
 
           <section class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40">
+            <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
               <h3 class="text-sm font-semibold mb-3">Total Budget vs Spent</h3>
-              <div class="text-3xl font-semibold text-accent-yellow">-</div>
+              <div class="text-3xl font-semibold text-black">-</div>
               <p class="text-sm">Summary of allocations vs expenses.</p>
             </article>
 
-            <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40">
+            <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
               <h3 class="text-sm font-semibold mb-3">Pending Invoices</h3>
-              <div class="text-3xl font-semibold text-accent-yellow">-</div>
+              <div class="text-3xl font-semibold text-black">-</div>
               <p class="text-sm">Awaiting approval/payment.</p>
             </article>
 
-            <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40">
+            <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
               <h3 class="text-sm font-semibold mb-3">Monthly Payroll Summary</h3>
-              <p class="text-3xl font-semibold text-accent-yellow">-</p>
+              <p class="text-3xl font-semibold text-black">-</p>
               <p class="text-sm">Linked to HR data.</p>
             </article>
 
-            <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40">
+            <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
               <h3 class="text-sm font-semibold mb-3">Expense Categories</h3>
-              <div class="text-3xl font-semibold text-accent-yellow">-</div>
+              <div class="text-3xl font-semibold text-black">-</div>
               <p class="text-sm">Pie chart placeholder.</p>
             </article>
 
-            <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40 md:col-span-2 xl:col-span-1">
+            <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70 md:col-span-2 xl:col-span-1">
               <h3 class="text-sm font-semibold mb-3">AI Insights (Forecasts)</h3>
               <ul class="text-sm space-y-2">
-                <li>Forecasted Revenue: <span class="text-accent-yellow">-</span></li>
-                <li>Forecasted Expenses: <span class="text-accent-yellow">-</span></li>
+                <li>Forecasted Revenue: <span class="text-black">-</span></li>
+                <li>Forecasted Expenses: <span class="text-black">-</span></li>
               </ul>
             </article>
           </section>
@@ -182,41 +182,41 @@ type Trend = 'up' | 'down' | 'flat';
           </header>
 
           <section class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40">
+            <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
               <h3 class="text-sm font-semibold mb-3">Total Employees</h3>
-              <div class="text-3xl font-semibold text-accent-yellow">-</div>
+              <div class="text-3xl font-semibold text-black">-</div>
               <p class="text-sm">Current headcount across departments.</p>
             </article>
 
-            <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40">
+            <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
               <h3 class="text-sm font-semibold mb-3">Attendance Today</h3>
-              <div class="text-3xl font-semibold text-accent-yellow">-</div>
+              <div class="text-3xl font-semibold text-black">-</div>
               <p class="text-sm">Check-ins recorded for today.</p>
             </article>
 
-            <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40">
+            <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
               <h3 class="text-sm font-semibold mb-3">Leave Requests Pending</h3>
-              <p class="text-3xl font-semibold text-accent-yellow">-</p>
+              <p class="text-3xl font-semibold text-black">-</p>
               <p class="text-sm">Awaiting approval.</p>
             </article>
 
-            <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40">
+            <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
               <h3 class="text-sm font-semibold mb-3">Training Sessions This Month</h3>
-              <div class="text-3xl font-semibold text-accent-yellow">-</div>
+              <div class="text-3xl font-semibold text-black">-</div>
               <p class="text-sm">Planned or completed.</p>
             </article>
 
-            <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40">
+            <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
               <h3 class="text-sm font-semibold mb-3">Top Performers</h3>
-              <div class="text-3xl font-semibold text-accent-yellow">-</div>
+              <div class="text-3xl font-semibold text-black">-</div>
               <p class="text-sm">Based on latest reviews.</p>
             </article>
 
-            <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40 md:col-span-2 xl:col-span-1">
+            <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70 md:col-span-2 xl:col-span-1">
               <h3 class="text-sm font-semibold mb-3">AI Insights (Coming Soon)</h3>
               <ul class="text-sm space-y-2">
-                <li>Attrition Risk: <span class="text-accent-yellow">-</span></li>
-                <li>Training Needs: <span class="text-accent-yellow">-</span></li>
+                <li>Attrition Risk: <span class="text-black">-</span></li>
+                <li>Training Needs: <span class="text-black">-</span></li>
               </ul>
             </article>
           </section>
@@ -237,13 +237,13 @@ type Trend = 'up' | 'down' | 'flat';
         </header>
 
         <section class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40">
+          <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
             <h3 class="text-sm font-semibold mb-3">Attendance</h3>
             <div class="text-3xl font-semibold">Present</div>
-            <p class="text-sm">You have <span class="text-accent-yellow">0</span> absences this week.</p>
+            <p class="text-sm">You have <span class="text-black">0</span> absences this week.</p>
           </article>
 
-          <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40">
+          <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
             <h3 class="text-sm font-semibold mb-3">Current Tasks</h3>
             <ul class="text-sm list-disc pl-5 space-y-1">
               <li>Finish onboarding checklist</li>
@@ -252,20 +252,20 @@ type Trend = 'up' | 'down' | 'flat';
             </ul>
           </article>
 
-          <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40">
+          <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
             <h3 class="text-sm font-semibold mb-3">Salary Summary</h3>
-            <p class="text-3xl font-semibold">$ <span class="text-accent-yellow">-</span></p>
+            <p class="text-3xl font-semibold">$ <span class="text-black">-</span></p>
             <p class="text-sm">View latest payslip from Finance.</p>
-            <button type="button" class="mt-3 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">Open Payslip</button>
+            <button type="button" class="mt-3 rounded-full bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-700">Open Payslip</button>
           </article>
 
-          <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40">
+          <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
             <h3 class="text-sm font-semibold mb-3">Performance Rating</h3>
-            <div class="text-3xl font-semibold text-accent-yellow">-</div>
+            <div class="text-3xl font-semibold text-black">-</div>
             <p class="text-sm">Your last review is available in HR.</p>
           </article>
 
-          <article class="rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40 md:col-span-2 xl:col-span-1">
+          <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70 md:col-span-2 xl:col-span-1">
             <h3 class="text-sm font-semibold mb-3">Notifications</h3>
             <ul class="text-sm space-y-2">
               <li>HR: New holiday schedule announced</li>
@@ -288,16 +288,16 @@ type Trend = 'up' | 'down' | 'flat';
           <button type="button" class="inline-flex items-center justify-center self-start rounded-full border border-primary-600 bg-primary-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 sm:self-center" (click)="vm.refresh()">Refresh data</button>
         </header>
         <section class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          <article class="flex flex-col gap-3 rounded-2xl bg-primary-600 text-white p-6 shadow-md ring-1 ring-primary-600/40" *ngFor="let metric of vm.metrics(); trackBy: trackByMetric">
+          <article class="flex flex-col gap-3 rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70" *ngFor="let metric of vm.metrics(); trackBy: trackByMetric">
             <header class="flex items-center justify-between text-sm font-medium">
-              <span class="text-white">{{ metric.label }}</span>
+              <span class="text-slate-900">{{ metric.label }}</span>
               <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1" [ngClass]="badgeClass(metric.trend)">
                 <span aria-hidden="true">{{ trendSymbol(metric.trend) }}</span>
                 {{ metric.delta | number: '1.0-1' }}%
               </span>
             </header>
-            <div class="text-3xl font-semibold text-accent-yellow">{{ metric.formattedValue }}</div>
-            <p class="text-sm text-white">{{ metric.caption }}</p>
+            <div class="text-3xl font-semibold text-black">{{ metric.formattedValue }}</div>
+            <p class="text-sm text-slate-600">{{ metric.caption }}</p>
           </article>
         </section>
       </ng-template>
