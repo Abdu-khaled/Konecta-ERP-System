@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { NavThemeService } from '../../../shared/nav-theme.service';
 import { useRegister } from './useRegister.hook';
 
 @Component({
@@ -94,7 +95,7 @@ import { useRegister } from './useRegister.hook';
     .animate-fade-in { animation: fade-in 0.3s ease-in-out; }
   `]
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit, OnDestroy {
   username = '';
   email = '';
   password = '';
@@ -107,7 +108,16 @@ export class RegisterComponent {
 
   register = useRegister();
 
+  private readonly navTheme = inject(NavThemeService);
   constructor(private router: Router) {}
+
+  ngOnInit(): void {
+    this.navTheme.setBrand(true); // Blue navbar like Home
+  }
+
+  ngOnDestroy(): void {
+    this.navTheme.setBrand(false);
+  }
 
   async onSubmit() {
     const res = await this.register.submit(this.username, this.email, this.password);

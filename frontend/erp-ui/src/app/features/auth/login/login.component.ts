@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { NavThemeService } from '../../../shared/nav-theme.service';
 import { useLogin } from './useLogin.hook';
 
 @Component({
@@ -92,7 +93,7 @@ import { useLogin } from './useLogin.hook';
     .animate-fade-in { animation: fade-in 0.3s ease-in-out; }
   `]
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit, OnDestroy {
   email = '';
   password = '';
   remember = false;
@@ -103,7 +104,16 @@ export class LoginComponent {
 
   login = useLogin();
 
+  private readonly navTheme = inject(NavThemeService);
   constructor(private router: Router) {}
+
+  ngOnInit(): void {
+    this.navTheme.setBrand(true);
+  }
+
+  ngOnDestroy(): void {
+    this.navTheme.setBrand(false);
+  }
 
   async onSubmit() {
     const res = await this.login.submit(this.email, this.password, this.remember);

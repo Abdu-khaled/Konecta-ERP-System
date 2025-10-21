@@ -26,8 +26,9 @@ import { Subscription } from 'rxjs';
 <div class="min-h-screen flex flex-col bg-slate-100 text-slate-900">
   <app-navbar [user]="user" [role]="role" (toggle)="toggleSidebar()" (signOut)="onSignOut()"></app-navbar>
   <div class="isolate flex flex-1 overflow-hidden">
-    <app-sidebar [isOpen]="isSidebarOpen" [role]="role" [items]="sidebarItems"></app-sidebar>
-    <main class="relative z-0 pointer-events-auto flex-1 overflow-y-auto bg-white p-8">
+    <app-sidebar *ngIf="role" [isOpen]="isSidebarOpen" [role]="role" [items]="sidebarItems"></app-sidebar>
+    <main class="relative z-0 pointer-events-auto flex-1 overflow-y-auto bg-white"
+      [ngClass]="isHomeGuest ? 'p-0' : 'px-8 pb-8 pt-[var(--navbar-height)]'">
       <router-outlet></router-outlet>
     </main>
   </div>
@@ -49,6 +50,7 @@ export class AppComponent implements OnInit, OnDestroy {
   user: { initials: string; email: string } | null = null;
   role: string | null = null;
   private sub?: Subscription;
+  isHomeGuest = false;
 
   toggleSidebar(): void {
     this.isSidebarOpen = !this.isSidebarOpen;
@@ -87,7 +89,9 @@ export class AppComponent implements OnInit, OnDestroy {
         this.role = null;
         this.sidebarItems = this.buildSidebarForRole(null);
       }
+      this.computeHomeGuest();
     });
+    this.router.events.subscribe(() => this.computeHomeGuest());
   }
 
   ngOnDestroy(): void {
@@ -99,6 +103,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.user = null;
     this.role = null;
     this.router.navigate(['/auth/login']);
+  }
+
+  private computeHomeGuest() {
+    const full = this.router.url || '/';
+    const pathOnly = full.split('?')[0].split('#')[0];
+    this.isHomeGuest = (!this.role) && (pathOnly === '/' || pathOnly === '');
   }
 
   private buildSidebarForRole(role: string | null): Array<{ label: string; icon: string; path?: string; children?: Array<{ label: string; icon: string; path?: string }> }> {

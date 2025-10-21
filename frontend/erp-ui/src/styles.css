@@ -2,6 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Konecta brand utilities (exclude navbar by opt-in usage) */
+@layer base {
+  body { @apply font-sans; }
+}
+
+@layer components {
+  /* Section/card background + typography */
+  .k-section {
+    @apply rounded-2xl bg-primary-600 p-6 shadow-md ring-1 ring-primary-600/40;
+    color: #fff;
+  }
+  /* Ensure text inside remains white even if components set slate classes */
+  .k-section :where(h1,h2,h3,h4,h5,h6,p,ul,li,small,span,label){
+    color:#fff !important;
+  }
+  /* Prominent numbers in yellow */
+  .k-number{ color:#F0FA00; }
+}
+
+/* Navbar brand mode override (minimal CSS to invert text) */
+.nav--brand :where(a, button, span, p, label, .material-symbols-outlined) {
+  color: #fff !important;
+}
+.nav--brand input::placeholder { color: rgba(255,255,255,0.7) !important; }
+.nav--brand #global-search { color: #111 !important; background: #fff !important; }
+
+/* Ensure dropdown panel text stays dark even in brand mode */
+.nav--brand .nav-dropdown,
+.nav--brand .nav-dropdown :where(p, a, span, label, small, li) {
+  color: #111 !important;
+}
+
 /* Global layout helpers */
 :root {
   /* Tune to match your navbar height */
@@ -12,6 +44,7 @@
   html, body {
     @apply font-sans text-slate-900 bg-white;
   }
+  html { scroll-behavior: smooth; }
 }
 
 /* Brand wordmark helper */
@@ -30,3 +63,6 @@
   margin-right: -0.48em;         /* overlap into C */
   transform: translateY(-0.02em);/* tiny raise to visually center */
 }
+
+/* Anchor section offsets so headings aren’t hidden under navbar */
+#about { scroll-margin-top: var(--navbar-height); }
