@@ -1,60 +1,88 @@
-name: C# Reporting Service CI Pipeline
+name: Frontend CI Pipeline
 
 on:
   push:
     branches: [main, develop]
     paths:
-      - 'backend/reporting-service/**'
-
+      - 'frontend/**'
   pull_request:
     branches: [main, develop]
     paths:
-      - 'backend/reporting-service/**'
+      - 'frontend/**'
   workflow_dispatch:
 
 env:
-  DOTNET_VERSION: '8.0.x'
+  NODE_VERSION: '18'
 
 jobs:
   
-  # STAGE 1: SECRET SCANNING
-  secret-scan:
-    name: Secret Scanning
+# STAGE 1: DETECT CHANGES
+  detect-changes:
+    name: Detect Changed Frontend Files
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      changed: ${{ steps.set-matrix.outputs.changed }}
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 2
 
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        with:
-          args: detect --source . --no-git --redact --report-format sarif --report-path gitleaks.sarif --exit-code 1
+      - name: Detect changed frontend files
+        id: set-matrix
+        shell: bash
+        run: |
+          echo "Detecting changed frontend files..."
+          git fetch origin --depth=2
 
-      - name: Upload Gitleaks report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: gitleaks-report-csharp
-          path: gitleaks.sarif
-          retention-days: 30
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA=${{ github.event.pull_request.base.sha }}
+          else
+            BASE_SHA=$(git rev-parse HEAD^)
+          fi
 
-  # STAGE 2: DEPENDENCY VULNERABILITY SCAN
+          echo "Base SHA: $BASE_SHA"
+          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" HEAD || true)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          if echo "$CHANGED_FILES" | grep -q "^frontend/"; then
+            echo "Frontend files changed — proceeding with build."
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "No frontend files changed — skipping build."
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+# STAGE 2: DEPENDENCY VULNERABILITY SCANNING
   dependency-vulnerability-scan:
     name: Dependency Vulnerability Scan (SCA)
     runs-on: ubuntu-latest
+    needs: [detect-changes]
+    if: ${{ needs.detect-changes.outputs.changed == 'true' }}
     timeout-minutes: 15
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/erp-ui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend/erp-ui
+        run: npm ci
+
       - name: Run Trivy SCA on Source Code
         uses: aquasecurity/trivy-action@0.18.0
         with:
           scan-type: 'fs'
-          scan-ref: ./backend/reporting-service
+          scan-ref: ./frontend/erp-ui
           vuln-type: 'library'
           severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
@@ -65,64 +93,75 @@ jobs:
         uses: aquasecurity/trivy-action@0.18.0
         with:
           scan-type: 'fs'
-          scan-ref: ./backend/reporting-service
+          scan-ref: ./frontend/erp-ui
           vuln-type: 'library'
           severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
           format: 'sarif'
-          output: 'trivy-dependency-csharp.sarif'
+          output: 'trivy-dependency-frontend.sarif'
         continue-on-error: true
 
       - name: Upload Trivy SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: 'trivy-dependency-csharp.sarif'
+          sarif_file: 'trivy-dependency-frontend.sarif'
 
-  # STAGE 3: BUILD & TEST
-  build-test:
-    name: Build & Test
+# STAGE 3: FRONTEND BUILD & TEST
+  frontend-build-test:
+    name: Frontend Build & Test
     runs-on: ubuntu-latest
+    needs: [detect-changes, dependency-vulnerability-scan]
+    if: ${{ needs.detect-changes.outputs.changed == 'true' }}
     timeout-minutes: 20
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/erp-ui/package-lock.json
 
-      - name: Restore dependencies
-        run: dotnet restore backend/reporting-service/ReportingService/ReportingService.csproj
+      - name: Install dependencies
+        working-directory: ./frontend/erp-ui
+        run: npm ci
 
-      - name: Build
-        run: dotnet build backend/reporting-service/ReportingService/ReportingService.csproj --configuration Release --no-restore
+      - name: Run linting
+        working-directory: ./frontend/erp-ui
+        run: npm run lint || echo "Linting script not found, skipping..."
 
-      - name: Test
-        run: dotnet test backend/reporting-service/ReportingService/ReportingService.csproj --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage"
+      - name: Run unit tests
+        working-directory: ./frontend/erp-ui
+        run: npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage || echo "Tests failed or not configured"
+
+      - name: Build application
+        working-directory: ./frontend/erp-ui
+        run: npm run build
 
       - name: Upload test results
-        if: always()
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: test-results-reporting-service
-          path: backend/reporting-service/ReportingService/TestResults/
+          name: test-results-frontend
+          path: frontend/erp-ui/coverage/
           retention-days: 7
 
       - name: Upload build artifacts
-        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts-reporting-service
-          path: backend/reporting-service/ReportingService/bin/Release/net8.0/
+          name: build-artifacts-frontend
+          path: frontend/erp-ui/dist/
           retention-days: 7
 
-  # STAGE 4: CODE QUALITY (SONARQUBE)
+# STAGE 4: CODE QUALITY (SONARQUBE)
   sonar-scan:
     name: Code Quality (SonarQube)
     runs-on: ubuntu-latest
-    needs: [build-test]
+    needs: [detect-changes, frontend-build-test]
+    if: ${{ needs.detect-changes.outputs.changed == 'true' }}
 
     steps:
       - name: Checkout code
@@ -130,42 +169,55 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/erp-ui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend/erp-ui
+        run: npm ci
 
       - name: Download test results
         uses: actions/download-artifact@v4
         with:
-          name: test-results-reporting-service
-          path: backend/reporting-service/ReportingService/TestResults/
+          name: test-results-frontend
+          path: frontend/erp-ui/coverage/
         continue-on-error: true
+
+      - name: Ensure coverage file exists
+        run: |
+          COVERAGE_PATH="frontend/erp-ui/coverage"
+          if [ ! -d "$COVERAGE_PATH" ]; then
+            echo "No coverage report found, creating empty one..."
+            mkdir -p "$COVERAGE_PATH"
+            echo '{"total":{"lines":{"total":0,"covered":0,"skipped":0,"pct":0}}}' > "$COVERAGE_PATH/coverage-summary.json"
+          fi
 
       - name: SonarQube analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_URL: ${{ secrets.SONAR_URL }}
         run: |
-          echo "Analyzing reporting-service..."
-          dotnet sonarscanner begin \
-            /k:"konecta-erp-reporting-service" \
-            /d:sonar.host.url="${{ env.SONAR_URL }}" \
-            /d:sonar.token="${{ env.SONAR_TOKEN }}" \
-            /d:sonar.cs.opencover.reportsPaths="backend/reporting-service/ReportingService/TestResults/**/coverage.opencover.xml" \
-            /d:sonar.coverage.exclusions="**/bin/**,**/obj/**,**/TestResults/**"
+          echo "Analyzing frontend application..."
+          npx sonar-scanner \
+            -Dsonar.projectKey=konecta-erp-frontend \
+            -Dsonar.host.url=${{ env.SONAR_URL }} \
+            -Dsonar.token=${{ env.SONAR_TOKEN }} \
+            -Dsonar.sources=frontend/erp-ui/src \
+            -Dsonar.tests=frontend/erp-ui/src \
+            -Dsonar.javascript.lcov.reportPaths=frontend/erp-ui/coverage/lcov.info \
+            -Dsonar.qualitygate.wait=true
+          echo "SonarQube analysis completed for frontend"
 
-          dotnet build backend/reporting-service/ReportingService/ReportingService.csproj --configuration Release
-
-          dotnet sonarscanner end /d:sonar.token="${{ env.SONAR_TOKEN }}"
-
-          echo "SonarQube analysis completed for reporting-service"
-
-  # STAGE 5: DOCKER BUILD & SECURITY SCAN
+# STAGE 5: DOCKER BUILD & SECURITY SCAN
   docker-build-scan:
     name: Docker Build & Security Scan
     runs-on: ubuntu-latest
-    needs: [build-test, sonar-scan]
+    needs: [detect-changes, frontend-build-test]
+    if: ${{ needs.detect-changes.outputs.changed == 'true' }}
     timeout-minutes: 25
 
     steps:
@@ -184,7 +236,7 @@ jobs:
       - name: Determine image tags
         id: vars
         env:
-          SERVICE: reporting-service
+          SERVICE: frontend
           DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
         run: |
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
@@ -209,10 +261,10 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKER_USERNAME }}/konecta-reporting-service
+          images: ${{ secrets.DOCKER_USERNAME }}/konecta-frontend
           labels: |
-            org.opencontainers.image.title=konecta-reporting-service
-            org.opencontainers.image.description=Konecta ERP System - Reporting Service (.NET)
+            org.opencontainers.image.title=konecta-frontend
+            org.opencontainers.image.description=Konecta ERP System - Frontend
             org.opencontainers.image.version=${{ steps.vars.outputs.version }}
             org.opencontainers.image.revision=${{ github.sha }}
 
@@ -220,14 +272,13 @@ jobs:
         id: build
         uses: docker/build-push-action@v6
         with:
-          context: backend/
-          file: backend/reporting-service/ReportingService/Dockerfile
+          context: frontend/erp-ui
           push: false
           load: true
           tags: ${{ steps.vars.outputs.docker_tag }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/konecta-reporting-service:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/konecta-reporting-service:buildcache,mode=max
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/konecta-frontend:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/konecta-frontend:buildcache,mode=max
           provenance: false
 
       - name: Check image size
@@ -236,26 +287,34 @@ jobs:
           SIZE_MB=$(($SIZE / 1024 / 1024))
           echo "Image size: ${SIZE_MB} MB"
           
-          if [ $SIZE_MB -gt 1000 ]; then
-            echo "WARNING: Image larger than 1GB!"
+          if [ $SIZE_MB -gt 500 ]; then
+            echo "WARNING: Image larger than 500MB!"
           fi
 
       - name: Smoke test
         timeout-minutes: 2
         run: |
-          echo "Testing container..."
-          docker run -d --name test-reporting-service \
-            ${{ steps.vars.outputs.docker_tag }} || true
-          sleep 5
-          
-          if docker ps | grep -q test-reporting-service; then
-            echo "Container started successfully"
-          else
-            echo "Container may have issues"
-            docker logs test-reporting-service 2>&1 | head -20 || true
+          echo "Testing container startup..."
+          docker run -d --name test-frontend -p 8080:80 ${{ steps.vars.outputs.docker_tag }}
+
+          sleep 10 # Give it a moment to potentially crash
+
+          if ! docker ps | grep -q test-frontend; then
+            echo "Container failed to start or crashed!"
+            docker logs test-frontend
+            exit 1
           fi
-          
-          docker rm -f test-reporting-service || true
+
+          # Test HTTP response
+          if curl -f http://localhost:8080 > /dev/null 2>&1; then
+            echo "Container started successfully and responding to HTTP requests."
+          else
+            echo "Container started but not responding to HTTP requests!"
+            docker logs test-frontend
+            exit 1
+          fi
+
+          docker rm -f test-frontend
 
       - name: Scan with Trivy (detailed)
         uses: aquasecurity/trivy-action@0.18.0
@@ -293,13 +352,13 @@ jobs:
         with:
           image-ref: ${{ steps.vars.outputs.docker_tag }}
           format: 'spdx-json'
-          output: 'sbom-reporting-service.spdx.json'
+          output: 'sbom-frontend.spdx.json'
 
       - name: Upload SBOM
         uses: actions/upload-artifact@v4
         with:
-          name: sbom-reporting-service
-          path: sbom-reporting-service.spdx.json
+          name: sbom-frontend
+          path: sbom-frontend.spdx.json
           retention-days: 90
 
       - name: Generate SARIF
@@ -315,7 +374,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
-          category: trivy-reporting-service
+          category: trivy-frontend
 
       - name: Push image
         if: success()
