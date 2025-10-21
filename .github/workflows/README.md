@@ -18,6 +18,8 @@
 - [🛠️ Troubleshooting](#️-troubleshooting)
 - [📈 Metrics & KPIs](#-metrics--kpis)
 - [🔮 Roadmap](#-roadmap)
+- [📚 Best Practices](#-best-practices)
+- [🆘 Support & Maintenance](#-support--maintenance)
 
 ## 🎯 Overview
 
