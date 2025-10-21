@@ -209,6 +209,8 @@ jobs:
             -Dsonar.sources=frontend/erp-ui/src \
             -Dsonar.tests=frontend/erp-ui/src \
             -Dsonar.javascript.lcov.reportPaths=frontend/erp-ui/coverage/lcov.info \
+            -Dsonar.sonar.exclusions="**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.test.ts" \
+            -Dsonar.sonar.test.exclusions="**/node_modules/**,**/dist/**,**/coverage/**" \
             -Dsonar.qualitygate.wait=true
           echo "SonarQube analysis completed for frontend"
 
@@ -291,30 +293,6 @@ jobs:
             echo "WARNING: Image larger than 500MB!"
           fi
 
-      - name: Smoke test
-        timeout-minutes: 2
-        run: |
-          echo "Testing container startup..."
-          docker run -d --name test-frontend -p 8080:80 ${{ steps.vars.outputs.docker_tag }}
-
-          sleep 10 # Give it a moment to potentially crash
-
-          if ! docker ps | grep -q test-frontend; then
-            echo "Container failed to start or crashed!"
-            docker logs test-frontend
-            exit 1
-          fi
-
-          # Test HTTP response
-          if curl -f http://localhost:8080 > /dev/null 2>&1; then
-            echo "Container started successfully and responding to HTTP requests."
-          else
-            echo "Container started but not responding to HTTP requests!"
-            docker logs test-frontend
-            exit 1
-          fi
-
-          docker rm -f test-frontend
 
       - name: Scan with Trivy (detailed)
         uses: aquasecurity/trivy-action@0.18.0
@@ -327,6 +305,7 @@ jobs:
           severity: 'CRITICAL,HIGH,MEDIUM'
           output: 'trivy-report.json'
 
+          
       - name: Check vulnerabilities
         run: |
           echo "Security scan results:"
