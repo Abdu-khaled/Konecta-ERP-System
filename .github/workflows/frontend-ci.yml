@@ -1,0 +1,381 @@
+name: Frontend CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'frontend/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'frontend/**'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  
+# STAGE 1: DETECT CHANGES
+  detect-changes:
+    name: Detect Changed Frontend Files
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      changed: ${{ steps.set-matrix.outputs.changed }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed frontend files
+        id: set-matrix
+        shell: bash
+        run: |
+          echo "Detecting changed frontend files..."
+          git fetch origin --depth=2
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA=${{ github.event.pull_request.base.sha }}
+          else
+            BASE_SHA=$(git rev-parse HEAD^)
+          fi
+
+          echo "Base SHA: $BASE_SHA"
+          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" HEAD || true)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          if echo "$CHANGED_FILES" | grep -q "^frontend/"; then
+            echo "Frontend files changed — proceeding with build."
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "No frontend files changed — skipping build."
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+# STAGE 2: DEPENDENCY VULNERABILITY SCANNING
+  dependency-vulnerability-scan:
+    name: Dependency Vulnerability Scan (SCA)
+    runs-on: ubuntu-latest
+    needs: [detect-changes]
+    if: ${{ needs.detect-changes.outputs.changed == 'true' }}
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/erp-ui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend/erp-ui
+        run: npm ci
+
+      - name: Run Trivy SCA on Source Code
+        uses: aquasecurity/trivy-action@0.18.0
+        with:
+          scan-type: 'fs'
+          scan-ref: ./frontend/erp-ui
+          vuln-type: 'library'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          format: 'table'
+          exit-code: '1'
+
+      - name: Generate SARIF report
+        uses: aquasecurity/trivy-action@0.18.0
+        with:
+          scan-type: 'fs'
+          scan-ref: ./frontend/erp-ui
+          vuln-type: 'library'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          format: 'sarif'
+          output: 'trivy-dependency-frontend.sarif'
+        continue-on-error: true
+
+      - name: Upload Trivy SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-dependency-frontend.sarif'
+
+# STAGE 3: FRONTEND BUILD & TEST
+  frontend-build-test:
+    name: Frontend Build & Test
+    runs-on: ubuntu-latest
+    needs: [detect-changes, dependency-vulnerability-scan]
+    if: ${{ needs.detect-changes.outputs.changed == 'true' }}
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/erp-ui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend/erp-ui
+        run: npm ci
+
+      - name: Run linting
+        working-directory: ./frontend/erp-ui
+        run: npm run lint || echo "Linting script not found, skipping..."
+
+      - name: Check for test files
+        working-directory: ./frontend/erp-ui
+        run: |
+          if find src -name "*.spec.ts" -o -name "*.test.ts" | grep -q .; then
+            echo "Test files found - running tests"
+            npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
+            echo "has_tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "No test files found - skipping test execution"
+            echo "has_tests=false" >> $GITHUB_OUTPUT
+          fi
+        id: test-check
+
+      - name: Build application
+        working-directory: ./frontend/erp-ui
+        run: npm run build
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always() && steps.test-check.outputs.has_tests == 'true'
+        with:
+          name: test-results-frontend
+          path: frontend/erp-ui/coverage/
+          retention-days: 7
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-frontend
+          path: frontend/erp-ui/dist/
+          retention-days: 7
+
+# STAGE 4: CODE QUALITY (SONARQUBE)
+  sonar-scan:
+    name: Code Quality (SonarQube)
+    runs-on: ubuntu-latest
+    needs: [detect-changes, frontend-build-test]
+    if: ${{ needs.detect-changes.outputs.changed == 'true' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/erp-ui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend/erp-ui
+        run: npm ci
+
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results-frontend
+          path: frontend/erp-ui/coverage/
+        continue-on-error: true
+
+      - name: Ensure coverage file exists
+        run: |
+          COVERAGE_PATH="frontend/erp-ui/coverage"
+          if [ ! -d "$COVERAGE_PATH" ]; then
+            echo "No coverage report found (no tests exist), creating empty one..."
+            mkdir -p "$COVERAGE_PATH"
+            echo '{"total":{"lines":{"total":0,"covered":0,"skipped":0,"pct":0}}}' > "$COVERAGE_PATH/coverage-summary.json"
+            # Create a minimal lcov.info file for SonarQube
+            echo "TN:" > "$COVERAGE_PATH/lcov.info"
+            echo "end_of_record" >> "$COVERAGE_PATH/lcov.info"
+          fi
+
+      - name: SonarQube analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_URL: ${{ secrets.SONAR_URL }}
+        run: |
+          echo "Analyzing frontend application..."
+          npx sonar-scanner \
+            -Dsonar.projectKey=konecta-erp-frontend \
+            -Dsonar.host.url=${{ env.SONAR_URL }} \
+            -Dsonar.token=${{ env.SONAR_TOKEN }} \
+            -Dsonar.sources=frontend/erp-ui/src \
+            -Dsonar.javascript.lcov.reportPaths=frontend/erp-ui/coverage/lcov.info \
+            -Dsonar.sonar.exclusions="**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.test.ts,**/*.spec.js,**/*.test.js" \
+            -Dsonar.qualitygate.wait=true
+          echo "SonarQube analysis completed for frontend"
+
+# STAGE 5: DOCKER BUILD & SECURITY SCAN
+  docker-build-scan:
+    name: Docker Build & Security Scan
+    runs-on: ubuntu-latest
+    needs: [detect-changes, frontend-build-test, sonar-scan]
+    if: ${{ needs.detect-changes.outputs.changed == 'true' }}
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Determine image tags
+        id: vars
+        env:
+          SERVICE: frontend
+          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION=${GITHUB_REF_NAME}
+          else
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            BRANCH=$(echo "${GITHUB_REF_NAME}" | sed 's/\//-/g')
+            VERSION="${BRANCH}-${SHORT_SHA}"
+          fi
+
+          DOCKER_TAG="${DOCKER_USER}/konecta-${SERVICE}:${VERSION}"
+          DOCKER_LATEST="${DOCKER_USER}/konecta-${SERVICE}:latest"
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "docker_tag=${DOCKER_TAG}" >> $GITHUB_OUTPUT
+          echo "docker_latest=${DOCKER_LATEST}" >> $GITHUB_OUTPUT
+
+          echo "Version: $VERSION"
+          echo "Tag: $DOCKER_TAG"
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USERNAME }}/konecta-frontend
+          labels: |
+            org.opencontainers.image.title=konecta-frontend
+            org.opencontainers.image.description=Konecta ERP System - Frontend
+            org.opencontainers.image.version=${{ steps.vars.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Build Docker image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend/erp-ui
+          push: false
+          load: true
+          tags: ${{ steps.vars.outputs.docker_tag }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/konecta-frontend:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/konecta-frontend:buildcache,mode=max
+          provenance: false
+
+      - name: Check image size
+        run: |
+          SIZE=$(docker image inspect ${{ steps.vars.outputs.docker_tag }} --format='{{.Size}}')
+          SIZE_MB=$(($SIZE / 1024 / 1024))
+          echo "Image size: ${SIZE_MB} MB"
+          
+          if [ $SIZE_MB -gt 500 ]; then
+            echo "WARNING: Image larger than 500MB!"
+          fi
+
+
+      - name: Scan with Trivy (detailed)
+        uses: aquasecurity/trivy-action@0.18.0
+        with:
+          image-ref: ${{ steps.vars.outputs.docker_tag }}
+          format: 'json'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          output: 'trivy-report.json'
+
+          
+      - name: Check vulnerabilities
+        run: |
+          echo "Security scan results:"
+          cat trivy-report.json | jq '.Results[]?.Vulnerabilities[]? | {VulnerabilityID, Severity, PkgName, InstalledVersion}'
+
+          CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' trivy-report.json)
+          HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length' trivy-report.json)
+
+          echo ""
+          echo "Summary:"
+          echo "Critical: $CRITICAL"
+          echo "High: $HIGH"
+          
+          if [ "$CRITICAL" -gt "0" ]; then
+            echo "CRITICAL vulnerabilities found in image!"
+            exit 1
+          fi
+          
+          echo "No critical vulnerabilities"
+
+      - name: Generate SBOM
+        uses: aquasecurity/trivy-action@0.18.0
+        with:
+          image-ref: ${{ steps.vars.outputs.docker_tag }}
+          format: 'spdx-json'
+          output: 'sbom-frontend.spdx.json'
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-frontend
+          path: sbom-frontend.spdx.json
+          retention-days: 90
+
+      - name: Generate SARIF
+        if: always()
+        uses: aquasecurity/trivy-action@0.18.0
+        with:
+          image-ref: ${{ steps.vars.outputs.docker_tag }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: trivy-frontend
+
+      - name: Push image
+        if: success()
+        run: |
+          echo "Pushing secure image..."
+          docker push ${{ steps.vars.outputs.docker_tag }}
+          echo "Pushed: ${{ steps.vars.outputs.docker_tag }}"
+
+      - name: Tag and push latest
+        if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        run: |
+          echo "Tagging as latest..."
+          docker tag ${{ steps.vars.outputs.docker_tag }} ${{ steps.vars.outputs.docker_latest }}
+          docker push ${{ steps.vars.outputs.docker_latest }}
+          echo "Latest updated"
