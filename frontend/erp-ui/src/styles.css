@@ -4,7 +4,7 @@
 
 /* Konecta brand utilities (exclude navbar by opt-in usage) */
 @layer base {
-  body { @apply font-sans; }
+  body { @apply font-sans; font-family: 'Poppins', Arial, sans-serif; }
 }
 
 @layer components {
@@ -43,6 +43,7 @@
 @layer base {
   html, body {
     @apply font-sans text-slate-900 bg-white;
+    font-family: 'Poppins', Arial, sans-serif;
   }
   html { scroll-behavior: smooth; }
 }
@@ -66,3 +67,4 @@
 
 /* Anchor section offsets so headings aren’t hidden under navbar */
 #about { scroll-margin-top: var(--navbar-height); }
+/* Poppins primary font with Arial fallback (loaded via index.html) */
