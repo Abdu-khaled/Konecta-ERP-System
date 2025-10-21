@@ -133,9 +133,18 @@ jobs:
         working-directory: ./frontend/erp-ui
         run: npm run lint || echo "Linting script not found, skipping..."
 
-      - name: Run unit tests
+      - name: Check for test files
         working-directory: ./frontend/erp-ui
-        run: npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage || echo "Tests failed or not configured"
+        run: |
+          if find src -name "*.spec.ts" -o -name "*.test.ts" | grep -q .; then
+            echo "Test files found - running tests"
+            npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
+            echo "has_tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "No test files found - skipping test execution"
+            echo "has_tests=false" >> $GITHUB_OUTPUT
+          fi
+        id: test-check
 
       - name: Build application
         working-directory: ./frontend/erp-ui
@@ -143,7 +152,7 @@ jobs:
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.test-check.outputs.has_tests == 'true'
         with:
           name: test-results-frontend
           path: frontend/erp-ui/coverage/
@@ -191,9 +200,12 @@ jobs:
         run: |
           COVERAGE_PATH="frontend/erp-ui/coverage"
           if [ ! -d "$COVERAGE_PATH" ]; then
-            echo "No coverage report found, creating empty one..."
+            echo "No coverage report found (no tests exist), creating empty one..."
             mkdir -p "$COVERAGE_PATH"
             echo '{"total":{"lines":{"total":0,"covered":0,"skipped":0,"pct":0}}}' > "$COVERAGE_PATH/coverage-summary.json"
+            # Create a minimal lcov.info file for SonarQube
+            echo "TN:" > "$COVERAGE_PATH/lcov.info"
+            echo "end_of_record" >> "$COVERAGE_PATH/lcov.info"
           fi
 
       - name: SonarQube analysis
@@ -207,11 +219,8 @@ jobs:
             -Dsonar.host.url=${{ env.SONAR_URL }} \
             -Dsonar.token=${{ env.SONAR_TOKEN }} \
             -Dsonar.sources=frontend/erp-ui/src \
-            -Dsonar.tests=frontend/erp-ui/src \
             -Dsonar.javascript.lcov.reportPaths=frontend/erp-ui/coverage/lcov.info \
             -Dsonar.sonar.exclusions="**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.test.ts,**/*.spec.js,**/*.test.js" \
-            -Dsonar.sonar.test.inclusions="**/*.spec.ts,**/*.test.ts,**/*.spec.js,**/*.test.js" \
-            -Dsonar.sonar.test.exclusions="**/node_modules/**,**/dist/**,**/coverage/**,**/styles.css,**/styles.scss,**/styles.sass,**/assets/**" \
             -Dsonar.qualitygate.wait=true
           echo "SonarQube analysis completed for frontend"
 
@@ -219,7 +228,7 @@ jobs:
   docker-build-scan:
     name: Docker Build & Security Scan
     runs-on: ubuntu-latest
-    needs: [detect-changes, frontend-build-test]
+    needs: [detect-changes, frontend-build-test, sonar-scan]
     if: ${{ needs.detect-changes.outputs.changed == 'true' }}
     timeout-minutes: 25
 
