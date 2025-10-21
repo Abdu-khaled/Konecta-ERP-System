@@ -202,23 +202,25 @@ jobs:
           SONAR_URL: ${{ secrets.SONAR_URL }}
         run: |
           echo "Analyzing frontend application..."
-          npx sonar-scanner \
-            -Dsonar.projectKey=konecta-erp-frontend \
-            -Dsonar.host.url=${{ env.SONAR_URL }} \
-            -Dsonar.token=${{ env.SONAR_TOKEN }} \
-            -Dsonar.sources=frontend/erp-ui/src \
-            -Dsonar.tests=frontend/erp-ui/src \
-            -Dsonar.javascript.lcov.reportPaths=frontend/erp-ui/coverage/lcov.info \
-            -Dsonar.sonar.exclusions="**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.test.ts" \
-            -Dsonar.sonar.test.exclusions="**/node_modules/**,**/dist/**,**/coverage/**" \
-            -Dsonar.qualitygate.wait=true
+            npx sonar-scanner \
+              -Dsonar.projectKey=konecta-erp-frontend \
+              -Dsonar.host.url=${{ env.SONAR_URL }} \
+              -Dsonar.token=${{ env.SONAR_TOKEN }} \
+              -Dsonar.sources=frontend/erp-ui/src \
+              -Dsonar.tests=frontend/erp-ui/src \
+              -Dsonar.javascript.lcov.reportPaths=frontend/erp-ui/coverage/lcov.info \
+              -Dsonar.sonar.exclusions="**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.test.ts,**/*.spec.js,**/*.test.js" \
+              -Dsonar.sonar.test.exclusions="**/node_modules/**,**/dist/**,**/coverage/**,**/styles.css,**/styles.scss,**/styles.sass" \
+              -Dsonar.sonar.test.inclusions="**/*.spec.ts,**/*.test.ts,**/*.spec.js,**/*.test.js" \
+              -Dsonar.qualitygate.wait=true
+ 
           echo "SonarQube analysis completed for frontend"
 
 # STAGE 5: DOCKER BUILD & SECURITY SCAN
   docker-build-scan:
     name: Docker Build & Security Scan
     runs-on: ubuntu-latest
-    needs: [detect-changes, frontend-build-test]
+    needs: [detect-changes, frontend-build-test, sonar-scan]
     if: ${{ needs.detect-changes.outputs.changed == 'true' }}
     timeout-minutes: 25
 
