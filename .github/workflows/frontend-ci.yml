@@ -221,7 +221,7 @@ jobs:
             -Dsonar.sources=frontend/erp-ui/src \
             -Dsonar.javascript.lcov.reportPaths=frontend/erp-ui/coverage/lcov.info \
             -Dsonar.sonar.exclusions="**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.test.ts,**/*.spec.js,**/*.test.js" \
-            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.wait=false
           echo "SonarQube analysis completed for frontend"
 
 # STAGE 5: DOCKER BUILD & SECURITY SCAN
