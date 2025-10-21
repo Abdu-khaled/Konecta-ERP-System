@@ -13,6 +13,3 @@ namespace ReportingService.Controllers
         }
     }
 }
-
-
-
