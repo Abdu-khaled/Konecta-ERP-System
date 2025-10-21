@@ -16,26 +16,24 @@ env:
 
 jobs:
   
-# STAGE 1: SMART CHANGE DETECTION
+# STAGE 1: DETECT CHANGES
   detect-changes:
-    name: 🧠 Smart Change Detection
+    name: Detect Changed Frontend Files
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       changed: ${{ steps.set-matrix.outputs.changed }}
-      change-type: ${{ steps.set-matrix.outputs.change-type }}
-      affected-paths: ${{ steps.set-matrix.outputs.affected-paths }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
-      - name: 🧠 Smart change detection with impact analysis
+      - name: Detect changed frontend files
         id: set-matrix
         shell: bash
         run: |
-          echo "🧠 Smart change detection with impact analysis..."
+          echo "Detecting changed frontend files..."
           git fetch origin --depth=2
 
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -49,68 +47,27 @@ jobs:
           echo "Changed files:"
           echo "$CHANGED_FILES"
 
-          # Smart analysis of change types
-          FRONTEND_CHANGES=$(echo "$CHANGED_FILES" | grep "^frontend/" || true)
-          if [ -n "$FRONTEND_CHANGES" ]; then
+          if echo "$CHANGED_FILES" | grep -q "^frontend/"; then
             echo "Frontend files changed — proceeding with build."
             echo "changed=true" >> $GITHUB_OUTPUT
-            
-            # Analyze change impact
-            if echo "$FRONTEND_CHANGES" | grep -q "package.json\|package-lock.json"; then
-              echo "change-type=dependency" >> $GITHUB_OUTPUT
-              echo "🔧 Dependency changes detected - will run full scan"
-            elif echo "$FRONTEND_CHANGES" | grep -q "src/.*\.ts\|src/.*\.html\|src/.*\.scss"; then
-              echo "change-type=source" >> $GITHUB_OUTPUT
-              echo "📝 Source code changes detected - will run build and tests"
-            elif echo "$FRONTEND_CHANGES" | grep -q "Dockerfile\|nginx.conf"; then
-              echo "change-type=infrastructure" >> $GITHUB_OUTPUT
-              echo "🏗️ Infrastructure changes detected - will rebuild container"
-            else
-              echo "change-type=other" >> $GITHUB_OUTPUT
-              echo "📄 Other frontend changes detected"
-            fi
-            
-            # Store affected paths for smart caching
-            echo "affected-paths=$FRONTEND_CHANGES" >> $GITHUB_OUTPUT
           else
             echo "No frontend files changed — skipping build."
             echo "changed=false" >> $GITHUB_OUTPUT
-            echo "change-type=none" >> $GITHUB_OUTPUT
-            echo "affected-paths=" >> $GITHUB_OUTPUT
           fi
 
-# STAGE 2: SMART DEPENDENCY VULNERABILITY SCANNING
+# STAGE 2: DEPENDENCY VULNERABILITY SCANNING
   dependency-vulnerability-scan:
-    name: 🧠 Smart Dependency Vulnerability Scan (SCA)
+    name: Dependency Vulnerability Scan (SCA)
     runs-on: ubuntu-latest
     needs: [detect-changes]
     if: ${{ needs.detect-changes.outputs.changed == 'true' }}
     timeout-minutes: 15
-    outputs:
-      critical-vulns: ${{ steps.vuln-analysis.outputs.critical-vulns }}
-      high-vulns: ${{ steps.vuln-analysis.outputs.high-vulns }}
-      scan-skipped: ${{ steps.vuln-analysis.outputs.scan-skipped }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 🧠 Smart dependency analysis
-        id: dep-analysis
-        run: |
-          echo "🧠 Analyzing dependency changes..."
-          if [ "${{ needs.detect-changes.outputs.change-type }}" = "dependency" ]; then
-            echo "🔧 Full dependency scan required due to package changes"
-            echo "full-scan=true" >> $GITHUB_OUTPUT
-          elif [ "${{ needs.detect-changes.outputs.change-type }}" = "source" ]; then
-            echo "📝 Quick dependency scan for source changes"
-            echo "full-scan=false" >> $GITHUB_OUTPUT
-          else
-            echo "⚡ Skipping dependency scan - no dependency changes"
-            echo "full-scan=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Setup Node.js with smart caching
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -121,9 +78,7 @@ jobs:
         working-directory: ./frontend/erp-ui
         run: npm ci
 
-      - name: 🧠 Smart Trivy SCA scan
-        if: steps.dep-analysis.outputs.full-scan == 'true'
-        id: vuln-analysis
+      - name: Run Trivy SCA on Source Code
         uses: aquasecurity/trivy-action@0.18.0
         with:
           scan-type: 'fs'
@@ -131,47 +86,10 @@ jobs:
           vuln-type: 'library'
           severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
-          format: 'json'
-          output: 'trivy-dependency-results.json'
-          exit-code: '0'
-
-      - name: 🧠 Analyze vulnerability results
-        if: steps.dep-analysis.outputs.full-scan == 'true'
-        run: |
-          echo "🧠 Analyzing vulnerability results..."
-          if [ -f "trivy-dependency-results.json" ]; then
-            CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' trivy-dependency-results.json)
-            HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length' trivy-dependency-results.json)
-            
-            echo "critical-vulns=$CRITICAL" >> $GITHUB_OUTPUT
-            echo "high-vulns=$HIGH" >> $GITHUB_OUTPUT
-            echo "scan-skipped=false" >> $GITHUB_OUTPUT
-            
-            echo "📊 Vulnerability Summary:"
-            echo "  Critical: $CRITICAL"
-            echo "  High: $HIGH"
-            
-            if [ "$CRITICAL" -gt "0" ]; then
-              echo "🚨 CRITICAL vulnerabilities found!"
-              exit 1
-            fi
-          else
-            echo "No vulnerability results found"
-            echo "critical-vulns=0" >> $GITHUB_OUTPUT
-            echo "high-vulns=0" >> $GITHUB_OUTPUT
-            echo "scan-skipped=true" >> $GITHUB_OUTPUT
-          fi
-
-      - name: 🧠 Skip scan for non-dependency changes
-        if: steps.dep-analysis.outputs.full-scan == 'false'
-        run: |
-          echo "⚡ Skipping dependency scan - no dependency changes detected"
-          echo "critical-vulns=0" >> $GITHUB_OUTPUT
-          echo "high-vulns=0" >> $GITHUB_OUTPUT
-          echo "scan-skipped=true" >> $GITHUB_OUTPUT
+          format: 'table'
+          exit-code: '1'
 
       - name: Generate SARIF report
-        if: steps.dep-analysis.outputs.full-scan == 'true'
         uses: aquasecurity/trivy-action@0.18.0
         with:
           scan-type: 'fs'
@@ -184,28 +102,23 @@ jobs:
         continue-on-error: true
 
       - name: Upload Trivy SARIF to GitHub Security tab
-        if: steps.dep-analysis.outputs.full-scan == 'true'
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-dependency-frontend.sarif'
 
-# STAGE 3: SMART FRONTEND BUILD & TEST
+# STAGE 3: FRONTEND BUILD & TEST
   frontend-build-test:
-    name: 🧠 Smart Frontend Build & Test
+    name: Frontend Build & Test
     runs-on: ubuntu-latest
     needs: [detect-changes, dependency-vulnerability-scan]
     if: ${{ needs.detect-changes.outputs.changed == 'true' }}
     timeout-minutes: 20
-    outputs:
-      build-success: ${{ steps.build-analysis.outputs.build-success }}
-      test-coverage: ${{ steps.test-analysis.outputs.test-coverage }}
-      has-tests: ${{ steps.test-analysis.outputs.has-tests }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js with smart caching
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -216,98 +129,30 @@ jobs:
         working-directory: ./frontend/erp-ui
         run: npm ci
 
-      - name: 🧠 Smart linting based on change type
+      - name: Run linting
         working-directory: ./frontend/erp-ui
-        run: |
-          echo "🧠 Smart linting analysis..."
-          if [ "${{ needs.detect-changes.outputs.change-type }}" = "source" ]; then
-            echo "📝 Running full linting for source changes"
-            npm run lint || echo "Linting script not found, skipping..."
-          elif [ "${{ needs.detect-changes.outputs.change-type }}" = "dependency" ]; then
-            echo "🔧 Running quick linting for dependency changes"
-            npm run lint:quick || npm run lint || echo "Linting script not found, skipping..."
-          else
-            echo "⚡ Skipping linting for non-source changes"
-          fi
+        run: npm run lint || echo "Linting script not found, skipping..."
 
-      - name: 🧠 Smart test analysis and execution
-        id: test-analysis
+      - name: Check for test files
         working-directory: ./frontend/erp-ui
         run: |
-          echo "🧠 Smart test analysis..."
-          
-          # Check if test files exist
           if find src -name "*.spec.ts" -o -name "*.test.ts" | grep -q .; then
+            echo "Test files found - running tests"
+            npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
             echo "has_tests=true" >> $GITHUB_OUTPUT
-            echo "📝 Test files found - analyzing test strategy..."
-            
-            # Smart test execution based on change type
-            if [ "${{ needs.detect-changes.outputs.change-type }}" = "source" ]; then
-              echo "🧪 Running full test suite for source changes"
-              npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
-            elif [ "${{ needs.detect-changes.outputs.change-type }}" = "dependency" ]; then
-              echo "🔧 Running smoke tests for dependency changes"
-              npm run test:smoke -- --watch=false --browsers=ChromeHeadless || npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
-            else
-              echo "⚡ Running minimal tests for other changes"
-              npm run test:minimal -- --watch=false --browsers=ChromeHeadless || npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
-            fi
-            
-            # Extract test coverage if available
-            if [ -f "coverage/coverage-summary.json" ]; then
-              COVERAGE=$(jq '.total.lines.pct' coverage/coverage-summary.json)
-              echo "test-coverage=$COVERAGE" >> $GITHUB_OUTPUT
-              echo "📊 Test coverage: $COVERAGE%"
-            else
-              echo "test-coverage=0" >> $GITHUB_OUTPUT
-            fi
           else
-            echo "has_tests=false" >> $GITHUB_OUTPUT
-            echo "test-coverage=0" >> $GITHUB_OUTPUT
             echo "No test files found - skipping test execution"
+            echo "has_tests=false" >> $GITHUB_OUTPUT
           fi
+        id: test-check
 
-      - name: 🧠 Smart build with optimization
-        id: build-analysis
+      - name: Build application
         working-directory: ./frontend/erp-ui
-        run: |
-          echo "🧠 Smart build analysis..."
-          
-          # Smart build based on change type
-          if [ "${{ needs.detect-changes.outputs.change-type }}" = "infrastructure" ]; then
-            echo "🏗️ Full production build for infrastructure changes"
-            npm run build:prod || npm run build
-          elif [ "${{ needs.detect-changes.outputs.change-type }}" = "dependency" ]; then
-            echo "🔧 Optimized build for dependency changes"
-            npm run build:optimized || npm run build
-          else
-            echo "📝 Standard build for source changes"
-            npm run build
-          fi
-          
-          # Verify build success
-          if [ -d "dist" ] && [ "$(ls -A dist)" ]; then
-            echo "build-success=true" >> $GITHUB_OUTPUT
-            echo "✅ Build successful"
-            
-            # Analyze build size
-            BUILD_SIZE=$(du -sh dist | cut -f1)
-            echo "📦 Build size: $BUILD_SIZE"
-            
-            # Check for build warnings
-            if [ -f "build.log" ]; then
-              WARNINGS=$(grep -c "WARNING" build.log || echo "0")
-              echo "⚠️ Build warnings: $WARNINGS"
-            fi
-          else
-            echo "build-success=false" >> $GITHUB_OUTPUT
-            echo "❌ Build failed - no dist directory or empty"
-            exit 1
-          fi
+        run: npm run build
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
-        if: always() && steps.test-analysis.outputs.has_tests == 'true'
+        if: always() && steps.test-check.outputs.has_tests == 'true'
         with:
           name: test-results-frontend
           path: frontend/erp-ui/coverage/
