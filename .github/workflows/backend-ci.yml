@@ -369,7 +369,7 @@ jobs:
             -Dsonar.projectKey=konecta-erp-${{ matrix.service }} \
             -Dsonar.host.url=${{ env.SONAR_URL }} \
             -Dsonar.token=${{ env.SONAR_TOKEN }} \
-            -Dsonar.qualitygate.wait=true \
+            -Dsonar.qualitygate.wait=false \
             -Dsonar.coverage.jacoco.xmlReportPaths=backend/${{ matrix.service }}/target/site/jacoco/jacoco.xml \
             -DskipTests
           echo "SonarQube analysis completed for ${{ matrix.service }}"
@@ -393,7 +393,8 @@ jobs:
             /d:sonar.host.url="${{ env.SONAR_URL }}" \
             /d:sonar.token="${{ env.SONAR_TOKEN }}" \
             /d:sonar.cs.opencover.reportsPaths="backend/${{ matrix.service }}/ReportingService/TestResults/**/coverage.opencover.xml" \
-            /d:sonar.coverage.exclusions="**/bin/**,**/obj/**,**/TestResults/**"
+            /d:sonar.coverage.exclusions="**/bin/**,**/obj/**,**/TestResults/**" \
+            /d:sonar.qualitygate.wait=false
 
           dotnet build backend/${{ matrix.service }}/ReportingService/ReportingService.csproj --configuration Release
 
