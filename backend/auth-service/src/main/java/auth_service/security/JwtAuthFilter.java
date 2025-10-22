@@ -49,7 +49,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             } catch (Exception ignored) {
-                // If the user no longer exists or any issue occurs, skip authentication
             }
         }
         filterChain.doFilter(request, response);

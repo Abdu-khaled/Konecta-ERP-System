@@ -46,10 +46,9 @@ public class SecurityConfig {
                                 "/actuator/**",
                                 "/api/auth/register",
                                 "/api/auth/login",
-                                "/api/auth/validate"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
+                                "/api/auth/validate")
+                        .permitAll()
+                        .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
@@ -58,11 +57,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // Allow common local dev origins and reflect others via patterns
         config.setAllowedOrigins(List.of(
                 "http://localhost:4200",
-                "http://127.0.0.1:4200"
-        ));
+                "http://127.0.0.1:4200"));
         config.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
