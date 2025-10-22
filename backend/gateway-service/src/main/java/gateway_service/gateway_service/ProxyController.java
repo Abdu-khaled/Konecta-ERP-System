@@ -7,6 +7,7 @@ import org.springframework.http.*;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.HttpStatusCodeException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -26,7 +27,15 @@ public class ProxyController {
         this.restTemplate = builder.requestFactory(() -> factory).build();
     }
 
-    @RequestMapping(path = "/auth/**")
+    @RequestMapping(path = "/auth/**", method = {
+            RequestMethod.GET,
+            RequestMethod.HEAD,
+            RequestMethod.OPTIONS,
+            RequestMethod.POST,
+            RequestMethod.PUT,
+            RequestMethod.PATCH,
+            RequestMethod.DELETE
+    })
     public ResponseEntity<byte[]> proxyAuth(HttpMethod method,
                                             HttpServletRequest request,
                                             @RequestBody(required = false) byte[] body) {
@@ -34,7 +43,15 @@ public class ProxyController {
         return forward(upstreamBase, method, request, body);
     }
 
-    @RequestMapping(path = "/hr/**")
+    @RequestMapping(path = "/hr/**", method = {
+            RequestMethod.GET,
+            RequestMethod.HEAD,
+            RequestMethod.OPTIONS,
+            RequestMethod.POST,
+            RequestMethod.PUT,
+            RequestMethod.PATCH,
+            RequestMethod.DELETE
+    })
     public ResponseEntity<byte[]> proxyHr(HttpMethod method,
                                           HttpServletRequest request,
                                           @RequestBody(required = false) byte[] body) {
@@ -42,7 +59,15 @@ public class ProxyController {
         return forward(upstreamBase, method, request, body);
     }
 
-    @RequestMapping(path = "/finance/**")
+    @RequestMapping(path = "/finance/**", method = {
+            RequestMethod.GET,
+            RequestMethod.HEAD,
+            RequestMethod.OPTIONS,
+            RequestMethod.POST,
+            RequestMethod.PUT,
+            RequestMethod.PATCH,
+            RequestMethod.DELETE
+    })
     public ResponseEntity<byte[]> proxyFinance(HttpMethod method,
                                                HttpServletRequest request,
                                                @RequestBody(required = false) byte[] body) {
@@ -51,7 +76,15 @@ public class ProxyController {
     }
 
 
-    @RequestMapping(path = "/reporting/**")
+    @RequestMapping(path = "/reporting/**", method = {
+            RequestMethod.GET,
+            RequestMethod.HEAD,
+            RequestMethod.OPTIONS,
+            RequestMethod.POST,
+            RequestMethod.PUT,
+            RequestMethod.PATCH,
+            RequestMethod.DELETE
+    })
     public ResponseEntity<byte[]> proxyReporting(HttpMethod method,
                                                  HttpServletRequest request,
                                                  @RequestBody(required = false) byte[] body) {
@@ -65,9 +98,11 @@ public class ProxyController {
                                            byte[] body) {
         String fullPath = request.getRequestURI(); // e.g. /api/auth/login
         String prefix = "/api";
-        String suffix = fullPath.startsWith(prefix) ? fullPath.substring(prefix.length()) : fullPath; // /auth/login
+        String suffix = fullPath.startsWith(prefix) ? fullPath.substring(prefix.length()) : fullPath; // e.g. /hr/employees
         String query = request.getQueryString();
-        String target = upstreamBase + suffix.replaceFirst("^/auth", "") + (query != null ? "?" + query : "");
+        // Remove the first path segment (/auth|/hr|/finance|/reporting) to avoid duplication with upstreamBase
+        String cleaned = suffix.replaceFirst("^/(auth|hr|finance|reporting)", "");
+        String target = upstreamBase + cleaned + (query != null ? "?" + query : "");
 
         HttpHeaders headers = extractHeaders(request);
         // Remove hop-by-hop headers
@@ -78,13 +113,22 @@ public class ProxyController {
         HttpEntity<byte[]> entity = new HttpEntity<>(body, headers);
         String fullUrl = fullPath + (query != null ? ("?" + query) : "");
         log.info("Proxy {} {} -> {}", method, fullUrl, target);
-        ResponseEntity<byte[]> resp = restTemplate.exchange(URI.create(target), method, entity, byte[].class);
-
-        HttpHeaders out = new HttpHeaders();
-        out.putAll(resp.getHeaders());
-        out.remove(HttpHeaders.TRANSFER_ENCODING);
-        out.remove(HttpHeaders.CONTENT_LENGTH);
-        return new ResponseEntity<>(resp.getBody(), out, resp.getStatusCode());
+        try {
+            ResponseEntity<byte[]> resp = restTemplate.exchange(URI.create(target), method, entity, byte[].class);
+            HttpHeaders out = new HttpHeaders();
+            out.putAll(resp.getHeaders());
+            out.remove(HttpHeaders.TRANSFER_ENCODING);
+            out.remove(HttpHeaders.CONTENT_LENGTH);
+            return new ResponseEntity<>(resp.getBody(), out, resp.getStatusCode());
+        } catch (HttpStatusCodeException ex) {
+            HttpHeaders out = new HttpHeaders();
+            if (ex.getResponseHeaders() != null) {
+                out.putAll(ex.getResponseHeaders());
+            }
+            out.remove(HttpHeaders.TRANSFER_ENCODING);
+            out.remove(HttpHeaders.CONTENT_LENGTH);
+            return new ResponseEntity<>(ex.getResponseBodyAsByteArray(), out, ex.getStatusCode());
+        }
     }
 
     private static HttpHeaders extractHeaders(HttpServletRequest request) {
