@@ -57,16 +57,28 @@ import { useRegister } from './useRegister.hook';
 
         <!-- Password -->
         <div>
-          <label class="block text-base text-gray-600 mb-2">Password</label>
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-base text-gray-600">Password</label>
+            <button type="button" (click)="pwd.type = pwd.type === 'password' ? 'text' : 'password'" class="text-gray-500 hover:text-gray-700" aria-label="Toggle password visibility">
+              <svg *ngIf="pwd.type === 'password'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.644C3.423 7.51 7.36 5 12 5c4.64 0 8.577 2.51 9.964 6.678.07.207.07.437 0 .644C20.577 16.49 16.64 19 12 19c-4.64 0-8.577-2.51-9.964-6.678z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              <svg *ngIf="pwd.type !== 'password'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.322 16.168 7.259 18.678 11.9 18.678c1.68 0 3.274-.31 4.72-.872M6.228 6.228A10.45 10.45 0 0111.9 5.322c4.64 0 8.577 2.51 9.964 6.678-.424 1.25-1.087 2.39-1.94 3.36M3 3l18 18"/>
+              </svg>
+            </button>
+          </div>
           <input
             [(ngModel)]="password"
             (ngModelChange)="validateLive()"
-            name="password"
+            name="password" #pwd
             type="password"
             placeholder="••••••••"
             class="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm"
             required
           />
+          
           <p *ngIf="passwordError" class="text-red-500 text-sm mt-1">{{ passwordError }}</p>
         </div>
 
