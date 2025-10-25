@@ -1,7 +1,7 @@
 import { Component, inject, AfterViewInit, OnDestroy } from '@angular/core';
 import { DecimalPipe, NgClass, NgFor, NgIf } from '@angular/common';
 import { useHome } from './home.hook';
-import { AuthState } from '../../features/auth/services/auth.state';
+import { AuthState } from '../../core/services/auth-state.service';
 import { NavThemeService } from '../../shared/nav-theme.service';
 
 type Trend = 'up' | 'down' | 'flat';
