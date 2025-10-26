@@ -37,7 +37,7 @@ type Trend = 'up' | 'down' | 'flat';
               A modern ERP platform that unifies HR, Finance, and Reporting with a clean, fast experience.
             </p>
             <div class="mt-6 flex items-center justify-center gap-4">
-              <a routerLink="/auth/register" class="rounded-full bg-white text-primary-600 px-6 py-2.5 text-sm font-semibold shadow-sm hover:bg-white/90">Get started</a>
+              <a routerLink="/register" class="rounded-full bg-white text-primary-600 px-6 py-2.5 text-sm font-semibold shadow-sm hover:bg-white/90">Get started</a>
               <a href="#modules" class="rounded-full border border-white/70 px-6 py-2.5 text-sm font-semibold text-white hover:bg-white/10">Explore modules</a>
             </div>
           </div>

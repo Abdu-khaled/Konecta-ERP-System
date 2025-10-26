@@ -46,7 +46,9 @@ public class SecurityConfig {
                                 "/actuator/**",
                                 "/api/auth/register",
                                 "/api/auth/login",
-                                "/api/auth/validate")
+                                "/api/auth/validate",
+                                "/api/auth/registration/**",
+                                "/api/auth/register/**")
                         .permitAll()
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())

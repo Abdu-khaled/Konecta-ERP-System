@@ -24,7 +24,7 @@ export class SidebarComponent {
       return [
         { label: 'Dashboard Overview', icon: 'space_dashboard' },
         { label: 'Manage Users & Roles', icon: 'manage_accounts', children: [
-          { label: 'Add / Remove Users', icon: 'group_add' },
+          { label: 'Invite Users', icon: 'group_add', path: '/admin/invite' },
           { label: 'Assign Roles', icon: 'badge' }
         ]},
         { label: 'System Activity Log', icon: 'history' },
@@ -79,4 +79,3 @@ export class SidebarComponent {
     if (this.expanded.has(i)) this.expanded.delete(i); else this.expanded.add(i);
   }
 }
-

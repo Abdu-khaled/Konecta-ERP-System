@@ -25,8 +25,15 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: 1234
       SPRING_PROFILES_ACTIVE: docker
+      SPRING_MAIL_HOST: host.docker.internal
+      SPRING_MAIL_PORT: 1025
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "false"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "false"
+      APP_MAIL_FROM: noreply@konecta-erp.local
     networks:
       - erp-net
+    depends_on:
+      - mailhog
 
   hr-service:
     build:
@@ -80,6 +87,17 @@ services:
     container_name: erp-gateway-service
     ports:
       - "8084:8080"
+    networks:
+      - erp-net
+    depends_on:
+      - auth-service
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: erp-mailhog
+    ports:
+      - "8025:8025"  # UI
+      - "1025:1025"  # SMTP
     networks:
       - erp-net
 

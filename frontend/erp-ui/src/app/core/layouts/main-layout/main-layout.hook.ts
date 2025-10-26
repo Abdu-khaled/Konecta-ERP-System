@@ -5,7 +5,7 @@ export function buildSidebarForRole(role: string | null): SidebarItem[] {
     return [
       { label: 'Dashboard Overview', icon: 'space_dashboard' },
       { label: 'Manage Users & Roles', icon: 'manage_accounts', children: [
-        { label: 'Add / Remove Users', icon: 'group_add' },
+        { label: 'Invite Users', icon: 'group_add', path: '/admin/invite' },
         { label: 'Assign Roles', icon: 'badge' }
       ] },
       { label: 'System Activity Log', icon: 'history' },
@@ -62,4 +62,3 @@ export function buildSidebarForRole(role: string | null): SidebarItem[] {
     { label: 'Modules', icon: 'apps' }
   ];
 }
-

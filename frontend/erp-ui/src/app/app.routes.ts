@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { MainLayoutComponent } from './core/layouts/main-layout/main-layout.component';
+import { roleGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
   {
@@ -12,6 +13,21 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent)
       }
     ]
+  },
+  // Public registration deep links from email
+  {
+    path: 'register',
+    loadComponent: () => import('./modules/auth/components/register-complete/register-complete.component').then(m => m.RegisterCompleteComponent)
+  },
+  {
+    path: 'register/verify-otp',
+    loadComponent: () => import('./modules/auth/components/register-verify/register-verify.component').then(m => m.RegisterVerifyComponent)
+  },
+  {
+    path: 'admin/invite',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'] },
+    loadComponent: () => import('./modules/admin/components/invite-user/invite-user.component').then(m => m.InviteUserComponent)
   },
   {
     path: 'auth',
