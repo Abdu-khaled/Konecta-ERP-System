@@ -27,7 +27,14 @@ export const routes: Routes = [
     path: 'admin/invite',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN'] },
-    loadComponent: () => import('./modules/admin/components/invite-user/invite-user.component').then(m => m.InviteUserComponent)
+    component: MainLayoutComponent,
+    children: [
+      {
+        path: '',
+        data: { inviteView: true },
+        loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent)
+      }
+    ]
   },
   {
     path: 'auth',

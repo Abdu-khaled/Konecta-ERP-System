@@ -8,17 +8,6 @@ export const AUTH_API_BASE_URL = new InjectionToken<string>('AUTH_API_BASE_URL',
   factory: () => '/api/auth'
 });
 
-export interface RegisterRequest {
-  username: string;
-  email: string;
-  password: string;
-}
-
-export interface RegisterResponse {
-  id?: string;
-  message?: string;
-}
-
 export interface LoginRequest {
   email: string;
   password: string;
@@ -30,10 +19,6 @@ export interface AuthResponse { token: string; }
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = inject(AUTH_API_BASE_URL);
-
-  register(payload: RegisterRequest): Observable<RegisterResponse> {
-    return this.http.post<RegisterResponse>(`${this.baseUrl}/register`, payload);
-  }
 
   login(payload: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.baseUrl}/login`, payload);

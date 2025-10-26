@@ -1,15 +1,17 @@
-import { Component, inject, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, inject, AfterViewInit, OnDestroy, OnInit } from '@angular/core';
 import { DecimalPipe, NgClass, NgFor, NgIf } from '@angular/common';
 import { useHome } from './home.hook';
 import { AuthState } from '../../core/services/auth-state.service';
 import { NavThemeService } from '../../shared/nav-theme.service';
+import { InviteUserComponent } from '../../modules/admin/components/invite-user/invite-user.component';
+import { ActivatedRoute } from '@angular/router';
 
 type Trend = 'up' | 'down' | 'flat';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [NgFor, NgClass, NgIf, DecimalPipe],
+  imports: [NgFor, NgClass, NgIf, DecimalPipe, InviteUserComponent],
   template: `
     <section class="flex flex-col gap-7" [ngClass]="role ? 'py-4' : 'pt-0 pb-4'">
       <!-- Guest marketing-style home when not logged in -->
@@ -37,7 +39,6 @@ type Trend = 'up' | 'down' | 'flat';
               A modern ERP platform that unifies HR, Finance, and Reporting with a clean, fast experience.
             </p>
             <div class="mt-6 flex items-center justify-center gap-4">
-              <a routerLink="/register" class="rounded-full bg-white text-primary-600 px-6 py-2.5 text-sm font-semibold shadow-sm hover:bg-white/90">Get started</a>
               <a href="#modules" class="rounded-full border border-white/70 px-6 py-2.5 text-sm font-semibold text-white hover:bg-white/10">Explore modules</a>
             </div>
           </div>
@@ -79,12 +80,14 @@ type Trend = 'up' | 'down' | 'flat';
       <!-- Logged-in dashboards preserved below -->
       <ng-template #loggedIn>
       <ng-container *ngIf="role === 'ADMIN'; else notAdmin">
+        <ng-container *ngIf="!showInvite; else inviteView">
         <header class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div class="space-y-1">
             <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Admin Dashboard</h1>
             <p class="text-sm text-slate-500">Global statistics and controls.</p>
           </div>
           <div class="flex gap-2">
+            <button type="button" class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700" (click)="showInvite = true">Invite Users</button>
             <button type="button" class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700">Manage Roles</button>
             <button type="button" class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700">System Settings</button>
           </div>
@@ -118,6 +121,19 @@ type Trend = 'up' | 'down' | 'flat';
             </ul>
           </article>
         </section>
+        </ng-container>
+        <ng-template #inviteView>
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-4">
+            <div class="space-y-1">
+              <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Invite Users</h1>
+              <p class="text-sm text-slate-500">Send invitations to HR, Finance, or Employees.</p>
+            </div>
+            <div class="flex gap-2">
+              <button type="button" class="rounded-full bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-300" (click)="showInvite = false">Back to Dashboard</button>
+            </div>
+          </div>
+          <app-admin-invite-user></app-admin-invite-user>
+        </ng-template>
       </ng-container>
 
       <ng-template #notAdmin>
@@ -304,11 +320,13 @@ type Trend = 'up' | 'down' | 'flat';
     </section>
   `
 })
-export class HomeComponent implements AfterViewInit, OnDestroy {
+export class HomeComponent implements AfterViewInit, OnDestroy, OnInit {
   readonly vm = useHome();
   private readonly state = inject(AuthState);
   private readonly navTheme = inject(NavThemeService);
+  private readonly route = inject(ActivatedRoute);
   private heroObserver?: IntersectionObserver;
+  showInvite = false;
   get role(): string | null { return this.state.profile?.role ?? null; }
   get firstName(): string { return (this.state.profile?.username || '').split(' ')[0] || 'Employee'; }
 
@@ -331,6 +349,14 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
     }
   }
   trendSymbol(trend: Trend): string { return this.trendSymbols[trend]; }
+
+  ngOnInit(): void {
+    const dataInvite = this.route.snapshot.data?.['inviteView'] || this.route.parent?.snapshot?.data?.['inviteView'];
+    const qpInvite = this.route.snapshot.queryParamMap.get('invite');
+    if (dataInvite || qpInvite === '1' || qpInvite === 'true') {
+      this.showInvite = true;
+    }
+  }
   ngAfterViewInit(): void {
     if (!this.role) {
       const hero = document.getElementById('hero');
@@ -354,6 +380,3 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
     this.navTheme.setBrand(false);
   }
 }
-
-
-

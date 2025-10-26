@@ -60,10 +60,6 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.passwordError = validation.passwordError;
   }
 
-  goToRegister() {
-    this.router.navigate(['/auth/register']);
-  }
-
   signInWithGoogle() {
     this.login.signInWithGoogle();
   }
