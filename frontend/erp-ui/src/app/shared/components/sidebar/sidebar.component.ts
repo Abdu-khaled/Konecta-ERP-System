@@ -22,7 +22,8 @@ export class SidebarComponent {
   private buildSidebarForRole(role: string | null): Array<{ label: string; icon: string; path?: string; children?: Array<{ label: string; icon: string; path?: string }> }> {
     if (role === 'ADMIN') {
       return [
-        { label: 'Dashboard Overview', icon: 'space_dashboard' },
+        // Make dashboard clickable and route to the main admin dashboard (home)
+        { label: 'Dashboard Overview', icon: 'space_dashboard', path: '/' },
         { label: 'Manage Users & Roles', icon: 'manage_accounts', children: [
           { label: 'Invite Users', icon: 'group_add', path: '/admin/invite' },
           { label: 'Assign Roles', icon: 'badge' }

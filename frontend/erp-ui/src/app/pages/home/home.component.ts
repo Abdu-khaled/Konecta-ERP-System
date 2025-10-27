@@ -129,7 +129,7 @@ type Trend = 'up' | 'down' | 'flat';
               <p class="text-sm text-slate-500">Send invitations to HR, Finance, or Employees.</p>
             </div>
             <div class="flex gap-2">
-              <button type="button" class="rounded-full bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-300" (click)="showInvite = false">Back to Dashboard</button>
+              <!-- Back button removed; navigation handled via sidebar Dashboard link -->
             </div>
           </div>
           <app-admin-invite-user></app-admin-invite-user>
