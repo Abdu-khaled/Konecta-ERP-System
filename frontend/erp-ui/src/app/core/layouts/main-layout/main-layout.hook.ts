@@ -18,13 +18,13 @@ export function buildSidebarForRole(role: string | null): SidebarItem[] {
     return [
       { label: 'Dashboard', icon: 'space_dashboard', path: '/hr/dashboard' },
       { label: 'Manage Employees', icon: 'group', children: [
-        { label: 'Add Employee', icon: 'person_add' },
-        { label: 'Update / Delete Employee', icon: 'edit' }
+        { label: 'Employees', icon: 'group', path: '/hr/employees' },
+        { label: 'Departments', icon: 'apartment', path: '/hr/departments' }
       ] },
-      { label: 'Attendance Tracking', icon: 'schedule' },
-      { label: 'Performance Evaluation', icon: 'workspace_premium' },
+      { label: 'Attendance Tracking', icon: 'schedule', path: '/hr/attendance' },
+      { label: 'Performance Evaluation', icon: 'workspace_premium', path: '/hr/performance' },
       { label: 'Training Management', icon: 'school' },
-      { label: 'Leave Management', icon: 'event_note' },
+      { label: 'Leave Management', icon: 'event_note', path: '/hr/leaves' },
       { label: 'Reports (HR Analytics)', icon: 'insights' }
     ];
   }
@@ -32,14 +32,14 @@ export function buildSidebarForRole(role: string | null): SidebarItem[] {
     return [
       { label: 'Dashboard', icon: 'space_dashboard', path: '/finance/dashboard' },
       { label: 'Manage Transactions', icon: 'receipt_long', children: [
-        { label: 'Add / Approve Expenses', icon: 'add_card' },
-        { label: 'View All Invoices', icon: 'request_quote' }
+        { label: 'Invoices', icon: 'request_quote', path: '/finance/invoices' },
+        { label: 'Expenses', icon: 'add_card', path: '/finance/expenses' }
       ] },
       { label: 'Budget Monitoring', icon: 'monitoring', children: [
-        { label: 'Departmental Budgets', icon: 'account_balance' },
+        { label: 'Departmental Budgets', icon: 'account_balance', path: '/finance/budgets' },
         { label: 'Spending Reports', icon: 'bar_chart' }
       ] },
-      { label: 'Payroll Overview (HR data)', icon: 'payments' },
+      { label: 'Payroll Overview (HR data)', icon: 'payments', path: '/finance/payroll' },
       { label: 'Forecasting (AI Integration)', icon: 'trending_up' }
     ];
   }

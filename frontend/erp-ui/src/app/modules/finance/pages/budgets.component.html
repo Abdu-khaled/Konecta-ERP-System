@@ -1,0 +1,33 @@
+<div class="mt-6">
+  <header class="flex items-center justify-between">
+    <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Departmental Budgets</h1>
+    <span class="text-sm text-slate-600">Overall utilization: {{ utilization | number:'1.0-0' }}%</span>
+  </header>
+
+  <section class="mt-6 rounded-2xl bg-white p-4 shadow ring-1 ring-slate-200/70">
+    <table class="w-full text-sm">
+      <thead class="text-left text-slate-600">
+        <tr>
+          <th class="py-2">Department</th>
+          <th>Allocated</th>
+          <th>Spent</th>
+          <th>Utilization</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of rows" class="border-t border-slate-200/70">
+          <td class="py-2">{{ r.department }}</td>
+          <td>{{ r.allocated | number:'1.0-0' }}</td>
+          <td>{{ r.spent | number:'1.0-0' }}</td>
+          <td class="w-[360px]">
+            <div class="h-2 rounded bg-slate-200">
+              <div class="h-2 rounded bg-primary-600" [style.width.%]="(r.spent / r.allocated) * 100"></div>
+            </div>
+            <div class="text-xs text-slate-600 mt-1">{{ (r.spent / r.allocated) * 100 | number:'1.0-0' }}%</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</div>
+

@@ -3,6 +3,8 @@ import { NgClass, NgFor, NgIf, NgSwitch, NgSwitchCase, NgSwitchDefault } from '@
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { NavbarComponent } from '../../../shared/components/navbar/navbar.component';
 import { SidebarComponent } from '../../../shared/components/sidebar/sidebar.component';
+import { ToastComponent } from '../../../shared/components/toast/toast.component';
+import { LoadingBarComponent } from '../../../shared/components/loading-bar/loading-bar.component';
 import { AuthState } from '../../services/auth-state.service';
 import { Subscription } from 'rxjs';
 import { buildSidebarForRole, SidebarItem } from './main-layout.hook';
@@ -21,7 +23,9 @@ import { buildSidebarForRole, SidebarItem } from './main-layout.hook';
     NgSwitchDefault,
     NgClass,
     NavbarComponent,
-    SidebarComponent
+    SidebarComponent,
+    ToastComponent,
+    LoadingBarComponent
   ],
   templateUrl: './main-layout.component.html'
 })

@@ -1,4 +1,5 @@
 <div class="min-h-screen flex flex-col bg-slate-100 text-slate-900">
+  <app-loading-bar></app-loading-bar>
   <app-navbar [user]="user" [role]="role" (toggle)="toggleSidebar()" (signOut)="onSignOut()"></app-navbar>
   <div class="isolate flex flex-1 overflow-hidden">
     <app-sidebar *ngIf="role" [isOpen]="isSidebarOpen" [role]="role" [items]="sidebarItems"></app-sidebar>
@@ -7,5 +8,5 @@
       <router-outlet></router-outlet>
     </main>
   </div>
+  <app-toast></app-toast>
 </div>
-
