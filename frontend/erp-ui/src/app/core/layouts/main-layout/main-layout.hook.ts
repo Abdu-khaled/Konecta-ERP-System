@@ -3,7 +3,7 @@ export type SidebarItem = { label: string; icon: string; path?: string; children
 export function buildSidebarForRole(role: string | null): SidebarItem[] {
   if (role === 'ADMIN') {
     return [
-      { label: 'Dashboard Overview', icon: 'space_dashboard' },
+      { label: 'Dashboard', icon: 'space_dashboard', path: '/admin/dashboard' },
       { label: 'Manage Users & Roles', icon: 'manage_accounts', children: [
         { label: 'Invite Users', icon: 'group_add', path: '/admin/invite' },
         { label: 'Assign Roles', icon: 'badge' }
@@ -16,7 +16,7 @@ export function buildSidebarForRole(role: string | null): SidebarItem[] {
   }
   if (role === 'HR') {
     return [
-      { label: 'Dashboard', icon: 'space_dashboard' },
+      { label: 'Dashboard', icon: 'space_dashboard', path: '/hr/dashboard' },
       { label: 'Manage Employees', icon: 'group', children: [
         { label: 'Add Employee', icon: 'person_add' },
         { label: 'Update / Delete Employee', icon: 'edit' }
@@ -30,7 +30,7 @@ export function buildSidebarForRole(role: string | null): SidebarItem[] {
   }
   if (role === 'FINANCE') {
     return [
-      { label: 'Dashboard', icon: 'space_dashboard' },
+      { label: 'Dashboard', icon: 'space_dashboard', path: '/finance/dashboard' },
       { label: 'Manage Transactions', icon: 'receipt_long', children: [
         { label: 'Add / Approve Expenses', icon: 'add_card' },
         { label: 'View All Invoices', icon: 'request_quote' }
@@ -45,7 +45,7 @@ export function buildSidebarForRole(role: string | null): SidebarItem[] {
   }
   if (role === 'EMPLOYEE') {
     return [
-      { label: 'Dashboard', icon: 'home' },
+      { label: 'Dashboard', icon: 'home', path: '/employee/dashboard' },
       { label: 'My Attendance', icon: 'schedule' },
       { label: 'My Leave Requests', icon: 'event_note' },
       { label: 'My Performance', icon: 'workspace_premium' },

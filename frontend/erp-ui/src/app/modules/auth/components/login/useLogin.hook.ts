@@ -54,8 +54,21 @@ export function useLogin() {
     const role = (state.profile?.role || '').toString().toLowerCase();
     const message = role ? `Welcome ${role}` : 'Login successful!';
 
-    // Route to home after a short delay to allow the UI to show the toast
-    setTimeout(() => router.navigate(['/']), 1000);
+    // Navigate to the appropriate dashboard after a short delay
+    setTimeout(() => {
+      switch (role) {
+        case 'admin':
+          router.navigate(['/admin/dashboard']); break;
+        case 'hr':
+          router.navigate(['/hr/dashboard']); break;
+        case 'finance':
+          router.navigate(['/finance/dashboard']); break;
+        case 'employee':
+          router.navigate(['/employee/dashboard']); break;
+        default:
+          router.navigate(['/']);
+      }
+    }, 1000);
 
     return { ok: true, message } as const;
   };

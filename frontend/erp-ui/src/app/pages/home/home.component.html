@@ -1,0 +1,63 @@
+<section class="flex flex-col gap-7 pt-0 pb-4">
+  <!-- Guest marketing-style home when not logged in -->
+  <!-- Hero -->
+  <section id="hero" class="bg-primary-600 text-white pt-12 sm:pt-16 pb-16 sm:pb-24">
+    <div class="mx-auto max-w-6xl px-6 pt-10 sm:pt-12 pb-16 sm:pb-24">
+      <p class="text-center text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-wider uppercase opacity-95 mb-0 sm:mb-0 translate-y-7">
+        Your Work finally in
+      </p>
+      <div class="-mt-2 flex justify-center lg:translate-x-6">
+        <svg class="w-[520px] sm:w-[680px] h-auto text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 100" fill="currentColor" role="img" aria-label="SYNC">
+          <style>.sync-text{font:700 70px 'Poppins', Arial, sans-serif;}</style>
+          <text x="10" y="76" class="sync-text" style="letter-spacing:-2px">
+            <tspan>S</tspan>
+            <tspan dx="3" dy="-2" style="font-size:82px">y</tspan>
+          </text>
+          <g transform="translate(3,18) scale(2)">
+            <path d="M205.3,19.2l-7.589,17.871a7.06,7.06,0,0,1-4.246,3.936,7.054,7.054,0,0,1-4.5,0,7.07,7.07,0,0,1-4.229-3.9l-.037-.085-3-7.068L178.956,23.5l-.025-.056a.543.543,0,0,0-.978.048l-2.746,6.47L170.36,41.378l-5.994-2.543,7.589-17.877a7.053,7.053,0,0,1,12.994,0l3.017,7.107,2.723,6.414,0,.008a.614.614,0,0,0,.042.1l0,.006a.545.545,0,0,0,.964-.031.345.345,0,0,0,.02-.048l2.737-6.448L199.3,16.658Z" transform="translate(-118.027 -11.956)" />
+          </g>
+          <text x="176" y="76" class="sync-text">C</text>
+        </svg>
+      </div>
+      <p class="mt-4 text-center text-lg opacity-90 max-w-3xl mx-auto">
+        A modern ERP platform that unifies HR, Finance, and Reporting with a clean, fast experience.
+      </p>
+      <div class="mt-6 flex items-center justify-center gap-4">
+        <a href="#modules" class="rounded-full border border-white/70 px-6 py-2.5 text-sm font-semibold text-white hover:bg-white/10">Explore modules</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- About us (home-only) -->
+  <section id="about" class="mx-auto max-w-6xl px-6 py-10 sm:py-12">
+    <h2 class="text-center text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">About us</h2>
+    <p class="mt-3 text-center text-slate-600 max-w-3xl mx-auto">
+      Konecta ERP System is a modern platform focused on simplicity and speed.
+      We help teams stay in sync across HR, Finance and Reporting.
+    </p>
+  </section>
+
+  <!-- Modules overview -->
+  <section id="modules" class="mx-auto max-w-6xl px-6 py-12 sm:py-16">
+    <h2 class="text-center text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">All your business in one platform</h2>
+    <p class="mt-2 text-center text-slate-500">Simple, efficient, and scalable for your team.</p>
+    <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <article class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70">
+        <h3 class="text-base font-semibold text-slate-900">Human Resources</h3>
+        <p class="mt-2 text-sm text-slate-600">Employees, attendance, leave, performance, and payroll integrations.</p>
+      </article>
+      <article class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70">
+        <h3 class="text-base font-semibold text-slate-900">Finance</h3>
+        <p class="mt-2 text-sm text-slate-600">Invoices, expenses, budgets, approvals, and forecasts.</p>
+      </article>
+      <article class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70">
+        <h3 class="text-base font-semibold text-slate-900">Reporting</h3>
+        <p class="mt-2 text-sm text-slate-600">Dashboards and analytics to keep your team aligned.</p>
+      </article>
+    </div>
+    <div class="mt-10 text-center">
+      <a routerLink="/auth/login" class="inline-flex items-center justify-center rounded-full bg-primary-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700">Log in</a>
+    </div>
+  </section>
+</section>
+

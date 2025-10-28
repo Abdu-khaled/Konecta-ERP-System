@@ -31,10 +31,43 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        data: { inviteView: true },
-        loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent)
+        loadComponent: () => import('./modules/admin/components/invite-user/invite-user.component').then(m => m.InviteUserComponent)
       }
     ]
+  },
+  {
+    path: 'admin/dashboard',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'] },
+    component: MainLayoutComponent,
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./modules/admin/components/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+      }
+    ]
+  },
+  // Role dashboards via lazy routes
+  {
+    path: 'hr',
+    canActivate: [roleGuard],
+    data: { roles: ['HR'] },
+    component: MainLayoutComponent,
+    loadChildren: () => import('./modules/hr/hr.routes').then(m => m.hrRoutes)
+  },
+  {
+    path: 'finance',
+    canActivate: [roleGuard],
+    data: { roles: ['FINANCE'] },
+    component: MainLayoutComponent,
+    loadChildren: () => import('./modules/finance/finance.routes').then(m => m.financeRoutes)
+  },
+  {
+    path: 'employee',
+    canActivate: [roleGuard],
+    data: { roles: ['EMPLOYEE'] },
+    component: MainLayoutComponent,
+    loadChildren: () => import('./modules/employee/employee.routes').then(m => m.employeeRoutes)
   },
   {
     path: 'auth',

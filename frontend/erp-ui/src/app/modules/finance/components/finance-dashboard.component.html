@@ -1,5 +1,47 @@
-<section class="p-4">
-  <h1 class="text-xl font-semibold">Finance Dashboard</h1>
-  <p class="text-slate-600">Placeholder dashboard content.</p>
+<div class="mt-6">
+<header class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+  <div class="space-y-1">
+    <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Finance Dashboard</h1>
+    <p class="text-sm text-slate-500">Budget and transaction insights.</p>
+  </div>
+  <div class="flex gap-2">
+    <button type="button" class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700">Budgets</button>
+    <button type="button" class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700">Transactions</button>
+  </div>
+</header>
+
+<section class="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+  <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
+    <h3 class="text-sm font-semibold mb-3">Total Budget vs Spent</h3>
+    <div class="text-3xl font-semibold text-black">-</div>
+    <p class="text-sm">Summary of allocations vs expenses.</p>
+  </article>
+
+  <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
+    <h3 class="text-sm font-semibold mb-3">Pending Invoices</h3>
+    <div class="text-3xl font-semibold text-black">-</div>
+    <p class="text-sm">Awaiting approval/payment.</p>
+  </article>
+
+  <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
+    <h3 class="text-sm font-semibold mb-3">Monthly Payroll Summary</h3>
+    <p class="text-3xl font-semibold text-black">-</p>
+    <p class="text-sm">Linked to HR data.</p>
+  </article>
+
+  <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
+    <h3 class="text-sm font-semibold mb-3">Expense Categories</h3>
+    <div class="text-3xl font-semibold text-black">-</div>
+    <p class="text-sm">Pie chart placeholder.</p>
+  </article>
+
+  <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70 md:col-span-2 xl:col-span-1">
+    <h3 class="text-sm font-semibold mb-3">AI Insights (Forecasts)</h3>
+    <ul class="text-sm space-y-2">
+      <li>Forecasted Revenue: <span class="text-black">-</span></li>
+      <li>Forecasted Expenses: <span class="text-black">-</span></li>
+    </ul>
+  </article>
 </section>
 
+</div>
