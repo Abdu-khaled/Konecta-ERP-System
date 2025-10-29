@@ -6,4 +6,3 @@ export const authGuard: CanActivateFn = () => {
   const state = inject(AuthState);
   return !!state.token;
 };
-
