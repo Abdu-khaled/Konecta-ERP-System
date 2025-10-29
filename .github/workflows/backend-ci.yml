@@ -67,55 +67,55 @@ jobs:
           path: gitleaks.sarif
           retention-days: 30
 
-      # # Notify Slack about secret scan results
-      # - name: Notify Slack - Secret Scan
-      #   if: always()
-      #   uses: slackapi/slack-github-action@v1.26.0
-      #   with:
-      #     payload: |
-      #       {
-      #         "text": "Secret Scan ${{ job.status == 'success' && '✅ Passed' || '⚠️ Issues Found' }}",
-      #         "blocks": [
-      #           {
-      #             "type": "header",
-      #             "text": {
-      #               "type": "plain_text",
-      #               "text": "${{ job.status == 'success' && '🔒 Secret Scan Passed' || '⚠️ Secret Scan - Potential Issues' }}"
-      #             }
-      #           },
-      #           {
-      #             "type": "section",
-      #             "fields": [
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Repository:*\n${{ github.repository }}"
-      #               },
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Branch:*\n${{ github.ref_name }}"
-      #               },
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Triggered by:*\n${{ github.actor }}"
-      #               },
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Findings:*\n${{ steps.gitleaks.outputs.findings || '0' }}"
-      #               }
-      #             ]
-      #           },
-      #           {
-      #             "type": "section",
-      #             "text": {
-      #               "type": "mrkdwn",
-      #               "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Full Report>"
-      #             }
-      #           }
-      #         ]
-      #       }
-      #   env:
-      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      #     SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      # Notify Slack about secret scan results
+      - name: Notify Slack - Secret Scan
+        if: always()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "Secret Scan ${{ job.status == 'success' && '✅ Passed' || '⚠️ Issues Found' }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${{ job.status == 'success' && '🔒 Secret Scan Passed' || '⚠️ Secret Scan - Potential Issues' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Repository:*\n${{ github.repository }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n${{ github.ref_name }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Triggered by:*\n${{ github.actor }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Findings:*\n${{ steps.gitleaks.outputs.findings || '0' }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Full Report>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
 # STAGE 2: DETECT CHANGES
   detect-changes:
@@ -187,63 +187,63 @@ jobs:
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
           echo "Detected services matrix: $MATRIX_JSON"
 
-      # # Notify Slack about detected changes
-      # - name: Notify Slack - Pipeline Started
-      #   if: always()
-      #   uses: slackapi/slack-github-action@v1.26.0
-      #   with:
-      #     payload: |
-      #       {
-      #         "text": "🚀 Backend CI Pipeline Started",
-      #         "blocks": [
-      #           {
-      #             "type": "header",
-      #             "text": {
-      #               "type": "plain_text",
-      #               "text": "🚀 Backend CI Pipeline Started"
-      #             }
-      #           },
-      #           {
-      #             "type": "section",
-      #             "fields": [
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Repository:*\n${{ github.repository }}"
-      #               },
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Branch:*\n${{ github.ref_name }}"
-      #               },
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Triggered by:*\n${{ github.actor }}"
-      #               },
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Event:*\n${{ github.event_name }}"
-      #               },
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Services Detected:*\n${{ steps.set-matrix.outputs.services_list }}"
-      #               },
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Commit:*\n<${{ github.event.head_commit.url }}|${{ github.event.head_commit.message }}>"
-      #               }
-      #             ]
-      #           },
-      #           {
-      #             "type": "section",
-      #             "text": {
-      #               "type": "mrkdwn",
-      #               "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Pipeline Run>"
-      #             }
-      #           }
-      #         ]
-      #       }
-      #   env:
-      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      #     SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      # Notify Slack about detected changes
+      - name: Notify Slack - Pipeline Started
+        if: always()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "🚀 Backend CI Pipeline Started",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚀 Backend CI Pipeline Started"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Repository:*\n${{ github.repository }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n${{ github.ref_name }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Triggered by:*\n${{ github.actor }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Event:*\n${{ github.event_name }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Services Detected:*\n${{ steps.set-matrix.outputs.services_list }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Commit:*\n<${{ github.event.head_commit.url }}|${{ github.event.head_commit.message }}>"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Pipeline Run>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
 
 # STAGE 3: BACKEND DEPENDENCY SCANNING
@@ -285,62 +285,62 @@ jobs:
         with:
           sarif_file: 'trivy-dependency.sarif'
 
-      # # Notify Slack about dependency scan
-      # - name: Notify Slack - Dependency Scan
-      #   if: always()
-      #   uses: slackapi/slack-github-action@v1.26.0
-      #   with:
-      #     payload: |
-      #       {
-      #         "text": "Dependency Scan ${{ steps.trivy_scan.outcome == 'success' && '✅ Passed' || '❌ Failed' }}",
-      #         "blocks": [
-      #           {
-      #             "type": "header",
-      #             "text": {
-      #               "type": "plain_text",
-      #               "text": "${{ steps.trivy_scan.outcome == 'success' && '✅ Dependency Scan Passed' || '❌ Dependency Scan Failed' }}"
-      #             }
-      #           },
-      #           {
-      #             "type": "section",
-      #             "fields": [
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Repository:*\n${{ github.repository }}"
-      #               },
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Branch:*\n${{ github.ref_name }}"
-      #               },
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Scan Type:*\nDependency Vulnerabilities"
-      #               },
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Severity:*\nCRITICAL, HIGH"
-      #               }
-      #             ]
-      #           },
-      #           {
-      #             "type": "section",
-      #             "text": {
-      #               "type": "mrkdwn",
-      #               "text": "${{ steps.trivy_scan.outcome == 'success' && '✅ No critical vulnerabilities found in dependencies' || '⚠️ Critical vulnerabilities detected! Check the security tab for details.' }}"
-      #             }
-      #           },
-      #           {
-      #             "type": "section",
-      #             "text": {
-      #               "type": "mrkdwn",
-      #               "text": "<${{ github.server_url }}/${{ github.repository }}/security/code-scanning|View Security Report> | <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
-      #             }
-      #           }
-      #         ]
-      #       }
-      #   env:
-      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      #     SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      # Notify Slack about dependency scan
+      - name: Notify Slack - Dependency Scan
+        if: always()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "Dependency Scan ${{ steps.trivy_scan.outcome == 'success' && '✅ Passed' || '❌ Failed' }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${{ steps.trivy_scan.outcome == 'success' && '✅ Dependency Scan Passed' || '❌ Dependency Scan Failed' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Repository:*\n${{ github.repository }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n${{ github.ref_name }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Scan Type:*\nDependency Vulnerabilities"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Severity:*\nCRITICAL, HIGH"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ steps.trivy_scan.outcome == 'success' && '✅ No critical vulnerabilities found in dependencies' || '⚠️ Critical vulnerabilities detected! Check the security tab for details.' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<${{ github.server_url }}/${{ github.repository }}/security/code-scanning|View Security Report> | <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
 
 # STAGE 4: BACKEND BUILD & TEST
@@ -457,55 +457,55 @@ jobs:
             echo "No TRX files found, skipping test report publication"
           fi
 
-      # # Notify Slack about build results
-      # - name: Notify Slack - Build & Test
-      #   if: always()
-      #   uses: slackapi/slack-github-action@v1.26.0
-      #   with:
-      #     payload: |
-      #       {
-      #         "text": "Build ${{ matrix.service }}: ${{ job.status == 'success' && '✅ Success' || '❌ Failed' }}",
-      #         "blocks": [
-      #           {
-      #             "type": "header",
-      #             "text": {
-      #               "type": "plain_text",
-      #               "text": "${{ job.status == 'success' && '✅' || '❌' }} Build & Test: ${{ matrix.service }}"
-      #             }
-      #           },
-      #           {
-      #             "type": "section",
-      #             "fields": [
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Service:*\n${{ matrix.service }}"
-      #               },
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Type:*\n${{ matrix.serviceType }}"
-      #               },
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Branch:*\n${{ github.ref_name }}"
-      #               },
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Status:*\n${{ job.status }}"
-      #               }
-      #             ]
-      #           },
-      #           {
-      #             "type": "section",
-      #             "text": {
-      #               "type": "mrkdwn",
-      #               "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Build Logs>"
-      #             }
-      #           }
-      #         ]
-      #       }
-      #   env:
-      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      #     SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      # Notify Slack about build results
+      - name: Notify Slack - Build & Test
+        if: always()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "Build ${{ matrix.service }}: ${{ job.status == 'success' && '✅ Success' || '❌ Failed' }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${{ job.status == 'success' && '✅' || '❌' }} Build & Test: ${{ matrix.service }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Service:*\n${{ matrix.service }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Type:*\n${{ matrix.serviceType }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n${{ github.ref_name }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Status:*\n${{ job.status }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Build Logs>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
 
 # STAGE 5: CODE QUALITY (SONARQUBE)
@@ -616,55 +616,55 @@ jobs:
           dotnet sonarscanner end /d:sonar.token="${{ env.SONAR_TOKEN }}"
           echo "SonarQube analysis completed for ${{ matrix.service }}"
 
-      # # Notify Slack about code quality scan
-      # - name: Notify Slack - Code Quality
-      #   if: always()
-      #   uses: slackapi/slack-github-action@v1.26.0
-      #   with:
-      #     payload: |
-      #       {
-      #         "text": "Code Quality ${{ matrix.service }}: ${{ job.status == 'success' && '✅ Analyzed' || '⚠️ Issues' }}",
-      #         "blocks": [
-      #           {
-      #             "type": "header",
-      #             "text": {
-      #               "type": "plain_text",
-      #               "text": "${{ job.status == 'success' && '📊' || '⚠️' }} SonarQube Analysis: ${{ matrix.service }}"
-      #             }
-      #           },
-      #           {
-      #             "type": "section",
-      #             "fields": [
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Service:*\n${{ matrix.service }}"
-      #               },
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Type:*\n${{ matrix.serviceType }}"
-      #               },
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Status:*\n${{ job.status }}"
-      #               },
-      #               {
-      #                 "type": "mrkdwn",
-      #                 "text": "*Project:*\nkonecta-erp-${{ matrix.service }}"
-      #               }
-      #             ]
-      #           },
-      #           {
-      #             "type": "section",
-      #             "text": {
-      #               "type": "mrkdwn",
-      #               "text": "<${{ secrets.SONAR_URL }}/dashboard?id=konecta-erp-${{ matrix.service }}|View SonarQube Dashboard> | <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
-      #             }
-      #           }
-      #         ]
-      #       }
-      #   env:
-      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      #     SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      # Notify Slack about code quality scan
+      - name: Notify Slack - Code Quality
+        if: always()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "Code Quality ${{ matrix.service }}: ${{ job.status == 'success' && '✅ Analyzed' || '⚠️ Issues' }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${{ job.status == 'success' && '📊' || '⚠️' }} SonarQube Analysis: ${{ matrix.service }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Service:*\n${{ matrix.service }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Type:*\n${{ matrix.serviceType }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Status:*\n${{ job.status }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Project:*\nkonecta-erp-${{ matrix.service }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<${{ secrets.SONAR_URL }}/dashboard?id=konecta-erp-${{ matrix.service }}|View SonarQube Dashboard> | <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
 # STAGE 6: DOCKER BUILD & SECURITY SCAN
   docker-build-scan:

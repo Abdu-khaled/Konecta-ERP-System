@@ -10,4 +10,3 @@ public class AttendanceRequest {
     private Boolean present;
     private Double workingHours;
 }
-

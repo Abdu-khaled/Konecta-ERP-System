@@ -19,4 +19,3 @@ public class TrainingRequest {
     private Integer rating;
     private String feedback;
 }
-

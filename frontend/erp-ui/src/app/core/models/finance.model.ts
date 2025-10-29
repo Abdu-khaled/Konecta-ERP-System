@@ -4,4 +4,3 @@ export interface FinanceRecord {
   category: string;
   createdAt: string;
 }
-
