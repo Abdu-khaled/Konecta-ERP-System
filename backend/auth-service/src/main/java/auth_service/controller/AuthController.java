@@ -53,7 +53,7 @@ public class AuthController {
     }
 
     @PostMapping("/users/invite")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','HR')")
     public ResponseEntity<?> inviteUser(@Valid @RequestBody InviteUserRequest req) {
         var existing = userRepository.findByEmail(req.getEmail()).orElse(null);
         String token = TokenGenerator.randomToken();
@@ -196,6 +196,41 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
         return ResponseEntity.status(403).body(Map.of("message", "self-registration disabled; ask admin to invite"));
+    }
+
+    @GetMapping("/users")
+    @PreAuthorize("hasAnyRole('ADMIN','HR')")
+    public ResponseEntity<?> listUsers(@RequestParam(value = "q", required = false) String q,
+                                       @RequestParam(value = "role", required = false) String roleStr) {
+        var users = userRepository.findAll();
+        Role parsedRole = null;
+        if (roleStr != null && !roleStr.isBlank()) {
+            try { parsedRole = Role.valueOf(roleStr.toUpperCase()); } catch (Exception ignored) {}
+        }
+        final Role roleFilter = parsedRole;
+        return ResponseEntity.ok(
+                users.stream()
+                        .filter(u -> roleFilter == null || (u.getRole() != null && u.getRole() == roleFilter))
+                        .filter(u -> {
+                            if (q == null || q.isBlank()) return true;
+                            String s = q.toLowerCase();
+                            return (u.getUsername() != null && u.getUsername().toLowerCase().contains(s))
+                                    || (u.getEmail() != null && u.getEmail().toLowerCase().contains(s))
+                                    || (u.getFullName() != null && u.getFullName().toLowerCase().contains(s))
+                                    || (u.getRole() != null && u.getRole().name().toLowerCase().contains(s));
+                        })
+                        .map(u -> new auth_service.dto.UserListItem(
+                                u.getId(),
+                                u.getUsername(),
+                                u.getFullName(),
+                                u.getEmail(),
+                                u.getRole(),
+                                u.getStatus(),
+                                u.getOtpVerified(),
+                                u.getCreatedAt()
+                        ))
+                        .toList()
+        );
     }
 
     @PostMapping("/login")

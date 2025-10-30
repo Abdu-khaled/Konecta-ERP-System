@@ -36,6 +36,18 @@ export const routes: Routes = [
     ]
   },
   {
+    path: 'hr/invite',
+    canActivate: [roleGuard],
+    data: { roles: ['HR'] },
+    component: MainLayoutComponent,
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./modules/admin/components/invite-user/invite-user.component').then(m => m.InviteUserComponent)
+      }
+    ]
+  },
+  {
     path: 'admin/dashboard',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN'] },
@@ -47,6 +59,15 @@ export const routes: Routes = [
       }
     ]
   },
+  {
+    path: 'admin/users',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'] },
+    component: MainLayoutComponent,
+    children: [
+      { path: '', loadComponent: () => import('./modules/admin/components/users-list/users-list.component').then(m => m.UsersListComponent) }
+    ]
+  },
   // Role dashboards via lazy routes
   {
     path: 'hr',
@@ -54,6 +75,15 @@ export const routes: Routes = [
     data: { roles: ['HR'] },
     component: MainLayoutComponent,
     loadChildren: () => import('./modules/hr/hr.routes').then(m => m.hrRoutes)
+  },
+  {
+    path: 'hr/users',
+    canActivate: [roleGuard],
+    data: { roles: ['HR'] },
+    component: MainLayoutComponent,
+    children: [
+      { path: '', loadComponent: () => import('./modules/admin/components/users-list/users-list.component').then(m => m.UsersListComponent) }
+    ]
   },
   {
     path: 'finance',

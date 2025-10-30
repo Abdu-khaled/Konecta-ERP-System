@@ -1,0 +1,25 @@
+<div class="mt-6">
+  <header class="flex items-center justify-between">
+    <h1 class="text-2xl font-semibold tracking-tight text-slate-900">My Payroll</h1>
+    <div class="flex items-center gap-2">
+      <label class="text-sm text-slate-600">Period</label>
+      <input type="month" class="border rounded px-3 py-2 text-sm" [(ngModel)]="period" (ngModelChange)="load()" />
+    </div>
+  </header>
+
+  <section class="mt-4 rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70">
+    <ng-container *ngIf="record; else none">
+      <div class="grid grid-cols-2 gap-4 text-sm">
+        <div><span class="text-slate-600">Employee ID:</span> <span class="font-medium">{{ record.employeeId }}</span></div>
+        <div><span class="text-slate-600">Period:</span> <span class="font-medium">{{ record.period }}</span></div>
+        <div><span class="text-slate-600">Gross Pay:</span> <span class="font-medium">{{ record.grossPay | number:'1.2-2' }}</span></div>
+        <div><span class="text-slate-600">Deductions:</span> <span class="font-medium">{{ record.deductions | number:'1.2-2' }}</span></div>
+        <div class="col-span-2"><span class="text-slate-600">Net Pay:</span> <span class="font-semibold text-black">{{ record.netPay | number:'1.2-2' }}</span></div>
+      </div>
+    </ng-container>
+    <ng-template #none>
+      <p class="text-slate-600 text-sm">No payroll found for this period.</p>
+    </ng-template>
+  </section>
+</div>
+

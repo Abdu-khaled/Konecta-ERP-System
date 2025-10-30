@@ -33,7 +33,7 @@ export class AuthState {
         error: (err) => {
           // If token is invalid/expired, clear state so app treats user as logged out
           const status = err?.status ?? 0;
-          if (status === 401 || status === 403) {
+          if (status === 401 || status === 403 || status === 500) {
             this.clear();
           }
         }

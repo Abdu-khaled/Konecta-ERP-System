@@ -1,6 +1,7 @@
 package hr_service.hr_service.controller;
 
 import hr_service.hr_service.dto.request.EmployeeRequest;
+import hr_service.hr_service.dto.request.EnsureEmployeeRequest;
 import hr_service.hr_service.dto.response.EmployeeResponse;
 import hr_service.hr_service.model.Department;
 import hr_service.hr_service.model.Employee;
@@ -34,7 +35,7 @@ public class EmployeeController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','HR')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<EmployeeResponse> create(@RequestBody EmployeeRequest req) {
         Employee e = fromRequest(req);
         return ResponseEntity.ok(toResponse(employeeService.create(e)));
@@ -52,6 +53,20 @@ public class EmployeeController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         employeeService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/ensure")
+    @PreAuthorize("hasAnyRole('ADMIN','HR')")
+    public ResponseEntity<EmployeeResponse> ensure(@RequestBody EnsureEmployeeRequest req) {
+        Department dept = null;
+        if (req.getDepartmentId() != null) {
+            dept = departmentService.findById(req.getDepartmentId());
+        }
+        String full = req.getFullName() != null ? req.getFullName().trim() : "";
+        String first = full.contains(" ") ? full.substring(0, full.indexOf(' ')).trim() : full;
+        String last = full.contains(" ") ? full.substring(full.indexOf(' ') + 1).trim() : "";
+        Employee saved = employeeService.ensureByEmail(req.getEmail(), first, last, req.getPhone(), req.getPosition(), dept);
+        return ResponseEntity.ok(toResponse(saved));
     }
 
     private Employee fromRequest(EmployeeRequest r) {

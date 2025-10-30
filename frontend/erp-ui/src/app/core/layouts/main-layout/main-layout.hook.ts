@@ -18,8 +18,9 @@ export function buildSidebarForRole(role: string | null): SidebarItem[] {
     return [
       { label: 'Dashboard', icon: 'space_dashboard', path: '/hr/dashboard' },
       { label: 'Manage Employees', icon: 'group', children: [
-        { label: 'Employees', icon: 'group', path: '/hr/employees' },
-        { label: 'Departments', icon: 'apartment', path: '/hr/departments' }
+        // Removed Employees and System Users entries from sidebar
+        { label: 'Departments', icon: 'apartment', path: '/hr/departments' },
+        { label: 'Invite Users', icon: 'group_add', path: '/hr/invite' }
       ] },
       { label: 'Attendance Tracking', icon: 'schedule', path: '/hr/attendance' },
       { label: 'Performance Evaluation', icon: 'workspace_premium', path: '/hr/performance' },
@@ -46,10 +47,10 @@ export function buildSidebarForRole(role: string | null): SidebarItem[] {
   if (role === 'EMPLOYEE') {
     return [
       { label: 'Dashboard', icon: 'home', path: '/employee/dashboard' },
-      { label: 'My Attendance', icon: 'schedule' },
-      { label: 'My Leave Requests', icon: 'event_note' },
-      { label: 'My Performance', icon: 'workspace_premium' },
-      { label: 'My Payroll', icon: 'request_quote' },
+      { label: 'My Attendance', icon: 'schedule', path: '/employee/my-attendance' },
+      { label: 'My Leave Requests', icon: 'event_note', path: '/employee/my-leaves' },
+      { label: 'My Performance', icon: 'workspace_premium', path: '/employee/my-performance' },
+      { label: 'My Payroll', icon: 'request_quote', path: '/employee/my-payroll' },
       { label: 'Training & Learning', icon: 'school' },
       { label: 'Help / Support', icon: 'support_agent' }
     ];

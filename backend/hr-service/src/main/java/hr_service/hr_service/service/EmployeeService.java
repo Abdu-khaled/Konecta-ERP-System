@@ -1,5 +1,6 @@
 package hr_service.hr_service.service;
 
+import hr_service.hr_service.model.Department;
 import hr_service.hr_service.model.Employee;
 import hr_service.hr_service.repository.EmployeeRepository;
 import lombok.RequiredArgsConstructor;
@@ -39,5 +40,19 @@ public class EmployeeService {
 
     public void delete(Long id) {
         employeeRepository.deleteById(id);
+    }
+
+    public Employee ensureByEmail(String email, String firstName, String lastName, String phone, String position, Department dept) {
+        return employeeRepository.findByEmail(email)
+                .orElseGet(() -> employeeRepository.save(
+                        Employee.builder()
+                                .email(email)
+                                .firstName(firstName)
+                                .lastName(lastName)
+                                .phone(phone)
+                                .position(position)
+                                .department(dept)
+                                .build()
+                ));
     }
 }

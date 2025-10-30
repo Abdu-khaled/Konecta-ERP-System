@@ -66,8 +66,8 @@ class EmployeeControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = { "HR" })
-    void create_allowed_for_hr() throws Exception {
+    @WithMockUser(roles = { "ADMIN" })
+    void create_allowed_for_admin() throws Exception {
         Department dept = new Department();
         dept.setId(100L);
         given(departmentService.findById(100L)).willReturn(dept);
@@ -81,6 +81,16 @@ class EmployeeControllerTest {
                         "{\n  \"firstName\": \"New\", \n \"lastName\": \"Person\", \n \"email\": \"new@example.com\", \n \"hireDate\": \"2025-01-10\", \n \"salary\": 3500, \n \"departmentId\": 100\n}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(3));
+    }
+
+    @Test
+    @WithMockUser(roles = { "HR" })
+    void create_forbidden_for_hr() throws Exception {
+        mvc.perform(post("/api/hr/employees")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                        "{\n  \"firstName\": \"New\", \n \"lastName\": \"Person\", \n \"email\": \"new@example.com\"\n}"))
+                .andExpect(status().isForbidden());
     }
 
     @Test

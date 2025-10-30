@@ -1,5 +1,6 @@
 import { Injectable, InjectionToken, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { map } from 'rxjs/operators';
 import { Department, DepartmentRequest, Employee, EmployeeRequest } from './hr.types';
 
 export const HR_API_BASE_URL = new InjectionToken<string>('HR_API_BASE_URL', {
@@ -17,9 +18,13 @@ export class HrApiService {
   updateDepartment(id: number, payload: DepartmentRequest) { return this.http.put<Department>(`${this.base}/departments/${id}`, payload); }
   deleteDepartment(id: number) { return this.http.delete<void>(`${this.base}/departments/${id}`); }
   listEmployees() { return this.http.get<Employee[]>(`${this.base}/employees`); }
+  ensureEmployee(payload: { email: string; fullName?: string; phone?: string; position?: string; departmentId?: number | null }) {
+    return this.http.post<Employee>(`${this.base}/employees/ensure`, payload);
+  }
   createEmployee(payload: EmployeeRequest) { return this.http.post<Employee>(`${this.base}/employees`, payload); }
   updateEmployee(id: number, payload: EmployeeRequest) { return this.http.put<Employee>(`${this.base}/employees/${id}`, payload); }
   deleteEmployee(id: number) { return this.http.delete<void>(`${this.base}/employees/${id}`); }
+  getEmployeeByEmail(email: string) { return this.listEmployees().pipe(map(list => list.find(e => (e.email || '').toLowerCase() === email.toLowerCase()) || null)); }
   listAttendanceByEmployee(employeeId: number) { return this.http.get<any[]>(`${this.base}/attendance/${employeeId}`); }
   markAttendance(payload: { employeeId: number; date: string; present: boolean; workingHours?: number }) { return this.http.post<any>(`${this.base}/attendance`, payload); }
   listLeavesByEmployee(employeeId: number) { return this.http.get<any[]>(`${this.base}/leaves/${employeeId}`); }

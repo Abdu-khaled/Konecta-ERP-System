@@ -67,15 +67,15 @@
     </div>
     <!-- Admin primary nav buttons (placeholders) -->
     <div *ngIf="role === 'ADMIN'" class="hidden md:flex items-center gap-6 mr-2 border-l border-white/30 pl-6">
-      <button type="button" class="text-white text-sm font-medium hover:text-white hover:underline underline-offset-4 decoration-2 decoration-white">Users</button>
+      <a routerLink="/admin/users" class="text-white text-sm font-medium hover:text-white hover:underline underline-offset-4 decoration-2 decoration-white">Users</a>
       <button type="button" class="text-white text-sm font-medium hover:text-white hover:underline underline-offset-4 decoration-2 decoration-white">Roles</button>
       <button type="button" class="text-white text-sm font-medium hover:text-white hover:underline underline-offset-4 decoration-2 decoration-white">Settings</button>
     </div>
     <!-- HR primary nav buttons (placeholders) -->
     <div *ngIf="role === 'HR'" class="hidden md:flex items-center gap-6 mr-2 border-l border-white/30 pl-6">
-      <button type="button" class="text-white text-sm font-medium hover:text-white hover:underline underline-offset-4 decoration-2 decoration-white">Employees</button>
-      <button type="button" class="text-white text-sm font-medium hover:text-white hover:underline underline-offset-4 decoration-2 decoration-white">Attendance</button>
-      <button type="button" class="text-white text-sm font-medium hover:text-white hover:underline underline-offset-4 decoration-2 decoration-white">Leave</button>
+      <a routerLink="/hr/users" class="text-white text-sm font-medium hover:text-white hover:underline underline-offset-4 decoration-2 decoration-white">Users</a>
+      <a routerLink="/hr/attendance" class="text-white text-sm font-medium hover:text-white hover:underline underline-offset-4 decoration-2 decoration-white">Attendance</a>
+      <a routerLink="/hr/leaves" class="text-white text-sm font-medium hover:text-white hover:underline underline-offset-4 decoration-2 decoration-white">Leave</a>
     </div>
     <!-- Finance primary nav buttons (placeholders) -->
     <div *ngIf="role === 'FINANCE'" class="hidden md:flex items-center gap-6 mr-2 border-l border-white/30 pl-6">
