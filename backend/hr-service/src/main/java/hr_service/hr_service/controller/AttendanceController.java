@@ -23,9 +23,16 @@ public class AttendanceController {
     private final EmployeeService employeeService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','HR')")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     public ResponseEntity<AttendanceResponse> mark(@RequestBody AttendanceRequest req) {
-        Employee e = employeeService.findById(req.getEmployeeId());
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        // For employees, always resolve employee by token subject (username/email); auto-create if missing
+        String username = auth != null ? auth.getName() : null;
+        Employee e = employeeService.findByEmail(username);
+        if (e == null) {
+            String first = username != null && username.contains("@") ? username.substring(0, username.indexOf('@')) : (username != null ? username : "");
+            e = employeeService.ensureByEmail(username, first, "", null, null, null);
+        }
         Attendance a = Attendance.builder()
                 .employee(e)
                 .date(req.getDate())
@@ -37,11 +44,37 @@ public class AttendanceController {
     }
 
     @GetMapping("/{employeeId}")
-    @PreAuthorize("hasAnyRole('ADMIN','HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','HR','EMPLOYEE')")
     public ResponseEntity<List<AttendanceResponse>> byEmployee(@PathVariable Long employeeId) {
-        return ResponseEntity.ok(
-                attendanceService.getByEmployee(employeeId).stream().map(this::toResponse).collect(Collectors.toList())
-        );
+
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getAuthorities().stream().anyMatch(a -> "ROLE_EMPLOYEE".equals(a.getAuthority()))) {
+            // Employees can only view own attendance; resolve or create
+            String username = auth.getName();
+            Employee self = employeeService.findByEmail(username);
+            if (self == null) {
+                String first = username != null && username.contains("@") ? username.substring(0, username.indexOf('@')) : (username != null ? username : "");
+                self = employeeService.ensureByEmail(username, first, "", null, null, null);
+            }
+            employeeId = self.getId();
+        }
+        return ResponseEntity.ok(attendanceService.getByEmployee(employeeId).stream().map(this::toResponse).collect(Collectors.toList()));
+
+
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    public ResponseEntity<List<AttendanceResponse>> mine() {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        String username = auth != null ? auth.getName() : null;
+        Employee self = employeeService.findByEmail(username);
+        if (self == null) {
+            String first = username != null && username.contains("@") ? username.substring(0, username.indexOf('@')) : (username != null ? username : "");
+            self = employeeService.ensureByEmail(username, first, "", null, null, null);
+        }
+        Long employeeId = self.getId();
+        return ResponseEntity.ok(attendanceService.getByEmployee(employeeId).stream().map(this::toResponse).collect(Collectors.toList()));
     }
 
     private AttendanceResponse toResponse(Attendance a) {

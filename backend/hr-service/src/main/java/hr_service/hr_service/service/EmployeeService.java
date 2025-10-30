@@ -21,6 +21,11 @@ public class EmployeeService {
         return employeeRepository.findById(id).orElseThrow(() -> new RuntimeException("Employee not found"));
     }
 
+    public Employee findByEmail(String email) {
+        if (email == null || email.isBlank()) return null;
+        return employeeRepository.findByEmail(email).orElse(null);
+    }
+
     public Employee create(Employee employee) {
         return employeeRepository.save(employee);
     }

@@ -36,8 +36,35 @@ public class PerformanceController {
     }
 
     @GetMapping("/{employeeId}")
-    @PreAuthorize("hasAnyRole('ADMIN','HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','HR','EMPLOYEE')")
     public ResponseEntity<List<PerformanceResponse>> byEmployee(@PathVariable Long employeeId) {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getAuthorities().stream().anyMatch(a -> "ROLE_EMPLOYEE".equals(a.getAuthority()))) {
+            // Employees can only view their own performance; ignore path param
+            String username = auth.getName();
+            Employee self = employeeService.findByEmail(username);
+            if (self == null) {
+                String first = username != null && username.contains("@") ? username.substring(0, username.indexOf('@')) : (username != null ? username : "");
+                self = employeeService.ensureByEmail(username, first, "", null, null, null);
+            }
+            employeeId = self.getId();
+        }
+        return ResponseEntity.ok(
+                performanceService.getByEmployee(employeeId).stream().map(this::toResponse).collect(Collectors.toList())
+        );
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    public ResponseEntity<List<PerformanceResponse>> mine() {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        String username = auth != null ? auth.getName() : null;
+        Employee self = employeeService.findByEmail(username);
+        if (self == null) {
+            String first = username != null && username.contains("@") ? username.substring(0, username.indexOf('@')) : (username != null ? username : "");
+            self = employeeService.ensureByEmail(username, first, "", null, null, null);
+        }
+        Long employeeId = self.getId();
         return ResponseEntity.ok(
                 performanceService.getByEmployee(employeeId).stream().map(this::toResponse).collect(Collectors.toList())
         );

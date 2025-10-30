@@ -1,9 +1,15 @@
 <div class="mt-6">
   <header class="flex items-center justify-between">
     <h1 class="text-2xl font-semibold tracking-tight text-slate-900">My Attendance</h1>
-    <div class="flex items-center gap-2">
-      <label class="text-sm text-slate-600">Month</label>
-      <input class="border rounded px-3 py-2 text-sm" type="month" [(ngModel)]="month" (ngModelChange)="load()" />
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
+        <label class="text-sm text-slate-600">Month</label>
+        <input class="border rounded px-3 py-2 text-sm" type="month" [(ngModel)]="month" (ngModelChange)="load()" />
+      </div>
+      <div class="flex items-center gap-2">
+        <input class="w-24 border rounded px-2 py-1 text-sm" type="number" placeholder="Hours" [(ngModel)]="todayHours" />
+        <button class="rounded bg-primary-600 text-white px-3 py-2 text-sm" (click)="markTodayPresent()">Mark Today Present</button>
+      </div>
     </div>
   </header>
 
@@ -28,4 +34,3 @@
     </table>
   </section>
 </div>
-

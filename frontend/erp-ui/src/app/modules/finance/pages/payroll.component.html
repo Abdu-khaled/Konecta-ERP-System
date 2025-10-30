@@ -20,8 +20,12 @@
         <input class="w-full border rounded px-3 py-2" type="month" [(ngModel)]="model.period" name="modelPeriod" required />
       </label>
       <label class="text-sm">
-        <span class="block mb-1">Gross Pay</span>
-        <input class="w-full border rounded px-3 py-2" type="number" [(ngModel)]="model.grossPay" name="grossPay" required />
+        <span class="block mb-1">Base Salary</span>
+        <input class="w-full border rounded px-3 py-2" type="number" [(ngModel)]="model.baseSalary" name="baseSalary" />
+      </label>
+      <label class="text-sm">
+        <span class="block mb-1">Bonuses</span>
+        <input class="w-full border rounded px-3 py-2" type="number" [(ngModel)]="model.bonuses" name="bonuses" />
       </label>
       <label class="text-sm">
         <span class="block mb-1">Deductions</span>
@@ -39,7 +43,8 @@
         <tr>
           <th class="py-2">Employee</th>
           <th>Period</th>
-          <th>Gross</th>
+          <th>Base</th>
+          <th>Bonuses</th>
           <th>Deductions</th>
           <th>Net</th>
         </tr>
@@ -48,12 +53,12 @@
         <tr *ngFor="let p of items" class="border-t border-slate-200/70">
           <td class="py-2">{{ p.employeeId }}</td>
           <td>{{ p.period }}</td>
-          <td>{{ p.grossPay | number:'1.2-2' }}</td>
+          <td>{{ p.baseSalary | number:'1.2-2' }}</td>
+          <td>{{ p.bonuses | number:'1.2-2' }}</td>
           <td>{{ p.deductions | number:'1.2-2' }}</td>
-          <td>{{ p.netPay | number:'1.2-2' }}</td>
+          <td>{{ p.netSalary | number:'1.2-2' }}</td>
         </tr>
       </tbody>
     </table>
   </section>
 </div>
-

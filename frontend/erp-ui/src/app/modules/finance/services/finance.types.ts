@@ -12,6 +12,19 @@ export interface Expense {
 export interface ExpenseRequest { submittedBy?: number; category?: string; amount: number; description?: string; }
 
 export interface Payroll {
-  id?: number; employeeId?: number; period: string; grossPay?: number; deductions?: number; netPay?: number; createdAt?: string;
+  id?: number;
+  employeeId?: number;
+  period: string; // YYYY-MM
+  baseSalary?: number;
+  bonuses?: number;
+  deductions?: number;
+  netSalary?: number;
+  processedDate?: string;
 }
-export interface PayrollRequest { employeeId: number; period: string; grossPay: number; deductions?: number; }
+export interface PayrollRequest {
+  employeeId: number;
+  period: string; // YYYY-MM
+  baseSalary?: number; // optional; backend can fetch from HR if omitted
+  bonuses?: number;
+  deductions?: number;
+}

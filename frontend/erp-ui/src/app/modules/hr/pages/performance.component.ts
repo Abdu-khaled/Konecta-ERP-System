@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -6,7 +6,7 @@ import { HrApiService } from '../services/hr.api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { Employee } from '../services/hr.types';
 import { UserApiService, SystemUser } from '../../../core/services/user-api.service';
-import { forkJoin } from 'rxjs';
+import { forkJoin, interval, Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-hr-performance',
@@ -14,7 +14,7 @@ import { forkJoin } from 'rxjs';
   imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './performance.component.html'
 })
-export class PerformanceComponent implements OnInit {
+export class PerformanceComponent implements OnInit, OnDestroy {
   private readonly api = inject(HrApiService);
   private readonly toast = inject(ToastService);
   private readonly usersApi = inject(UserApiService);
@@ -25,6 +25,7 @@ export class PerformanceComponent implements OnInit {
   allItems: Array<{ employeeId: number; employeeName: string; rating: number; feedback?: string; reviewDate: string }>=[];
   error = '';
   model = { rating: 3, feedback: '', reviewDate: '' };
+  private poll?: Subscription;
 
   ngOnInit(): void {
     // Load employees with role EMPLOYEE only
@@ -52,6 +53,7 @@ export class PerformanceComponent implements OnInit {
                 });
                 this.employeesWithReviews = withReviews;
                 this.allItems = all.sort((a,b)=> (a.reviewDate||'').localeCompare(b.reviewDate||''));
+                this.startPolling();
               },
               error: () => { this.error = 'Failed to load performance lists'; }
             });
@@ -60,6 +62,31 @@ export class PerformanceComponent implements OnInit {
         });
       },
       error: () => { this.employees = []; this.error = 'Failed to load users'; }
+    });
+  }
+  ngOnDestroy(): void { this.poll?.unsubscribe(); }
+
+  private startPolling() {
+    this.poll?.unsubscribe();
+    this.poll = interval(15000).subscribe(() => {
+      this.load();
+      if ((this.employees || []).length) {
+        const perfCalls = this.employees.map(e => this.api.listPerformanceByEmployee(e.id!));
+        forkJoin(perfCalls).subscribe({
+          next: (lists) => {
+            const all: Array<{ employeeId: number; employeeName: string; rating: number; feedback?: string; reviewDate: string }> = [];
+            this.employees.forEach((e, idx) => {
+              const list: any[] = lists[idx] as any[];
+              if (list && list.length) {
+                for (const r of list) {
+                  all.push({ employeeId: e.id!, employeeName: `${e.firstName} ${e.lastName}`.trim(), rating: r.rating, feedback: r.feedback, reviewDate: r.reviewDate });
+                }
+              }
+            });
+            this.allItems = all.sort((a,b)=> (a.reviewDate||'').localeCompare(b.reviewDate||''));
+          }
+        });
+      }
     });
   }
   load() {

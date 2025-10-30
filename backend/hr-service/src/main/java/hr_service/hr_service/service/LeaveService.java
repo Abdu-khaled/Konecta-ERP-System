@@ -26,6 +26,10 @@ public class LeaveService {
         return leaveRepository.findByEmployee(e);
     }
 
+    public List<LeaveRequest> listAll() {
+        return leaveRepository.findAll();
+    }
+
     public LeaveRequest approve(Long id) {
         LeaveRequest r = leaveRepository.findById(id).orElseThrow(() -> new RuntimeException("Leave not found"));
         r.setStatus(LeaveStatus.APPROVED);

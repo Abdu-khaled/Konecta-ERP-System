@@ -1,12 +1,13 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { HrApiService } from '../services/hr.api.service';
+import { HrApiService, HR_API_BASE_URL } from '../services/hr.api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { Employee } from '../services/hr.types';
 import { UserApiService, SystemUser } from '../../../core/services/user-api.service';
-import { forkJoin } from 'rxjs';
+import { forkJoin, interval, Subscription } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-hr-leaves',
@@ -14,10 +15,12 @@ import { forkJoin } from 'rxjs';
   imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './leaves.component.html'
 })
-export class LeavesComponent implements OnInit {
+export class LeavesComponent implements OnInit, OnDestroy {
   private readonly api = inject(HrApiService);
   private readonly toast = inject(ToastService);
   private readonly usersApi = inject(UserApiService);
+  private readonly http = inject(HttpClient);
+  private readonly hrBase = inject(HR_API_BASE_URL);
   employees: Employee[] = [];
   employeesWithLeaves: Employee[] = [];
   selectedEmployeeId: number | null = null;
@@ -25,6 +28,7 @@ export class LeavesComponent implements OnInit {
   allItems: Array<{ id: number; employeeId: number; employeeName: string; startDate: string; endDate: string; reason?: string; status: string }>=[];
   error = '';
   model = { startDate: '', endDate: '', reason: '' };
+  private poll?: Subscription;
 
   ngOnInit(): void {
     this.usersApi.listEmployeeUsers().subscribe({
@@ -34,25 +38,9 @@ export class LeavesComponent implements OnInit {
         forkJoin(calls).subscribe({
           next: (emps) => {
             this.employees = emps as any;
-            const leaveCalls = this.employees.map(e => this.api.listLeavesByEmployee(e.id!));
-            forkJoin(leaveCalls).subscribe({
-              next: (lists) => {
-                const withLeaves: Employee[] = [];
-                const all: Array<{ id: number; employeeId: number; employeeName: string; startDate: string; endDate: string; reason?: string; status: string }> = [];
-                this.employees.forEach((e, idx) => {
-                  const list: any[] = lists[idx] as any[];
-                  if (list && list.length) {
-                    withLeaves.push(e);
-                    for (const r of list) {
-                      all.push({ id: r.id, employeeId: e.id!, employeeName: `${e.firstName} ${e.lastName}`.trim(), startDate: r.startDate, endDate: r.endDate, reason: r.reason, status: r.status });
-                    }
-                  }
-                });
-                this.employeesWithLeaves = withLeaves;
-                this.allItems = all.sort((a,b)=> (a.startDate||'').localeCompare(b.startDate||''));
-              },
-              error: () => { this.error = 'Failed to load leave lists'; }
-            });
+            // Initial fetch of all requests (across all employees)
+            this.refreshAll();
+            this.startPolling();
           },
           error: () => { this.employees = []; this.error = 'Failed to prepare employees'; }
         });
@@ -60,6 +48,7 @@ export class LeavesComponent implements OnInit {
       error: () => { this.employees = []; this.error = 'Failed to load users'; }
     });
   }
+  ngOnDestroy(): void { this.poll?.unsubscribe(); }
   load() {
     if (!this.selectedEmployeeId) { this.items = []; return; }
     this.api.listLeavesByEmployee(this.selectedEmployeeId).subscribe({
@@ -107,6 +96,27 @@ export class LeavesComponent implements OnInit {
         // Update global table
         this.allItems = (this.allItems || []).map(r => r.id === id ? { ...r, status: 'REJECTED' } as any : r);
       }
+    });
+  }
+  private refreshAll() {
+    this.http.get<any[]>(`${this.hrBase}/leaves`).subscribe({
+      next: (list) => {
+        const all: Array<{ id: number; employeeId: number; employeeName: string; startDate: string; endDate: string; reason?: string; status: string }> = [];
+        (list || []).forEach((r: any) => {
+          const emp = (this.employees || []).find(e => e.id === r.employeeId);
+          const employeeName = emp ? `${emp.firstName} ${emp.lastName}`.trim() : `#${r.employeeId}`;
+          all.push({ id: r.id, employeeId: r.employeeId, employeeName, startDate: r.startDate, endDate: r.endDate, reason: r.reason, status: r.status });
+        });
+        this.allItems = all.sort((a,b)=> (a.startDate||'').localeCompare(b.startDate||''));
+      },
+      error: () => { /* keep previous */ }
+    });
+  }
+  private startPolling() {
+    this.poll?.unsubscribe();
+    this.poll = interval(15000).subscribe(() => {
+      this.load();
+      this.refreshAll();
     });
   }
 }

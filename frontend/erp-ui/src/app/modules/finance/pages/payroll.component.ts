@@ -18,7 +18,7 @@ export class PayrollComponent implements OnInit {
   items: Payroll[] = [];
   error = '';
 
-  model: PayrollRequest = { employeeId: 0, period: '', grossPay: 0, deductions: 0 };
+  model: PayrollRequest = { employeeId: 0, period: '', baseSalary: 0, bonuses: 0, deductions: 0 } as any;
 
   ngOnInit(): void { }
   load() { if (!this.period) return; this.api.listPayrollByPeriod(this.period).subscribe({ next: d => this.items = d, error: () => { this.error = 'Failed to load payroll'; this.toast.error(this.error); } }); }

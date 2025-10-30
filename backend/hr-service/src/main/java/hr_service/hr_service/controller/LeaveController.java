@@ -24,9 +24,16 @@ public class LeaveController {
     private final EmployeeService employeeService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','HR')")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     public ResponseEntity<LeaveResponse> create(@RequestBody LeaveRequestDTO req) {
-        Employee e = employeeService.findById(req.getEmployeeId());
+        // Employees can only create leave for themselves: resolve employee by token subject
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        String username = auth != null ? auth.getName() : null;
+        Employee e = employeeService.findByEmail(username);
+        if (e == null) {
+            String first = username != null && username.contains("@") ? username.substring(0, username.indexOf('@')) : (username != null ? username : "");
+            e = employeeService.ensureByEmail(username, first, "", null, null, null);
+        }
         LeaveRequest r = LeaveRequest.builder()
                 .employee(e)
                 .startDate(req.getStartDate())
@@ -37,9 +44,43 @@ public class LeaveController {
         return ResponseEntity.ok(toResponse(leaveService.create(r)));
     }
 
-    @GetMapping("/{employeeId}")
+    @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','HR')")
+    public ResponseEntity<List<LeaveResponse>> listAll() {
+        return ResponseEntity.ok(
+                leaveService.listAll().stream().map(this::toResponse).collect(Collectors.toList())
+        );
+    }
+
+    @GetMapping("/{employeeId}")
+    @PreAuthorize("hasAnyRole('ADMIN','HR','EMPLOYEE')")
     public ResponseEntity<List<LeaveResponse>> byEmployee(@PathVariable Long employeeId) {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getAuthorities().stream().anyMatch(a -> "ROLE_EMPLOYEE".equals(a.getAuthority()))) {
+            String username = auth.getName();
+            Employee self = employeeService.findByEmail(username);
+            if (self == null) {
+                String first = username != null && username.contains("@") ? username.substring(0, username.indexOf('@')) : (username != null ? username : "");
+                self = employeeService.ensureByEmail(username, first, "", null, null, null);
+            }
+            employeeId = self.getId();
+        }
+        return ResponseEntity.ok(
+                leaveService.getByEmployee(employeeId).stream().map(this::toResponse).collect(Collectors.toList())
+        );
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    public ResponseEntity<List<LeaveResponse>> mine() {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        String username = auth != null ? auth.getName() : null;
+        Employee self = employeeService.findByEmail(username);
+        if (self == null) {
+            String first = username != null && username.contains("@") ? username.substring(0, username.indexOf('@')) : (username != null ? username : "");
+            self = employeeService.ensureByEmail(username, first, "", null, null, null);
+        }
+        Long employeeId = self.getId();
         return ResponseEntity.ok(
                 leaveService.getByEmployee(employeeId).stream().map(this::toResponse).collect(Collectors.toList())
         );

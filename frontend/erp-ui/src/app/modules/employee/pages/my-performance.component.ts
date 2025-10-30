@@ -1,7 +1,9 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HrApiService } from '../../hr/services/hr.api.service';
+import { HrApiService, HR_API_BASE_URL } from '../../hr/services/hr.api.service';
 import { AuthState } from '../../../core/services/auth-state.service';
+import { HttpClient } from '@angular/common/http';
+import { interval, Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-employee-my-performance',
@@ -9,17 +11,22 @@ import { AuthState } from '../../../core/services/auth-state.service';
   imports: [CommonModule],
   templateUrl: './my-performance.component.html'
 })
-export class MyPerformanceComponent implements OnInit {
+export class MyPerformanceComponent implements OnInit, OnDestroy {
   private readonly hr = inject(HrApiService);
+  private readonly http = inject(HttpClient);
+  private readonly hrBase = inject(HR_API_BASE_URL);
   private readonly state = inject(AuthState);
   employeeId: number | null = null;
   items: any[] = [];
   error = '';
+  private poll?: Subscription;
 
   ngOnInit(): void {
-    const email = this.state.profile?.email || '';
-    this.hr.getEmployeeByEmail(email).subscribe({ next: (emp) => { this.employeeId = emp?.id || null; this.load(); } });
+    this.load();
   }
-  load() { if (!this.employeeId) return; this.hr.listPerformanceByEmployee(this.employeeId).subscribe({ next: d => this.items = d || [], error: () => this.error = 'Failed to load performance' }); }
+  load() { this.http.get<any[]>(`${this.hrBase}/performance/me`).subscribe({ next: d => this.items = d || [], error: () => this.error = 'Failed to load performance' }); }
+  ngAfterViewInit() {
+    this.poll = interval(15000).subscribe(() => this.load());
+  }
+  ngOnDestroy(): void { this.poll?.unsubscribe(); }
 }
-

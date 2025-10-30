@@ -35,13 +35,13 @@ public class AuthController {
     private final String registrationUrlBase;
 
     public AuthController(UserRepository userRepository,
-                          PasswordEncoder passwordEncoder,
-                          JwtService jwtService,
-                          NotificationService notificationService,
-                          OtpService otpService,
-                          @Value("${app.otp.ttl-seconds:300}") long otpTtlSeconds,
-                          @Value("${app.verification.ttl-minutes:1440}") long verificationTtlMinutes,
-                          @Value("${app.registration.urlBase:http://localhost:4200/register}") String registrationUrlBase) {
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService,
+            NotificationService notificationService,
+            OtpService otpService,
+            @Value("${app.otp.ttl-seconds:300}") long otpTtlSeconds,
+            @Value("${app.verification.ttl-minutes:1440}") long verificationTtlMinutes,
+            @Value("${app.registration.urlBase:http://localhost:4200/register}") String registrationUrlBase) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -71,8 +71,10 @@ public class AuthController {
             existing.setStatus(UserStatus.INACTIVE);
             existing.setOtpVerified(Boolean.FALSE);
             // Keep username as existing or fallback to email
-            if (existing.getUsername() == null) existing.setUsername(existing.getEmail());
-            if (existing.getPassword() == null) existing.setPassword(passwordEncoder.encode(TokenGenerator.randomToken()));
+            if (existing.getUsername() == null)
+                existing.setUsername(existing.getEmail());
+            if (existing.getPassword() == null)
+                existing.setPassword(passwordEncoder.encode(TokenGenerator.randomToken()));
             user = userRepository.save(existing);
         } else {
             user = User.builder()
@@ -93,11 +95,10 @@ public class AuthController {
         return ResponseEntity.ok(Map.of(
                 "message", "invite sent",
                 "id", user.getId(),
-                "email", user.getEmail()
-        ));
+                "email", user.getEmail()));
     }
 
-    @GetMapping({"/registration/validate", "/register/validate"})
+    @GetMapping({ "/registration/validate", "/register/validate" })
     public ResponseEntity<?> validateRegistrationToken(@RequestParam("token") String token) {
         var userOpt = userRepository.findByVerificationToken(token);
         if (userOpt.isEmpty()) {
@@ -114,14 +115,14 @@ public class AuthController {
                 "valid", true,
                 "email", user.getEmail(),
                 "name", user.getFullName(),
-                "role", user.getRole().name()
-        ));
+                "role", user.getRole().name()));
     }
 
-    @PostMapping({"/registration/complete", "/register/complete"})
+    @PostMapping({ "/registration/complete", "/register/complete" })
     public ResponseEntity<?> completeRegistration(@Valid @RequestBody CompleteRegistrationRequest req) {
         var userOpt = userRepository.findByVerificationToken(req.getToken());
-        if (userOpt.isEmpty()) return ResponseEntity.status(404).body(Map.of("message", "invalid token"));
+        if (userOpt.isEmpty())
+            return ResponseEntity.status(404).body(Map.of("message", "invalid token"));
         var user = userOpt.get();
         if (user.getVerificationExpiresAt() != null && user.getVerificationExpiresAt().isBefore(LocalDateTime.now())) {
             return ResponseEntity.badRequest().body(Map.of("message", "verification token expired"));
@@ -143,18 +144,19 @@ public class AuthController {
         user.setOtpExpiresAt(LocalDateTime.now().plusSeconds(otpTtlSeconds));
         userRepository.save(user);
 
-        notificationService.sendOtpEmail(user.getEmail(), user.getFullName() != null ? user.getFullName() : user.getUsername(), code, (int) otpTtlSeconds);
+        notificationService.sendOtpEmail(user.getEmail(),
+                user.getFullName() != null ? user.getFullName() : user.getUsername(), code, (int) otpTtlSeconds);
         return ResponseEntity.ok(Map.of(
                 "message", "otp_sent",
                 "delivery", "email",
-                "expiresIn", otpTtlSeconds
-        ));
+                "expiresIn", otpTtlSeconds));
     }
 
-    @PostMapping({"/registration/verify-otp", "/register/verify-otp"})
+    @PostMapping({ "/registration/verify-otp", "/register/verify-otp" })
     public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyOtpRequest req) {
         var userOpt = userRepository.findByVerificationToken(req.getToken());
-        if (userOpt.isEmpty()) return ResponseEntity.status(404).body(Map.of("message", "invalid token"));
+        if (userOpt.isEmpty())
+            return ResponseEntity.status(404).body(Map.of("message", "invalid token"));
         var user = userOpt.get();
         if (user.getOtpExpiresAt() == null || user.getOtpExpiresAt().isBefore(LocalDateTime.now())) {
             return ResponseEntity.badRequest().body(Map.of("message", "otp expired"));
@@ -187,8 +189,7 @@ public class AuthController {
                             "id", user.getId(),
                             "username", user.getUsername(),
                             "email", user.getEmail(),
-                            "role", user.getRole().name()
-                    ));
+                            "role", user.getRole().name()));
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -201,18 +202,22 @@ public class AuthController {
     @GetMapping("/users")
     @PreAuthorize("hasAnyRole('ADMIN','HR')")
     public ResponseEntity<?> listUsers(@RequestParam(value = "q", required = false) String q,
-                                       @RequestParam(value = "role", required = false) String roleStr) {
+            @RequestParam(value = "role", required = false) String roleStr) {
         var users = userRepository.findAll();
         Role parsedRole = null;
         if (roleStr != null && !roleStr.isBlank()) {
-            try { parsedRole = Role.valueOf(roleStr.toUpperCase()); } catch (Exception ignored) {}
+            try {
+                parsedRole = Role.valueOf(roleStr.toUpperCase());
+            } catch (Exception ignored) {
+            }
         }
         final Role roleFilter = parsedRole;
         return ResponseEntity.ok(
                 users.stream()
                         .filter(u -> roleFilter == null || (u.getRole() != null && u.getRole() == roleFilter))
                         .filter(u -> {
-                            if (q == null || q.isBlank()) return true;
+                            if (q == null || q.isBlank())
+                                return true;
                             String s = q.toLowerCase();
                             return (u.getUsername() != null && u.getUsername().toLowerCase().contains(s))
                                     || (u.getEmail() != null && u.getEmail().toLowerCase().contains(s))
@@ -227,16 +232,15 @@ public class AuthController {
                                 u.getRole(),
                                 u.getStatus(),
                                 u.getOtpVerified(),
-                                u.getCreatedAt()
-                        ))
-                        .toList()
-        );
+                                u.getCreatedAt()))
+                        .toList());
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req) {
         User user = userRepository.findByEmail(req.getEmail()).orElse(null);
-        if (user == null || user.getPassword() == null || !passwordEncoder.matches(req.getPassword(), user.getPassword())) {
+        if (user == null || user.getPassword() == null
+                || !passwordEncoder.matches(req.getPassword(), user.getPassword())) {
             return ResponseEntity.status(401).body(Map.of("message", "invalid credentials"));
         }
         if (user.getStatus() != UserStatus.ACTIVE || !Boolean.TRUE.equals(user.getOtpVerified())) {
@@ -245,7 +249,10 @@ public class AuthController {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", user.getRole().name());
         claims.put("uid", user.getId());
-        String token = jwtService.generateToken(user.getUsername(), claims);
+        // include username as claim; set token subject to the email so downstream
+        // services can reliably resolve Employee by email
+        claims.put("username", user.getUsername());
+        String token = jwtService.generateToken(user.getEmail(), claims);
         return ResponseEntity.ok(new AuthResponse(token));
     }
 
@@ -255,9 +262,11 @@ public class AuthController {
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
             return ResponseEntity.status(401).build();
         }
-        String username = auth.getName();
-        return userRepository.findByUsername(username)
-                .map(user -> ResponseEntity.ok(new ProfileResponse(user.getId(), user.getUsername(), user.getEmail(), user.getRole())))
+        String subject = auth.getName();
+        return userRepository.findByUsername(subject)
+                .or(() -> userRepository.findByEmail(subject))
+                .map(user -> ResponseEntity
+                        .ok(new ProfileResponse(user.getId(), user.getUsername(), user.getEmail(), user.getRole())))
                 .orElseGet(() -> ResponseEntity.status(404).build());
     }
 
@@ -270,8 +279,7 @@ public class AuthController {
                     "valid", true,
                     "sub", jws.getBody().getSubject(),
                     "exp", jws.getBody().getExpiration(),
-                    "role", jws.getBody().get("role")
-            ));
+                    "role", jws.getBody().get("role")));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("valid", false, "error", e.getMessage()));
         }

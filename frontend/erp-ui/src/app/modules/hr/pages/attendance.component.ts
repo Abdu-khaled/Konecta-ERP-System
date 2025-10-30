@@ -1,10 +1,10 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HrApiService } from '../services/hr.api.service';
 import { Employee } from '../services/hr.types';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, of, interval, Subscription } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { ToastService } from '../../../core/services/toast.service';
 import { UserApiService, SystemUser } from '../../../core/services/user-api.service';
@@ -17,7 +17,7 @@ type Row = { id: number; firstName: string; lastName: string; present: boolean; 
   imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './attendance.component.html'
 })
-export class AttendanceComponent implements OnInit {
+export class AttendanceComponent implements OnInit, OnDestroy {
   private readonly api = inject(HrApiService);
   private readonly toast = inject(ToastService);
   private readonly usersApi = inject(UserApiService);
@@ -25,8 +25,10 @@ export class AttendanceComponent implements OnInit {
   rows: Row[] = [];
   error = '';
   selectedDate = new Date().toISOString().slice(0, 10);
+  private poll?: Subscription;
 
   ngOnInit(): void { this.loadEligibleEmployees(); }
+  ngOnDestroy(): void { this.poll?.unsubscribe(); }
 
   private loadEligibleEmployees() {
     // Load HR employees + system users, and keep only those whose email belongs to role EMPLOYEE
@@ -35,7 +37,7 @@ export class AttendanceComponent implements OnInit {
         const calls = (users || []).map(u => this.api.ensureEmployee({ email: u.email, fullName: u.fullName }));
         if (!calls.length) { this.employees = []; return; }
         forkJoin(calls).subscribe({
-          next: (emps) => { this.employees = emps as any; this.loadForDate(); },
+          next: (emps) => { this.employees = emps as any; this.loadForDate(); this.startPolling(); },
           error: () => { this.employees = []; this.error = 'Failed to prepare employees'; }
         });
       },
@@ -65,5 +67,10 @@ export class AttendanceComponent implements OnInit {
       next: () => { row.saving = false; this.toast.success('Attendance saved'); },
       error: () => { this.error = 'Failed to save'; this.toast.error(this.error); row.saving = false; }
     });
+  }
+
+  private startPolling() {
+    this.poll?.unsubscribe();
+    this.poll = interval(30000).subscribe(() => this.loadForDate());
   }
 }
