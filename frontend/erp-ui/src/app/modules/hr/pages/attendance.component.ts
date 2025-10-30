@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HrApiService } from '../services/hr.api.service';
 import { Employee } from '../services/hr.types';
@@ -13,7 +14,7 @@ type Row = { id: number; firstName: string; lastName: string; present: boolean; 
 @Component({
   selector: 'app-attendance',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './attendance.component.html'
 })
 export class AttendanceComponent implements OnInit {

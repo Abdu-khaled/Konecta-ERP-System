@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { HrApiService } from '../services/hr.api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { Employee } from '../services/hr.types';
@@ -10,7 +11,7 @@ import { forkJoin } from 'rxjs';
 @Component({
   selector: 'app-hr-performance',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './performance.component.html'
 })
 export class PerformanceComponent implements OnInit {

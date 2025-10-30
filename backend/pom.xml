@@ -35,6 +35,7 @@
 		<module>auth-service</module>
 		<module>hr-service</module>
 		<module>finance-service</module>
+		<module>inventory-service</module>
 		<module>gateway-service</module>
 		<module>config-server</module>
 		<module>discovery-server</module>

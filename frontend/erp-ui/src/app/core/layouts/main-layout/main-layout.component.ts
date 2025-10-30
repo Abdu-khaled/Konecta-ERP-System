@@ -78,6 +78,17 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
         };
         this.role = p.role || null;
         this.sidebarItems = buildSidebarForRole(this.role);
+        // Ensure a top-level Dashboard link is present for all roles
+        const ensureDashboard = (label: string, path: string) => {
+          const exists = (this.sidebarItems || []).some(i => (i.path === path) || (i.label?.toLowerCase() === label.toLowerCase()));
+          if (!exists) {
+            this.sidebarItems = [{ label, icon: 'space_dashboard', path }, ...(this.sidebarItems || [])];
+          }
+        };
+        if (this.role === 'HR') ensureDashboard('Dashboard', '/hr/dashboard');
+        else if (this.role === 'ADMIN') ensureDashboard('Dashboard', '/admin/dashboard');
+        else if (this.role === 'FINANCE') ensureDashboard('Dashboard', '/finance/dashboard');
+        else if (this.role === 'EMPLOYEE') ensureDashboard('Dashboard', '/employee/dashboard');
       } else {
         this.user = null;
         this.role = null;

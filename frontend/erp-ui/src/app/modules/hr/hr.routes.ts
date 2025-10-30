@@ -7,6 +7,7 @@ import { EmployeesComponent } from './pages/employees.component';
 import { DepartmentsComponent } from './pages/departments.component';
 
 export const hrRoutes: Routes = [
+  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   { path: 'dashboard', component: HrDashboardComponent },
   { path: 'attendance', component: AttendanceComponent },
   { path: 'employees', component: EmployeesComponent },

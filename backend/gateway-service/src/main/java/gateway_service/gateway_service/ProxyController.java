@@ -75,6 +75,22 @@ public class ProxyController {
         return forward(upstreamBase, method, request, body);
     }
 
+    @RequestMapping(path = "/inventory/**", method = {
+            RequestMethod.GET,
+            RequestMethod.HEAD,
+            RequestMethod.OPTIONS,
+            RequestMethod.POST,
+            RequestMethod.PUT,
+            RequestMethod.PATCH,
+            RequestMethod.DELETE
+    })
+    public ResponseEntity<byte[]> proxyInventory(HttpMethod method,
+                                                 HttpServletRequest request,
+                                                 @RequestBody(required = false) byte[] body) {
+        String upstreamBase = "http://inventory-service:8085/api/inventory";
+        return forward(upstreamBase, method, request, body);
+    }
+
 
     @RequestMapping(path = "/reporting/**", method = {
             RequestMethod.GET,
@@ -101,7 +117,7 @@ public class ProxyController {
         String suffix = fullPath.startsWith(prefix) ? fullPath.substring(prefix.length()) : fullPath; // e.g. /hr/employees
         String query = request.getQueryString();
         // Remove the first path segment (/auth|/hr|/finance|/reporting) to avoid duplication with upstreamBase
-        String cleaned = suffix.replaceFirst("^/(auth|hr|finance|reporting)", "");
+        String cleaned = suffix.replaceFirst("^/(auth|hr|finance|reporting|inventory)", "");
         String target = upstreamBase + cleaned + (query != null ? "?" + query : "");
 
         HttpHeaders headers = extractHeaders(request);

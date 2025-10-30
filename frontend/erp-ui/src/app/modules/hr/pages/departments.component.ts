@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HrApiService } from '../services/hr.api.service';
 import { Department, DepartmentRequest } from '../services/hr.types';
@@ -8,7 +9,7 @@ import { ToastService } from '../../../core/services/toast.service';
 @Component({
   selector: 'app-hr-departments',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './departments.component.html'
 })
 export class DepartmentsComponent implements OnInit {

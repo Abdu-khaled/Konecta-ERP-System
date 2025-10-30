@@ -13,19 +13,19 @@
 <section class="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
   <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
     <h3 class="text-sm font-semibold mb-3">Total Employees</h3>
-    <div class="text-3xl font-semibold text-black">-</div>
+    <div class="text-3xl font-semibold text-black">{{ totalEmployees }}</div>
     <p class="text-sm">Current headcount across departments.</p>
   </article>
 
   <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
     <h3 class="text-sm font-semibold mb-3">Attendance Today</h3>
-    <div class="text-3xl font-semibold text-black">-</div>
+    <div class="text-3xl font-semibold text-black">{{ attendanceToday }}</div>
     <p class="text-sm">Check-ins recorded for today.</p>
   </article>
 
   <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
     <h3 class="text-sm font-semibold mb-3">Leave Requests Pending</h3>
-    <p class="text-3xl font-semibold text-black">-</p>
+    <p class="text-3xl font-semibold text-black">{{ pendingLeaves }}</p>
     <p class="text-sm">Awaiting approval.</p>
   </article>
 
@@ -37,8 +37,11 @@
 
   <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
     <h3 class="text-sm font-semibold mb-3">Top Performers</h3>
-    <div class="text-3xl font-semibold text-black">-</div>
-    <p class="text-sm">Based on latest reviews.</p>
+    <div class="text-3xl font-semibold text-black" *ngIf="!topPerformers.length">-</div>
+    <ul *ngIf="topPerformers.length" class="text-sm space-y-1">
+      <li *ngFor="let p of topPerformers">{{ p.name }} <span class="text-slate-500">(rating: {{ p.rating }})</span></li>
+    </ul>
+    <p class="text-sm" *ngIf="!topPerformers.length">Based on latest reviews.</p>
   </article>
 
   <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70 md:col-span-2 xl:col-span-1">

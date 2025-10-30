@@ -6,6 +6,7 @@ import { PayrollComponent } from './pages/payroll.component';
 import { BudgetsComponent } from './pages/budgets.component';
 
 export const financeRoutes: Routes = [
+  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   { path: 'dashboard', component: FinanceDashboardComponent },
   { path: 'invoices', component: InvoicesComponent },
   { path: 'expenses', component: ExpensesComponent },

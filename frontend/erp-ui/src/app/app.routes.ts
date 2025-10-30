@@ -59,6 +59,7 @@ export const routes: Routes = [
       }
     ]
   },
+  { path: 'admin', redirectTo: 'admin/dashboard', pathMatch: 'full' },
   {
     path: 'admin/users',
     canActivate: [roleGuard],

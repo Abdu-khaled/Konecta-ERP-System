@@ -18,7 +18,7 @@ export function buildSidebarForRole(role: string | null): SidebarItem[] {
     return [
       { label: 'Dashboard', icon: 'space_dashboard', path: '/hr/dashboard' },
       { label: 'Manage Employees', icon: 'group', children: [
-        // Removed Employees and System Users entries from sidebar
+        // Core HR actions
         { label: 'Departments', icon: 'apartment', path: '/hr/departments' },
         { label: 'Invite Users', icon: 'group_add', path: '/hr/invite' }
       ] },

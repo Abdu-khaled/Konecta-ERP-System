@@ -6,6 +6,7 @@ import { MyPerformanceComponent } from './pages/my-performance.component';
 import { MyPayrollComponent } from './pages/my-payroll.component';
 
 export const employeeRoutes: Routes = [
+  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   { path: 'dashboard', component: EmployeeDashboardComponent },
   { path: 'my-attendance', component: MyAttendanceComponent },
   { path: 'my-leaves', component: MyLeavesComponent },

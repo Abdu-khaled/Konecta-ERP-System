@@ -67,7 +67,23 @@ services:
     networks:
       - erp-net
 
+  inventory-service:
+    build:
+      context: ./backend
+      dockerfile: inventory-service/Dockerfile
+    image: erp-inventory-service:dev
+    container_name: erp-inventory-service
+    ports:
+      - "8086:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/inventory_service
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 1234
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - erp-net
 
+  
   discovery-server:
     build:
       context: ./backend
@@ -91,6 +107,7 @@ services:
       - erp-net
     depends_on:
       - auth-service
+      - inventory-service
 
   mailhog:
     image: mailhog/mailhog:latest
