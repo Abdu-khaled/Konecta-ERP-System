@@ -11,6 +11,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import jakarta.servlet.http.HttpServletRequest;
+import finance_service.finance_service.security.JwtService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +27,7 @@ public class PayrollController {
     private final PayrollService payrollService;
     private final PayrollRepository payrollRepository;
     private final RestTemplateBuilder restTemplateBuilder;
+    private final JwtService jwtService;
 
     @PostMapping("/calculate")
     @PreAuthorize("hasAnyRole('ADMIN','FINANCE')")
@@ -58,7 +60,7 @@ public class PayrollController {
     }
 
     @GetMapping("/me")
-    @PreAuthorize("hasAnyRole('ADMIN','FINANCE','EMPLOYEE')")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     public ResponseEntity<PayrollResponse> myPayroll(@RequestParam String period, HttpServletRequest request) {
         Long selfId = resolveSelfEmployeeId(request);
         if (selfId == null) {
@@ -83,19 +85,35 @@ public class PayrollController {
     private Long resolveSelfEmployeeId(HttpServletRequest request) {
         try {
             var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-            String username = auth != null ? auth.getName() : null;
-            if (username == null) return null;
+            String subject = auth != null ? auth.getName() : null;
+            if (subject == null) return null;
             var rt = restTemplateBuilder.build();
             HttpHeaders headers = new HttpHeaders();
             String bearer = request.getHeader(org.springframework.http.HttpHeaders.AUTHORIZATION);
             if (bearer != null) headers.set(org.springframework.http.HttpHeaders.AUTHORIZATION, bearer);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
+            // Try to extract explicit username claim (might be the system username while subject is email)
+            String usernameClaim = null;
+            try {
+                if (bearer != null && bearer.startsWith("Bearer ")) {
+                    var jws = jwtService.validate(bearer.substring(7));
+                    Object un = jws.getBody().get("username");
+                    if (un != null) usernameClaim = un.toString();
+                }
+            } catch (Exception ignored) {}
             String[] candidates = new String[]{
                     "http://hr-service:8082",
                     "http://localhost:8088"
             };
             for (String base : candidates) {
                 try {
+                    // First, ask HR for my employee id directly
+                    try {
+                        var idResp = rt.exchange(base + "/api/hr/employees/me-id", HttpMethod.GET, entity, Long.class);
+                        if (idResp.getStatusCode().is2xxSuccessful() && idResp.getBody() != null) {
+                            return idResp.getBody();
+                        }
+                    } catch (Exception ignored) {}
                     // First attempt list employees
                     var resp = rt.exchange(base + "/api/hr/employees", HttpMethod.GET, entity, java.util.List.class);
                     if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() instanceof java.util.List<?> list) {
@@ -103,7 +121,10 @@ public class PayrollController {
                             if (o instanceof java.util.Map<?, ?> m) {
                                 Object email = m.get("email");
                                 Object id = m.get("id");
-                                if (email != null && id != null && username.equalsIgnoreCase(email.toString())) {
+                                if (email != null && id != null && (
+                                        subject.equalsIgnoreCase(email.toString()) ||
+                                        (usernameClaim != null && usernameClaim.equalsIgnoreCase(email.toString()))
+                                )) {
                                     try { return Long.valueOf(id.toString()); } catch (Exception ignored) {}
                                 }
                             }
@@ -120,7 +141,10 @@ public class PayrollController {
                                 if (o instanceof java.util.Map<?, ?> m) {
                                     Object email = m.get("email");
                                     Object id = m.get("id");
-                                    if (email != null && id != null && username.equalsIgnoreCase(email.toString())) {
+                                    if (email != null && id != null && (
+                                            subject.equalsIgnoreCase(email.toString()) ||
+                                            (usernameClaim != null && usernameClaim.equalsIgnoreCase(email.toString()))
+                                    )) {
                                         try { return Long.valueOf(id.toString()); } catch (Exception ignored) {}
                                     }
                                 }

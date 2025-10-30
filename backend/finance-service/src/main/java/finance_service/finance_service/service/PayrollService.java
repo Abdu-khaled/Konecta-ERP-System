@@ -52,20 +52,23 @@ public class PayrollService {
         double deductions = req.getDeductions() != null ? req.getDeductions() : 0.0;
         double net = base + bonuses - deductions;
 
-        Payroll p = Payroll.builder()
-                .employeeId(req.getEmployeeId())
-                .period(req.getPeriod())
-                .baseSalary(base)
-                .bonuses(bonuses)
-                .deductions(deductions)
-                .netSalary(net)
-                .processedDate(LocalDate.now())
-                .build();
+        // Upsert by (employeeId, period) to avoid duplicates
+        Payroll p = payrollRepository
+                .findTopByEmployeeIdAndPeriodOrderByProcessedDateDescIdDesc(req.getEmployeeId(), req.getPeriod())
+                .orElseGet(() -> Payroll.builder()
+                        .employeeId(req.getEmployeeId())
+                        .period(req.getPeriod())
+                        .build());
+        p.setBaseSalary(base);
+        p.setBonuses(bonuses);
+        p.setDeductions(deductions);
+        p.setNetSalary(net);
+        p.setProcessedDate(LocalDate.now());
         return payrollRepository.save(p);
     }
 
     public Payroll getByEmployeeAndPeriod(Long employeeId, String period) {
-        return payrollRepository.findByEmployeeIdAndPeriod(employeeId, period).orElse(null);
+        // If duplicates exist, prefer the most recent
+        return payrollRepository.findTopByEmployeeIdAndPeriodOrderByProcessedDateDescIdDesc(employeeId, period).orElse(null);
     }
 }
-

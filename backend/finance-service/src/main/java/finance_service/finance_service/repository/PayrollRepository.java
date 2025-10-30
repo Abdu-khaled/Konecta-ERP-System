@@ -9,5 +9,5 @@ import java.util.Optional;
 public interface PayrollRepository extends JpaRepository<Payroll, Long> {
     Optional<Payroll> findByEmployeeIdAndPeriod(Long employeeId, String period);
     List<Payroll> findByPeriod(String period);
+    Optional<Payroll> findTopByEmployeeIdAndPeriodOrderByProcessedDateDescIdDesc(Long employeeId, String period);
 }
-

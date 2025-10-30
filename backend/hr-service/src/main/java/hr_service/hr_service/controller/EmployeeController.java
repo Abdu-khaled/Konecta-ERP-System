@@ -69,6 +69,22 @@ public class EmployeeController {
         return ResponseEntity.ok(toResponse(saved));
     }
 
+    @GetMapping("/me-id")
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    public ResponseEntity<Long> myEmployeeId() {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        String username = auth != null ? auth.getName() : null;
+        if (username == null || username.isBlank()) {
+            return ResponseEntity.status(403).build();
+        }
+        var existing = employeeService.findByEmail(username);
+        if (existing == null) {
+            String first = username.contains("@") ? username.substring(0, username.indexOf('@')) : username;
+            existing = employeeService.ensureByEmail(username, first, "", null, null, null);
+        }
+        return ResponseEntity.ok(existing.getId());
+    }
+
     private Employee fromRequest(EmployeeRequest r) {
         Department dept = null;
         if (r.getDepartmentId() != null) {
