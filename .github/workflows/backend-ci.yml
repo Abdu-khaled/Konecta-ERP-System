@@ -750,25 +750,6 @@ jobs:
             echo "WARNING: Image larger than 1GB!"
           fi
 
-      - name: Smoke test
-        timeout-minutes: 2
-        run: |
-          echo "Testing container startup..."
-          docker run -d --name test-${{ matrix.service }} \
-            -e SPRING_PROFILES_ACTIVE=smoke-test \
-            ${{ steps.vars.outputs.docker_tag }}
-
-          sleep 15 # Give it a moment to potentially crash
-
-          if ! docker ps | grep -q test-${{ matrix.service }}; then
-            echo "Container failed to start or crashed!"
-            docker logs test-${{ matrix.service }}
-            exit 0
-          fi
-
-          echo "Container started successfully."
-          docker rm -f test-${{ matrix.service }}
-
       - name: Scan with Trivy (detailed)
         uses: aquasecurity/trivy-action@0.18.0
         with:

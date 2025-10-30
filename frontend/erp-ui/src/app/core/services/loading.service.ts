@@ -9,4 +9,3 @@ export class LoadingService {
   push() { this._pending.update(v => v + 1); }
   pop() { this._pending.update(v => Math.max(0, v - 1)); }
 }
-

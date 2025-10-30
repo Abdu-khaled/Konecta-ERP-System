@@ -8,4 +8,3 @@ export const roleGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   const role = state.profile?.role;
   return required.length ? required.includes(role || '') : true;
 };
-
