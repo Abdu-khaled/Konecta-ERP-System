@@ -29,7 +29,7 @@
     </form>
   </section>
 
-  <section class="mt-6 rounded-2xl bg-white p-4 shadow ring-1 ring-slate-200/70">
+  <section class="mt-6 rounded-2xl bg-white p-4 shadow ring-1 ring-slate-200/70" *ngIf="selectedEmployeeId">
     <table class="w-full text-sm">
       <thead class="text-left text-slate-600">
         <tr>
@@ -47,5 +47,26 @@
       </tbody>
     </table>
   </section>
-</div>
 
+  <section class="mt-6 rounded-2xl bg-white p-4 shadow ring-1 ring-slate-200/70" *ngIf="!selectedEmployeeId && allItems.length">
+    <h2 class="text-lg font-semibold mb-2">All Employee Reviews</h2>
+    <table class="w-full text-sm">
+      <thead class="text-left text-slate-600">
+        <tr>
+          <th class="py-2">Employee</th>
+          <th>Date</th>
+          <th>Rating</th>
+          <th>Feedback</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of allItems" class="border-t border-slate-200/70">
+          <td class="py-2">{{ r.employeeName }}</td>
+          <td>{{ r.reviewDate }}</td>
+          <td>{{ r.rating }}</td>
+          <td class="text-slate-600">{{ r.feedback }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</div>
