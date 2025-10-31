@@ -1,7 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService, InviteUserRequest } from '../../../admin/services/admin.service';
+import { HrApiService } from '../../../hr/services/hr.api.service';
+import { Department } from '../../../hr/services/hr.types';
 
 @Component({
   selector: 'app-admin-invite-user',
@@ -29,6 +31,14 @@ import { AdminService, InviteUserRequest } from '../../../admin/services/admin.s
             <option value="FINANCE">Finance</option>
           </select>
         </div>
+        <div>
+          <label class="block text-base text-gray-600 mb-2">Department</label>
+          <select [(ngModel)]="departmentId" name="departmentId" [required]="role==='EMPLOYEE'" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm">
+            <option [ngValue]="null">Select department</option>
+            <option *ngFor="let d of departments" [ngValue]="d.id">{{ d.name }}</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-1">{{ role==='EMPLOYEE' ? 'Required for Employees.' : 'Optional.' }} Choose the user's department.</p>
+        </div>
         <button class="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-lg px-4 py-3 text-base font-medium shadow-md" [disabled]="loading()">Send Invite</button>
         <p *ngIf="message()" class="text-green-700 text-sm">{{message()}}</p>
         <p *ngIf="error()" class="text-red-600 text-sm">{{error()}}</p>
@@ -37,16 +47,27 @@ import { AdminService, InviteUserRequest } from '../../../admin/services/admin.s
   </div>
   `
 })
-export class InviteUserComponent {
+export class InviteUserComponent implements OnInit {
   private readonly admin = inject(AdminService);
+  private readonly hrApi = inject(HrApiService);
 
   name = '';
   email = '';
   role: 'EMPLOYEE' | 'HR' | 'FINANCE' = 'EMPLOYEE';
+  departments: Department[] = [];
+  departmentId: number | null = null;
 
   loading = signal(false);
   message = signal('');
   error = signal('');
+
+  ngOnInit() {
+    // Load departments to populate dropdown
+    this.hrApi.listDepartments().subscribe({
+      next: (list) => this.departments = list || [],
+      error: () => { /* ignore fetch error silently */ }
+    });
+  }
 
   submit() {
     this.loading.set(true);
@@ -54,9 +75,14 @@ export class InviteUserComponent {
     const payload: InviteUserRequest = { name: this.name, email: this.email, role: this.role };
     this.admin.inviteUser(payload).subscribe({
       next: () => {
+        // Best-effort: ensure an Employee record exists with the chosen department
+        this.hrApi.ensureEmployee({ email: this.email, fullName: this.name, departmentId: this.departmentId || null }).subscribe({
+          next: () => {},
+          error: () => {}
+        });
         this.message.set('Invitation sent. User will complete registration from email link.');
         this.loading.set(false);
-        this.name=''; this.email=''; this.role='EMPLOYEE';
+        this.name=''; this.email=''; this.role='EMPLOYEE'; this.departmentId = null;
       },
       error: (e) => {
         this.error.set(e?.error?.message || 'Failed to send invite');

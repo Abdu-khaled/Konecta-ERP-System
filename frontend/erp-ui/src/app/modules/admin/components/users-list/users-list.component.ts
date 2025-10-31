@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService, SystemUser } from '../../../admin/services/admin.service';
 import { HrApiService } from '../../../hr/services/hr.api.service';
+import { ModalComponent } from '../../../../shared/components/modal/modal.component';
+import { Department, Employee } from '../../../hr/services/hr.types';
 
 @Component({
   selector: 'app-admin-users-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ModalComponent],
   template: `
   <div class="mt-6">
     <header class="flex items-center justify-between">
@@ -34,6 +36,7 @@ import { HrApiService } from '../../../hr/services/hr.api.service';
             <th>Role</th>
             <th>Status</th>
             <th>Department</th>
+            <th class="text-right pr-2">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -44,6 +47,10 @@ import { HrApiService } from '../../../hr/services/hr.api.service';
             <td>{{ u.role }}</td>
             <td>{{ u.status || '-' }}<span *ngIf="u.otpVerified === false" class="text-amber-700"> (pending OTP)</span></td>
             <td>{{ departmentByEmail[u.email.toLowerCase()] || '-' }}</td>
+            <td class="text-right">
+              <button class="text-blue-700 hover:underline mr-3" (click)="openEdit(u)">Edit</button>
+              <button class="text-red-600 hover:underline" (click)="delete(u)">Delete</button>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -56,6 +63,31 @@ import { HrApiService } from '../../../hr/services/hr.api.service';
       </div>
     </section>
   </div>
+
+  <app-modal [open]="editOpen" title="Edit User" (closed)="closeEdit()">
+    <form (ngSubmit)="saveEdit()" class="flex flex-col gap-4">
+      <div>
+        <label class="block text-sm text-gray-700 mb-1">Full name</label>
+        <input class="w-full border rounded px-3 py-2" [(ngModel)]="editFullName" name="fullName" />
+      </div>
+      <div>
+        <label class="block text-sm text-gray-700 mb-1">Phone number</label>
+        <input class="w-full border rounded px-3 py-2" [(ngModel)]="editPhone" name="phone" />
+      </div>
+      <div>
+        <label class="block text-sm text-gray-700 mb-1">Department</label>
+        <select class="w-full border rounded px-3 py-2" [(ngModel)]="editDepartmentId" name="departmentId">
+          <option [ngValue]="null">- None -</option>
+          <option *ngFor="let d of departments" [ngValue]="d.id">{{ d.name }}</option>
+        </select>
+      </div>
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button type="button" class="px-4 py-2 rounded bg-slate-200" (click)="closeEdit()">Cancel</button>
+        <button class="px-4 py-2 rounded bg-primary-600 text-white">Save</button>
+      </div>
+      <p *ngIf="editError" class="text-sm text-rose-700">{{ editError }}</p>
+    </form>
+  </app-modal>
   `
 })
 export class UsersListComponent implements OnInit {
@@ -64,12 +96,22 @@ export class UsersListComponent implements OnInit {
 
   users: SystemUser[] = [];
   departmentByEmail: Record<string, string> = {};
+  employeesByEmail: Record<string, Employee> = {};
+  departments: Department[] = [];
   loading = false;
   error = '';
 
   search = '';
   page = 1;
   pageSize = 10;
+
+  // editing state
+  editOpen = false;
+  editTarget: SystemUser | null = null;
+  editFullName = '';
+  editPhone = '';
+  editDepartmentId: number | null = null;
+  editError = '';
 
   ngOnInit() {
     this.refresh();
@@ -84,14 +126,22 @@ export class UsersListComponent implements OnInit {
     // Fetch employees to map departments by email (best-effort)
     this.hrApi.listEmployees().subscribe({
       next: (emps) => {
-        const map: Record<string, string> = {};
+        const mapName: Record<string, string> = {};
+        const empMap: Record<string, Employee> = {} as any;
         for (const e of emps) {
-          if (e.email) map[e.email.toLowerCase()] = e.departmentName || '';
+          if (e.email) {
+            const key = e.email.toLowerCase();
+            mapName[key] = e.departmentName || '';
+            empMap[key] = e;
+          }
         }
-        this.departmentByEmail = map;
+        this.departmentByEmail = mapName;
+        this.employeesByEmail = empMap;
       },
       error: () => {}
     });
+    // Fetch departments for editing dropdown
+    this.hrApi.listDepartments().subscribe({ next: (d) => this.departments = d, error: () => {} });
   }
 
   get filtered(): SystemUser[] {
@@ -104,4 +154,48 @@ export class UsersListComponent implements OnInit {
   }
   nextPage() { if (this.page < this.totalPages) this.page++; }
   prevPage() { if (this.page > 1) this.page--; }
+
+  openEdit(u: SystemUser) {
+    this.editTarget = u;
+    this.editFullName = u.fullName || '';
+    const emp = this.employeesByEmail[(u.email || '').toLowerCase()];
+    this.editPhone = (u.phone || emp?.phone || '') as string;
+    this.editDepartmentId = (emp?.departmentId ?? null) as any;
+    this.editError = '';
+    this.editOpen = true;
+  }
+  closeEdit() {
+    this.editOpen = false;
+    this.editTarget = null;
+  }
+  saveEdit() {
+    if (!this.editTarget) return;
+    const u = this.editTarget;
+    this.editError = '';
+    // update auth user (full name + phone)
+    this.admin.updateUser(u.id, { fullName: this.editFullName, phone: this.editPhone }).subscribe({
+      next: () => {
+        // update HR employee (phone + department via ensure)
+        this.hrApi.ensureEmployee({ email: u.email, fullName: this.editFullName, phone: this.editPhone, departmentId: this.editDepartmentId ?? null }).subscribe({
+          next: () => { this.closeEdit(); this.refresh(); },
+          error: () => { this.closeEdit(); this.refresh(); }
+        });
+      },
+      error: (e) => { this.editError = e?.error?.message || 'Failed to update user'; }
+    });
+  }
+
+  delete(u: SystemUser) {
+    if (!confirm(`Delete user ${u.email}? This cannot be undone.`)) return;
+    this.admin.deleteUser(u.id).subscribe({
+      next: () => {
+        // best-effort remove matching employee
+        this.hrApi.getEmployeeByEmail(u.email).subscribe({
+          next: (emp) => { if (emp?.id) this.hrApi.deleteEmployee(emp.id).subscribe({ next: () => this.refresh(), error: () => this.refresh() }); else this.refresh(); },
+          error: () => this.refresh()
+        });
+      },
+      error: (e) => { this.error = e?.error?.message || 'Failed to delete user'; }
+    });
+  }
 }

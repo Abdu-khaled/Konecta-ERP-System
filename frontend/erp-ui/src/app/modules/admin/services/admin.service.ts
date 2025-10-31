@@ -16,6 +16,7 @@ export interface SystemUser {
   username: string;
   fullName?: string;
   email: string;
+  phone?: string;
   role: InviteRole;
   status?: 'ACTIVE' | 'INACTIVE';
   otpVerified?: boolean;
@@ -34,5 +35,13 @@ export class AdminService {
   listUsers(q?: string): Observable<SystemUser[]> {
     const url = q && q.trim() ? `${this.baseUrl}/users?q=${encodeURIComponent(q.trim())}` : `${this.baseUrl}/users`;
     return this.http.get<SystemUser[]>(url);
+  }
+
+  updateUser(id: number, payload: { fullName?: string; phone?: string }) {
+    return this.http.put(`${this.baseUrl}/users/${id}`, payload);
+  }
+
+  deleteUser(id: number) {
+    return this.http.delete(`${this.baseUrl}/users/${id}`);
   }
 }

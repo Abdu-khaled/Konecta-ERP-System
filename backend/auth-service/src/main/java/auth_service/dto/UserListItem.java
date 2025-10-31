@@ -14,9 +14,9 @@ public class UserListItem {
     private String username;
     private String fullName;
     private String email;
+    private String phone;
     private Role role;
     private UserStatus status;
     private Boolean otpVerified;
     private LocalDateTime createdAt;
 }
-

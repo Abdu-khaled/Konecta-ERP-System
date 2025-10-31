@@ -229,11 +229,40 @@ public class AuthController {
                                 u.getUsername(),
                                 u.getFullName(),
                                 u.getEmail(),
+                                u.getPhone(),
                                 u.getRole(),
                                 u.getStatus(),
                                 u.getOtpVerified(),
                                 u.getCreatedAt()))
                         .toList());
+    }
+
+    @PutMapping("/users/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','HR')")
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest req) {
+        return userRepository.findById(id)
+                .map(u -> {
+                    if (req.getFullName() != null) u.setFullName(req.getFullName());
+                    if (req.getPhone() != null) u.setPhone(req.getPhone());
+                    userRepository.save(u);
+                    return ResponseEntity.ok(Map.of(
+                            "message", "user updated",
+                            "id", u.getId(),
+                            "fullName", u.getFullName(),
+                            "phone", u.getPhone()));
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/users/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','HR')")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+        return userRepository.findById(id)
+                .map(u -> {
+                    userRepository.deleteById(id);
+                    return ResponseEntity.ok(Map.of("message", "user deleted"));
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping("/login")
