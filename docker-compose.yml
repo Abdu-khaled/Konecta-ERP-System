@@ -1,0 +1,148 @@
+services:
+  frontend:
+    build:
+      context: ./frontend/erp-ui
+      dockerfile: Dockerfile
+    image: erp-frontend:dev
+    container_name: erp-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - auth-service
+    networks:
+      - erp-net
+
+  auth-service:
+    build:
+      context: ./backend
+      dockerfile: auth-service/Dockerfile
+    image: erp-auth-service:dev
+    container_name: erp-auth-service
+    ports:
+      - "8089:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/auth_service
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 1234
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_MAIL_HOST: host.docker.internal
+      SPRING_MAIL_PORT: 1025
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "false"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "false"
+      APP_MAIL_FROM: noreply@konecta-erp.local
+    networks:
+      - erp-net
+    depends_on:
+      - mailhog
+
+  hr-service:
+    build:
+      context: ./backend
+      dockerfile: hr-service/Dockerfile
+    image: erp-hr-service:dev
+    container_name: erp-hr-service
+    ports:
+      - "8088:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/hr_service
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 1234
+      SPRING_PROFILES_ACTIVE: prod
+    networks:
+      - erp-net
+
+  finance-service:
+    build:
+      context: ./backend
+      dockerfile: finance-service/Dockerfile
+    image: erp-finance-service:dev
+    container_name: erp-finance-service
+    ports:
+      - "8087:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/finance_service
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 1234
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - erp-net
+
+  inventory-service:
+    build:
+      context: ./backend
+      dockerfile: inventory-service/Dockerfile
+    image: erp-inventory-service:dev
+    container_name: erp-inventory-service
+    ports:
+      - "8086:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/inventory_service
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 1234
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - erp-net
+
+  
+  discovery-server:
+    build:
+      context: ./backend
+      dockerfile: discovery-server/Dockerfile
+    image: erp-discovery-server:dev
+    container_name: erp-discovery-server
+    ports:
+      - "8762:8080"
+    networks:
+      - erp-net
+
+  gateway-service:
+    build:
+      context: ./backend
+      dockerfile: gateway-service/Dockerfile
+    image: erp-gateway-service:dev
+    container_name: erp-gateway-service
+    ports:
+      - "8084:8080"
+    networks:
+      - erp-net
+    depends_on:
+      - auth-service
+      - inventory-service
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: erp-mailhog
+    ports:
+      - "8025:8025"  # UI
+      - "1025:1025"  # SMTP
+    networks:
+      - erp-net
+
+  config-server:
+    build:
+      context: ./backend
+      dockerfile: config-server/Dockerfile
+    image: erp-config-server:dev
+    container_name: erp-config-server
+    ports:
+      - "8888:8080"
+    networks:
+      - erp-net
+
+  reporting-service:
+    build:
+      context: ./backend
+      dockerfile: reporting-service/ReportingService/Dockerfile
+    image: erp-reporting-service:dev
+    container_name: erp-reporting-service
+    ports:
+      - "5160:8080"
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Host=host.docker.internal;Port=5432;Database=reporting_service;Username=postgres;Password=1234
+    networks:
+      - erp-net
+
+networks:
+  erp-net:
+    driver: bridge

@@ -1,0 +1,17 @@
+package hr_service.hr_service.dto.request;
+
+import lombok.Data;
+import java.time.LocalDate;
+
+@Data
+public class EmployeeRequest {
+    private String firstName;
+    private String lastName;
+    private String email;
+    private String phone;
+    private String position;
+    private LocalDate hireDate;
+    private Double salary;
+    private Long departmentId;
+}
+

@@ -1,0 +1,43 @@
+<div class="mt-6">
+<header class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+  <div class="space-y-1">
+    <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Admin Dashboard</h1>
+    <p class="text-sm text-slate-500">Global statistics and controls.</p>
+  </div>
+  <div class="flex gap-2">
+    <a routerLink="/admin/invite" class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700">Invite Users</a>
+    <button type="button" class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700">Manage Roles</button>
+    <button type="button" class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700">System Settings</button>
+  </div>
+</header>
+
+<section class="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+  <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
+    <h3 class="text-sm font-semibold mb-3">Users</h3>
+    <div class="text-3xl font-semibold"><span>Total:</span> <span class="text-black">-</span></div>
+    <p class="text-sm">Active employees: <span class="text-black">-</span> - Departments: <span class="text-black">-</span></p>
+  </article>
+
+  <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
+    <h3 class="text-sm font-semibold mb-3">System Uptime</h3>
+    <div class="text-3xl font-semibold text-black">-</div>
+    <p class="text-sm">Recent logins: <span class="text-black">-</span></p>
+  </article>
+
+  <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
+    <h3 class="text-sm font-semibold mb-3">Requests & Registrations</h3>
+    <p class="text-3xl font-semibold">Pending: <span class="text-black">-</span></p>
+    <p class="text-sm">New registrations: <span class="text-black">-</span></p>
+  </article>
+
+  <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70 md:col-span-2 xl:col-span-1">
+    <h3 class="text-sm font-semibold mb-3">Notifications</h3>
+    <ul class="text-sm space-y-2">
+      <li>System: Backup completed</li>
+      <li>Security: Review access changes</li>
+      <li>HR: New department created</li>
+    </ul>
+  </article>
+</section>
+
+</div>

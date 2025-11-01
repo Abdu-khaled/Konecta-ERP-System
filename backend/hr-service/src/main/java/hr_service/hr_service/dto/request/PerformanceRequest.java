@@ -1,0 +1,13 @@
+package hr_service.hr_service.dto.request;
+
+import lombok.Data;
+import java.time.LocalDate;
+
+@Data
+public class PerformanceRequest {
+    private Long employeeId;
+    private Integer rating;
+    private String feedback;
+    private LocalDate reviewDate;
+}
+

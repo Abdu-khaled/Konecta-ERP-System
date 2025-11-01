@@ -1,0 +1,63 @@
+<div class="mt-6">
+  <header class="flex items-center justify-between">
+    <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Expenses</h1>
+    <div class="flex items-center gap-2">
+      <select class="border rounded px-3 py-2 text-sm" [(ngModel)]="filter" (ngModelChange)="refresh()">
+        <option value="PENDING">Pending</option>
+        <option value="APPROVED">Approved</option>
+        <option value="REJECTED">Rejected</option>
+      </select>
+      <button class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700" (click)="showForm = true">Submit Expense</button>
+    </div>
+  </header>
+
+  <div *ngIf="error" class="mt-3 rounded bg-rose-50 text-rose-700 px-3 py-2 text-sm">{{ error }}</div>
+
+  <section *ngIf="showForm" class="mt-4 rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70">
+    <form (ngSubmit)="submit()" class="grid gap-3 sm:grid-cols-3">
+      <label class="text-sm">
+        <span class="block mb-1">Category</span>
+        <input class="w-full border rounded px-3 py-2" [(ngModel)]="model.category" name="category" required />
+      </label>
+      <label class="text-sm">
+        <span class="block mb-1">Amount</span>
+        <input class="w-full border rounded px-3 py-2" type="number" [(ngModel)]="model.amount" name="amount" required />
+      </label>
+      <label class="text-sm sm:col-span-3">
+        <span class="block mb-1">Description</span>
+        <textarea class="w-full border rounded px-3 py-2" rows="3" [(ngModel)]="model.description" name="description"></textarea>
+      </label>
+      <div class="sm:col-span-3 flex gap-2 mt-2">
+        <button class="rounded bg-primary-600 text-white px-4 py-2" type="submit">Submit</button>
+        <button class="rounded bg-slate-200 text-slate-800 px-4 py-2" type="button" (click)="showForm = false">Cancel</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="mt-6 rounded-2xl bg-white p-4 shadow ring-1 ring-slate-200/70">
+    <table class="w-full text-sm">
+      <thead class="text-left text-slate-600">
+        <tr>
+          <th class="py-2">Category</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Description</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let e of items" class="border-t border-slate-200/70">
+          <td class="py-2">{{ e.category }}</td>
+          <td>{{ e.amount | number:'1.2-2' }}</td>
+          <td>{{ e.status }}</td>
+          <td class="text-slate-600">{{ e.description }}</td>
+          <td class="text-right">
+            <button class="text-emerald-600 mr-2" (click)="approve(e)" [disabled]="e.status!=='PENDING'">Approve</button>
+            <button class="text-rose-600" (click)="reject(e)" [disabled]="e.status!=='PENDING'">Reject</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</div>
+

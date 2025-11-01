@@ -1,0 +1,33 @@
+import { Injectable, InjectionToken, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Expense, ExpenseRequest, ExpenseStatus, Invoice, InvoiceRequest, InvoiceStatus, Payroll, PayrollRequest } from './finance.types';
+
+export const FINANCE_API_BASE_URL = new InjectionToken<string>('FINANCE_API_BASE_URL', {
+  providedIn: 'root',
+  factory: () => '/api/finance'
+});
+
+@Injectable({ providedIn: 'root' })
+export class FinanceApiService {
+  private readonly http = inject(HttpClient);
+  private readonly base = inject(FINANCE_API_BASE_URL);
+
+  listInvoices(status?: InvoiceStatus) {
+    const q = status ? `?status=${status}` : '';
+    return this.http.get<Invoice[]>(`${this.base}/invoices${q}`);
+  }
+  createInvoice(payload: InvoiceRequest) { return this.http.post<Invoice>(`${this.base}/invoices`, payload); }
+  sendInvoice(id: number) { return this.http.put<Invoice>(`${this.base}/invoices/${id}/send`, {}); }
+  markInvoicePaid(id: number) { return this.http.put<Invoice>(`${this.base}/invoices/${id}/mark-paid`, {}); }
+
+  listExpenses(status?: ExpenseStatus) {
+    const q = status ? `?status=${status}` : '';
+    return this.http.get<Expense[]>(`${this.base}/expenses${q}`);
+  }
+  submitExpense(payload: ExpenseRequest) { return this.http.post<Expense>(`${this.base}/expenses`, payload); }
+  approveExpense(id: number, approverId: number) { return this.http.put<Expense>(`${this.base}/expenses/${id}/approve?approverId=${approverId}`, {}); }
+  rejectExpense(id: number, approverId: number) { return this.http.put<Expense>(`${this.base}/expenses/${id}/reject?approverId=${approverId}`, {}); }
+  listPayrollByPeriod(period: string) { return this.http.get<Payroll[]>(`${this.base}/payroll?period=${encodeURIComponent(period)}`); }
+  getPayrollForEmployee(employeeId: number, period: string) { return this.http.get<Payroll>(`${this.base}/payroll/employee/${employeeId}?period=${encodeURIComponent(period)}`); }
+  calculateAndSavePayroll(payload: PayrollRequest) { return this.http.post<Payroll>(`${this.base}/payroll`, payload); }
+}
