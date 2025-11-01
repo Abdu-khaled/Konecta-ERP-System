@@ -41,5 +41,8 @@ public class ExpenseService {
     public List<Expense> byStatus(ExpenseStatus status) {
         return expenseRepository.findByStatus(status);
     }
-}
 
+    public List<Expense> listAll() {
+        return expenseRepository.findAll();
+    }
+}

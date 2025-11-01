@@ -55,7 +55,9 @@ public class ExpenseController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','FINANCE')")
     public ResponseEntity<List<ExpenseResponse>> byStatus(@RequestParam(required = false) ExpenseStatus status) {
-        List<Expense> list = status == null ? expenseService.byStatus(ExpenseStatus.PENDING) : expenseService.byStatus(status);
+        List<Expense> list = (status == null)
+                ? expenseService.listAll()
+                : expenseService.byStatus(status);
         return ResponseEntity.ok(list.stream().map(this::toResponse).collect(Collectors.toList()));
     }
 
@@ -72,4 +74,3 @@ public class ExpenseController {
                 .build();
     }
 }
-

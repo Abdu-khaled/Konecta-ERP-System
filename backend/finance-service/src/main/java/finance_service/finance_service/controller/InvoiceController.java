@@ -46,8 +46,10 @@ public class InvoiceController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','FINANCE')")
     public ResponseEntity<List<InvoiceResponse>> byStatus(@RequestParam(required = false) InvoiceStatus status) {
-        InvoiceStatus s = status != null ? status : InvoiceStatus.DRAFT;
-        List<InvoiceResponse> body = invoiceService.byStatus(s).stream().map(this::toResponse).collect(Collectors.toList());
+        List<Invoice> list = (status == null)
+                ? invoiceService.listAll()
+                : invoiceService.byStatus(status);
+        List<InvoiceResponse> body = list.stream().map(this::toResponse).collect(Collectors.toList());
         return ResponseEntity.ok(body);
     }
 
@@ -62,4 +64,3 @@ public class InvoiceController {
                 .build();
     }
 }
-

@@ -36,5 +36,8 @@ public class InvoiceService {
     public List<Invoice> byStatus(InvoiceStatus status) {
         return invoiceRepository.findByStatus(status);
     }
-}
 
+    public List<Invoice> listAll() {
+        return invoiceRepository.findAll();
+    }
+}
