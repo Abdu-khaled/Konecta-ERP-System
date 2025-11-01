@@ -110,7 +110,7 @@ namespace ReportingService.Controllers
                         startDate = request.StartDate ?? DateTime.Now.AddMonths(-1);
                         endDate = request.EndDate ?? DateTime.Now;
                         var financialSummary = await _dataAggregationService.AggregateFinancialDataAsync(
-                            startDate.Value, endDate.Value, authToken);
+                            startDate, endDate, authToken);
                         var invoices = await _financeClient.GetInvoicesAsync(null, authToken);
                         var expenses = await _financeClient.GetExpensesAsync(null, authToken);
                         

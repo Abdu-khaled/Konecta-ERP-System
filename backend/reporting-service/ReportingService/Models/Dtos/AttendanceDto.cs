@@ -6,6 +6,6 @@ public class AttendanceDto
     public long EmployeeId { get; set; }
     public DateTime Date { get; set; }
     public bool Present { get; set; }
-    public decimal WorkingHours { get; set; }
+    public decimal? WorkingHours { get; set; }
 }
 

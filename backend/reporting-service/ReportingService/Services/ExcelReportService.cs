@@ -100,7 +100,8 @@ public class ExcelReportService : IExcelReportService
         worksheet.Cells[5, 1].Value = "Present Days:";
         worksheet.Cells[5, 2].Value = presentDays;
         worksheet.Cells[6, 1].Value = "Average Hours:";
-        worksheet.Cells[6, 2].Value = attendance.Any() ? attendance.Average(a => a.WorkingHours) : 0;
+        var avg = attendance.Where(a => a.WorkingHours.HasValue).Select(a => (double)a.WorkingHours!.Value).DefaultIfEmpty(0).Average();
+        worksheet.Cells[6, 2].Value = avg;
         worksheet.Cells[6, 2].Style.Numberformat.Format = "0.00";
 
         // Headers
@@ -123,7 +124,7 @@ public class ExcelReportService : IExcelReportService
             worksheet.Cells[row, 1].Value = record.EmployeeId;
             worksheet.Cells[row, 2].Value = record.Date.ToString("yyyy-MM-dd");
             worksheet.Cells[row, 3].Value = record.Present ? "Yes" : "No";
-            worksheet.Cells[row, 4].Value = record.WorkingHours;
+            worksheet.Cells[row, 4].Value = record.WorkingHours ?? 0m;
             worksheet.Cells[row, 4].Style.Numberformat.Format = "0.00";
             
             var dataRange = worksheet.Cells[row, 1, row, 4];

@@ -86,9 +86,7 @@ public class PdfReportService : IPdfReportService
                         x.CurrentPageNumber();
                         x.Span(" of ");
                         x.TotalPages();
-                    })
-                    .FontSize(8)
-                    .FontColor(Colors.Grey.Medium);
+                    });
             });
         });
 
@@ -121,7 +119,7 @@ public class PdfReportService : IPdfReportService
                         // Summary
                         var presentDays = attendance.Count(a => a.Present);
                         var totalDays = attendance.Count;
-                        var avgHours = attendance.Any() ? attendance.Average(a => a.WorkingHours) : 0;
+                        var avgHours = attendance.Any() ? attendance.Where(a => a.WorkingHours.HasValue).Select(a => (double)a.WorkingHours!.Value).DefaultIfEmpty(0).Average() : 0;
                         column.Item().Text($"Total Records: {totalDays}").SemiBold();
                         column.Item().Text($"Present Days: {presentDays}");
                         column.Item().Text($"Average Working Hours: {avgHours:F2}");
@@ -132,7 +130,7 @@ public class PdfReportService : IPdfReportService
                         
                         foreach (var group in grouped)
                         {
-                            column.Item().Text($"Employee ID: {group.Key}").SemiBold().PaddingTop(5);
+                            column.Item().PaddingTop(5).Text($"Employee ID: {group.Key}").SemiBold();
                             column.Item().Table(table =>
                             {
                                 table.ColumnsDefinition(columns =>
@@ -153,7 +151,7 @@ public class PdfReportService : IPdfReportService
                                 {
                                     table.Cell().Element(CellStyle).Text(record.Date.ToString("yyyy-MM-dd"));
                                     table.Cell().Element(CellStyle).Text(record.Present ? "Yes" : "No");
-                                    table.Cell().Element(CellStyle).Text(record.WorkingHours.ToString("F2"));
+                                    table.Cell().Element(CellStyle).Text((record.WorkingHours ?? 0m).ToString("F2"));
                                 }
                             });
                             column.Item().PaddingBottom(10);
@@ -168,9 +166,7 @@ public class PdfReportService : IPdfReportService
                         x.CurrentPageNumber();
                         x.Span(" of ");
                         x.TotalPages();
-                    })
-                    .FontSize(8)
-                    .FontColor(Colors.Grey.Medium);
+                    });
             });
         });
 
@@ -201,7 +197,7 @@ public class PdfReportService : IPdfReportService
                         column.Item().PaddingTop(10);
 
                         // Financial Summary
-                        column.Item().Text("Financial Summary").SemiBold().FontSize(12).PaddingTop(5);
+                        column.Item().PaddingTop(5).Text("Financial Summary").SemiBold().FontSize(12);
                         column.Item().Text($"Total Revenue: ${summary.TotalRevenue:F2}").SemiBold();
                         column.Item().Text($"Total Expenses: ${summary.TotalExpenses:F2}");
                         column.Item().Text($"Net Income: ${summary.NetIncome:F2}").FontColor(summary.NetIncome >= 0 ? Colors.Green.Medium : Colors.Red.Medium);
@@ -210,7 +206,7 @@ public class PdfReportService : IPdfReportService
                         column.Item().PaddingTop(10);
 
                         // Recent Invoices
-                        column.Item().Text("Recent Invoices").SemiBold().FontSize(12).PaddingTop(5);
+                        column.Item().PaddingTop(5).Text("Recent Invoices").SemiBold().FontSize(12);
                         var recentInvoices = invoices.OrderByDescending(i => i.InvoiceDate).Take(20).ToList();
                         
                         if (recentInvoices.Any())
@@ -249,7 +245,7 @@ public class PdfReportService : IPdfReportService
                         column.Item().PaddingTop(10);
 
                         // Recent Expenses
-                        column.Item().Text("Recent Expenses").SemiBold().FontSize(12).PaddingTop(5);
+                        column.Item().PaddingTop(5).Text("Recent Expenses").SemiBold().FontSize(12);
                         var recentExpenses = expenses.OrderByDescending(e => e.CreatedAt).Take(20).ToList();
                         
                         if (recentExpenses.Any())
@@ -294,9 +290,7 @@ public class PdfReportService : IPdfReportService
                         x.CurrentPageNumber();
                         x.Span(" of ");
                         x.TotalPages();
-                    })
-                    .FontSize(8)
-                    .FontColor(Colors.Grey.Medium);
+                    });
             });
         });
 
@@ -338,20 +332,20 @@ public class PdfReportService : IPdfReportService
                         // Attendance Summary
                         if (attendance.Any())
                         {
-                            column.Item().Text("Attendance Summary").SemiBold().FontSize(12).PaddingTop(5);
+                            column.Item().PaddingTop(5).Text("Attendance Summary").SemiBold().FontSize(12);
                             var presentDays = attendance.Count(a => a.Present);
                             var totalDays = attendance.Count;
                             column.Item().Text($"Total Days: {totalDays}");
                             column.Item().Text($"Present Days: {presentDays}");
                             column.Item().Text($"Attendance Rate: {(totalDays > 0 ? (double)presentDays / totalDays * 100 : 0):F2}%");
-                            column.Item().Text($"Average Working Hours: {(attendance.Any() ? attendance.Average(a => a.WorkingHours) : 0):F2}");
+                            column.Item().Text($"Average Working Hours: {(attendance.Any() ? attendance.Where(a => a.WorkingHours.HasValue).Select(a => (double)a.WorkingHours!.Value).DefaultIfEmpty(0).Average() : 0):F2}");
                             column.Item().PaddingTop(10);
                         }
 
                         // Payroll Summary
                         if (payrolls.Any())
                         {
-                            column.Item().Text("Payroll Summary").SemiBold().FontSize(12).PaddingTop(5);
+                            column.Item().PaddingTop(5).Text("Payroll Summary").SemiBold().FontSize(12);
                             var totalSalary = payrolls.Sum(p => p.NetSalary);
                             column.Item().Text($"Total Salary: ${totalSalary:F2}");
                             column.Item().Text($"Payroll Records: {payrolls.Count}");
@@ -392,9 +386,7 @@ public class PdfReportService : IPdfReportService
                         x.CurrentPageNumber();
                         x.Span(" of ");
                         x.TotalPages();
-                    })
-                    .FontSize(8)
-                    .FontColor(Colors.Grey.Medium);
+                    });
             });
         });
 

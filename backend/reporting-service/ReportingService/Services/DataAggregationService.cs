@@ -123,7 +123,7 @@ public class DataAggregationService : IDataAggregationService
         return new AttendanceSummaryDto
         {
             AverageAttendanceRate = totalDays > 0 ? (double)presentDays / totalDays * 100 : 0,
-            AverageWorkingHours = attendance.Any() ? (double)attendance.Average(a => a.WorkingHours) : 0,
+            AverageWorkingHours = attendance.Any() ? attendance.Where(a => a.WorkingHours.HasValue).Select(a => (double)a.WorkingHours!.Value).DefaultIfEmpty(0).Average() : 0,
             TotalPresentDays = presentDays,
             TotalAbsentDays = absentDays,
             StartDate = startDate,
@@ -165,7 +165,7 @@ public class DataAggregationService : IDataAggregationService
                 EmployeeId = employee.Id,
                 EmployeeName = $"{employee.FirstName} {employee.LastName}",
                 AttendanceRate = totalDays > 0 ? (double)presentDays / totalDays * 100 : 0,
-                AverageWorkingHours = employeeAttendance.Any() ? (double)employeeAttendance.Average(a => a.WorkingHours) : 0,
+                AverageWorkingHours = employeeAttendance.Any() ? employeeAttendance.Where(a => a.WorkingHours.HasValue).Select(a => (double)a.WorkingHours!.Value).DefaultIfEmpty(0).Average() : 0,
                 TotalWorkingDays = presentDays
             });
         }

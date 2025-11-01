@@ -133,11 +133,12 @@ public class FinanceServiceClient : IFinanceServiceClient
 
     private void AddAuthHeader(string? authToken)
     {
-        if (!string.IsNullOrEmpty(authToken))
-        {
-            _httpClient.DefaultRequestHeaders.Remove("Authorization");
-            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {authToken}");
-        }
+        if (string.IsNullOrWhiteSpace(authToken)) return;
+        var value = authToken!.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+            ? authToken
+            : $"Bearer {authToken}";
+        _httpClient.DefaultRequestHeaders.Remove("Authorization");
+        _httpClient.DefaultRequestHeaders.Add("Authorization", value);
     }
 }
 

@@ -140,6 +140,8 @@ services:
     environment:
       DOTNET_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: Host=host.docker.internal;Port=5432;Database=reporting_service;Username=postgres;Password=1234
+      ServiceUrls__HrService: http://hr-service:8082
+      ServiceUrls__FinanceService: http://finance-service:8083
     networks:
       - erp-net
 
