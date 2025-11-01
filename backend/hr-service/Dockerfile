@@ -18,3 +18,4 @@ COPY --from=builder /workspace/hr-service/target/*.jar /app/app.jar
 # hr-service configured on 8082
 EXPOSE 8082
 ENTRYPOINT ["java","-jar","/app/app.jar"]
+
