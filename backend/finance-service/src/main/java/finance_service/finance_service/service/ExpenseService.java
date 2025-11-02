@@ -17,6 +17,7 @@ public class ExpenseService {
     public Expense submit(Expense e) {
         e.setStatus(ExpenseStatus.PENDING);
         e.setCreatedAt(LocalDateTime.now());
+        e.setSource(finance_service.finance_service.model.ExpenseSource.USER);
         return expenseRepository.save(e);
     }
 

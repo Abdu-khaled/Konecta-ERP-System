@@ -30,4 +30,15 @@ export class FinanceApiService {
   listPayrollByPeriod(period: string) { return this.http.get<Payroll[]>(`${this.base}/payroll?period=${encodeURIComponent(period)}`); }
   getPayrollForEmployee(employeeId: number, period: string) { return this.http.get<Payroll>(`${this.base}/payroll/employee/${employeeId}?period=${encodeURIComponent(period)}`); }
   calculateAndSavePayroll(payload: PayrollRequest) { return this.http.post<Payroll>(`${this.base}/payroll`, payload); }
+
+  importExpenses(file: File, opts?: { status?: 'APPROVED'|'PENDING'; dateFormat?: string; mode?: 'upsert'|'insert_only' }) {
+    // Use binary upload to avoid multipart proxy issues
+    const params = new URLSearchParams();
+    if (opts?.status) params.set('status', opts.status);
+    if (opts?.dateFormat) params.set('dateFormat', opts.dateFormat);
+    if (opts?.mode) params.set('mode', opts.mode);
+    const q = params.toString() ? `?${params}` : '';
+    const headers = { 'X-Filename': file.name } as any;
+    return this.http.post<{ inserted: number; updated: number; skipped: number; errors: string[] }>(`${this.base}/expenses/import-bin${q}`, file, { headers });
+  }
 }

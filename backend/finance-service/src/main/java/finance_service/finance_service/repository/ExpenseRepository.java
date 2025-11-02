@@ -9,5 +9,6 @@ import java.util.List;
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     List<Expense> findBySubmittedBy(Long submittedBy);
     List<Expense> findByStatus(ExpenseStatus status);
+    Expense findByDepartmentAndCategoryAndExpenseDate(String department, String category, java.time.LocalDate expenseDate);
+    Expense findByExternalRef(String externalRef);
 }
-

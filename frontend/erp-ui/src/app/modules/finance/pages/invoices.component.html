@@ -1,4 +1,4 @@
-<div class="mt-6">
+﻿<div class="mt-6">
   <header class="flex items-center justify-between">
     <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Invoices</h1>
     <div class="flex items-center gap-2">
@@ -9,6 +9,7 @@
         <option value="PAID">Paid</option>
       </select>
       <button class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700" (click)="showForm = true">Create Invoice</button>
+      <button class="rounded bg-slate-200 text-slate-800 px-4 py-2 text-sm" type="button" (click)="download()">Download</button>
     </div>
   </header>
 

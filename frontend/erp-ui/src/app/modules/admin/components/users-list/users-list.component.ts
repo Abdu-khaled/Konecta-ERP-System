@@ -5,6 +5,7 @@ import { AdminService, SystemUser } from '../../../admin/services/admin.service'
 import { HrApiService } from '../../../hr/services/hr.api.service';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { Department, Employee } from '../../../hr/services/hr.types';
+import { downloadExcel } from '../../../../shared/helpers/excel';
 
 @Component({
   selector: 'app-admin-users-list',
@@ -21,6 +22,7 @@ import { Department, Employee } from '../../../hr/services/hr.types';
           <option [ngValue]="10">10</option>
           <option [ngValue]="20">20</option>
         </select>
+        <button class="rounded bg-slate-200 text-slate-800 px-4 py-2 text-sm" type="button" (click)="download()">Download</button>
       </div>
     </header>
 
@@ -197,5 +199,25 @@ export class UsersListComponent implements OnInit {
       },
       error: (e) => { this.error = e?.error?.message || 'Failed to delete user'; }
     });
+  }
+
+  download() {
+    const rows = (this.filtered || []).map(u => ({
+      Name: u.fullName || '-',
+      Username: u.username,
+      Email: u.email,
+      Role: u.role,
+      Status: u.status || '-',
+      Department: this.departmentByEmail[(u.email || '').toLowerCase()] || '-'
+    }));
+    const cols = [
+      { key: 'Name', header: 'Name' },
+      { key: 'Username', header: 'Username' },
+      { key: 'Email', header: 'Email' },
+      { key: 'Role', header: 'Role' },
+      { key: 'Status', header: 'Status' },
+      { key: 'Department', header: 'Department' },
+    ] as any;
+    downloadExcel('system-users.xlsx', cols, rows as any);
   }
 }

@@ -4,6 +4,7 @@ import finance_service.finance_service.model.ExpenseStatus;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -17,5 +18,6 @@ public class ExpenseResponse {
     private ExpenseStatus status;
     private Long approvedBy;
     private LocalDateTime createdAt;
+    private String department;
+    private LocalDate expenseDate;
 }
-

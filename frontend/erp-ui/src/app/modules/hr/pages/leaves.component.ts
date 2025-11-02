@@ -8,6 +8,7 @@ import { Employee } from '../services/hr.types';
 import { UserApiService, SystemUser } from '../../../core/services/user-api.service';
 import { forkJoin, interval, Subscription } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
+import { downloadExcel } from '../../../shared/helpers/excel';
 
 @Component({
   selector: 'app-hr-leaves',
@@ -118,5 +119,16 @@ export class LeavesComponent implements OnInit, OnDestroy {
       this.load();
       this.refreshAll();
     });
+  }
+
+  downloadAll() {
+    const cols = [
+      { key: 'employeeName', header: 'Employee' },
+      { key: 'startDate', header: 'Start' },
+      { key: 'endDate', header: 'End' },
+      { key: 'reason', header: 'Reason' },
+      { key: 'status', header: 'Status' }
+    ] as any;
+    downloadExcel('leaves.xlsx', cols, this.allItems || []);
   }
 }

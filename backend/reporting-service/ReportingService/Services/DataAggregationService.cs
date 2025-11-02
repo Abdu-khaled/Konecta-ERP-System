@@ -82,7 +82,9 @@ public class DataAggregationService : IDataAggregationService
         var expenses = await _financeClient.GetExpensesAsync(null, authToken);
 
         var filteredInvoices = invoices.Where(i => i.InvoiceDate >= startDate && i.InvoiceDate <= endDate).ToList();
-        var filteredExpenses = expenses.Where(e => e.CreatedAt >= startDate && e.CreatedAt <= endDate).ToList();
+        var filteredExpenses = expenses
+            .Where(e => (e.ExpenseDate ?? e.CreatedAt) >= startDate && (e.ExpenseDate ?? e.CreatedAt) <= endDate)
+            .ToList();
 
         return new FinancialSummaryDto
         {
@@ -133,7 +135,9 @@ public class DataAggregationService : IDataAggregationService
 
     private List<TrendDataPoint> CalculateExpenseTrends(List<ExpenseDto> expenses, DateTime startDate, DateTime endDate)
     {
-        var filteredExpenses = expenses.Where(e => e.CreatedAt >= startDate && e.CreatedAt <= endDate).ToList();
+        var filteredExpenses = expenses
+            .Where(e => (e.ExpenseDate ?? e.CreatedAt) >= startDate && (e.ExpenseDate ?? e.CreatedAt) <= endDate)
+            .ToList();
         
         return filteredExpenses
             .GroupBy(e => new { e.CreatedAt.Date, e.Category })

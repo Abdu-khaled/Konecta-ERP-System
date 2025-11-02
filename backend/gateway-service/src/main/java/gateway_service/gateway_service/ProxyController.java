@@ -127,6 +127,16 @@ public class ProxyController {
         headers.remove(HttpHeaders.CONTENT_LENGTH);
         headers.remove(HttpHeaders.ACCEPT_ENCODING);
 
+        // For multipart/form-data requests, Spring may not bind @RequestBody. Fallback to raw stream.
+        if (body == null || body.length == 0) {
+            try {
+                var is = request.getInputStream();
+                body = is.readAllBytes();
+            } catch (Exception ignore) {
+                body = new byte[0];
+            }
+        }
+
         HttpEntity<byte[]> entity = new HttpEntity<>(body, headers);
         String fullUrl = fullPath + (query != null ? ("?" + query) : "");
         log.info("Proxy {} {} -> {}", method, fullUrl, target);

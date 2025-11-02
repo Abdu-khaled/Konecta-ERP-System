@@ -1,9 +1,10 @@
-import { Component, OnInit, inject } from '@angular/core';
+﻿import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FinanceApiService } from '../services/finance.api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { Invoice, InvoiceRequest, InvoiceStatus } from '../services/finance.types';
+import { downloadExcel } from '../../../shared/helpers/excel';
 
 @Component({
   selector: 'app-finance-invoices',
@@ -29,4 +30,18 @@ export class InvoicesComponent implements OnInit {
   }
   send(i: Invoice) { if (!i.id) return; this.api.sendInvoice(i.id).subscribe({ next: () => { this.toast.success('Invoice sent'); this.refresh(); } }); }
   markPaid(i: Invoice) { if (!i.id) return; this.api.markInvoicePaid(i.id).subscribe({ next: () => { this.toast.success('Invoice marked paid'); this.refresh(); } }); }
+  download() {
+    const cols = [
+      { key: 'clientName', header: 'Client' },
+      { key: 'invoiceDate', header: 'Date' },
+      { key: 'amount', header: 'Amount' },
+      { key: 'status', header: 'Status' }
+    ] as any;
+    downloadExcel('invoices.xlsx', cols, this.items || []);
+  }
 }
+
+
+
+
+

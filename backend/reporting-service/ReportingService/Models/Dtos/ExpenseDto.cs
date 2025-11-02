@@ -10,5 +10,7 @@ public class ExpenseDto
     public string Status { get; set; } = string.Empty;
     public long? ApprovedBy { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? Department { get; set; }
+    public DateTime? ExpenseDate { get; set; }
 }
 

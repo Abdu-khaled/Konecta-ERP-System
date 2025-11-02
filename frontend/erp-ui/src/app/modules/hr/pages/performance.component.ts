@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { HrApiService } from '../services/hr.api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { Employee } from '../services/hr.types';
+import { downloadExcel } from '../../../shared/helpers/excel';
 import { UserApiService, SystemUser } from '../../../core/services/user-api.service';
 import { forkJoin, interval, Subscription } from 'rxjs';
 
@@ -115,5 +116,15 @@ export class PerformanceComponent implements OnInit, OnDestroy {
       },
       error: () => { this.error = 'Failed to add review'; this.toast.error(this.error); }
     });
+  }
+
+  downloadAll() {
+    const cols = [
+      { key: 'employeeName', header: 'Employee' },
+      { key: 'reviewDate', header: 'Date' },
+      { key: 'rating', header: 'Rating' },
+      { key: 'feedback', header: 'Feedback' }
+    ] as any;
+    downloadExcel('performance-reviews.xlsx', cols, this.allItems || []);
   }
 }

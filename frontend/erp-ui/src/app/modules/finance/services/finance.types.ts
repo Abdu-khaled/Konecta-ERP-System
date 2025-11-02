@@ -7,7 +7,7 @@ export interface InvoiceRequest { clientName: string; invoiceDate: string; amoun
 
 export type ExpenseStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export interface Expense {
-  id?: number; submittedBy?: number; category?: string; amount: number; description?: string; status?: ExpenseStatus; approvedBy?: number; createdAt?: string;
+  id?: number; submittedBy?: number; category?: string; amount: number; description?: string; status?: ExpenseStatus; approvedBy?: number; createdAt?: string; department?: string; expenseDate?: string;
 }
 export interface ExpenseRequest { submittedBy?: number; category?: string; amount: number; description?: string; }
 

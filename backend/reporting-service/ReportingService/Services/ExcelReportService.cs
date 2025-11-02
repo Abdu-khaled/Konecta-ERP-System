@@ -1,4 +1,4 @@
-using OfficeOpenXml;
+﻿using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using ReportingService.Models.Dtos;
 
@@ -218,7 +218,7 @@ public class ExcelReportService : IExcelReportService
             expensesSheet.Cells[row, 3].Style.Numberformat.Format = "$#,##0.00";
             expensesSheet.Cells[row, 4].Value = expense.Status;
             expensesSheet.Cells[row, 5].Value = expense.SubmittedBy;
-            expensesSheet.Cells[row, 6].Value = expense.CreatedAt.ToString("yyyy-MM-dd");
+            expensesSheet.Cells[row, 6].Value = (expense.ExpenseDate ?? expense.CreatedAt).ToString("yyyy-MM-dd");
             row++;
         }
 
@@ -308,4 +308,5 @@ public class ExcelReportService : IExcelReportService
         return Task.FromResult(package.GetAsByteArray());
     }
 }
+
 

@@ -1,10 +1,12 @@
-import { Component, OnInit, inject } from '@angular/core';
+﻿import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HrApiService } from '../services/hr.api.service';
+
 import { Department, DepartmentRequest } from '../services/hr.types';
 import { ToastService } from '../../../core/services/toast.service';
+import { downloadExcel } from '../../../shared/helpers/excel';
 
 @Component({
   selector: 'app-hr-departments',
@@ -34,4 +36,14 @@ export class DepartmentsComponent implements OnInit {
     if (!d.id) return; if (!confirm('Delete this department?')) return;
     this.api.deleteDepartment(d.id).subscribe({ next: () => { this.toast.success('Department deleted'); this.refresh(); }, error: () => { this.error = 'Delete failed'; this.toast.error(this.error); } });
   }
+  download() {
+    const cols = [
+      { key: 'name', header: 'Name' },
+      { key: 'description', header: 'Description' }
+    ] as any;
+    downloadExcel('departments.xlsx', cols, this.departments || []);
+  }
 }
+
+
+
