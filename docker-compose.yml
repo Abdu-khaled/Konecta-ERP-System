@@ -25,21 +25,19 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: 1234
       SPRING_PROFILES_ACTIVE: docker
-      # Email delivery: override these via .env to use real SMTP
-      # Examples in docs/EMAIL_SETUP.md
-      SPRING_MAIL_HOST: ${SMTP_HOST:-host.docker.internal}
-      SPRING_MAIL_PORT: ${SMTP_PORT:-1025}
-      SPRING_MAIL_USERNAME: ${SMTP_USERNAME:-}
-      SPRING_MAIL_PASSWORD: ${SMTP_PASSWORD:-}
-      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: ${SMTP_AUTH:-false}
-      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: ${SMTP_STARTTLS:-false}
-      SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_ENABLE: ${SMTP_SSL:-false}
-      APP_MAIL_FROM: ${MAIL_FROM:-noreply@konecta-erp.local}
-      APP_REGISTRATION_URLBASE: ${REGISTRATION_URL_BASE:-http://localhost:4200/register}
+      # Email delivery to real SMTP (no MailHog). Values required in .env
+      SPRING_MAIL_HOST: ${SMTP_HOST}
+      SPRING_MAIL_PORT: ${SMTP_PORT}
+      SPRING_MAIL_USERNAME: ${SMTP_USERNAME}
+      SPRING_MAIL_PASSWORD: ${SMTP_PASSWORD}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: ${SMTP_AUTH}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: ${SMTP_STARTTLS}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_ENABLE: ${SMTP_SSL}
+      APP_MAIL_FROM: ${MAIL_FROM}
+      APP_REGISTRATION_URLBASE: ${REGISTRATION_URL_BASE}
     networks:
       - erp-net
-    depends_on:
-      - mailhog
+    depends_on: []
 
   hr-service:
     build:
@@ -119,14 +117,6 @@ services:
       - auth-service
       - inventory-service
 
-  mailhog:
-    image: mailhog/mailhog:latest
-    container_name: erp-mailhog
-    ports:
-      - "8025:8025"  # UI
-      - "1025:1025"  # SMTP
-    networks:
-      - erp-net
 
   config-server:
     build:
