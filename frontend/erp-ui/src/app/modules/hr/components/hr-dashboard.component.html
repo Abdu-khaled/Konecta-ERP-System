@@ -10,47 +10,17 @@
   </div>
 </header>
 
-<section class="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-  <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
-    <h3 class="text-sm font-semibold mb-3">Total Employees</h3>
-    <div class="text-3xl font-semibold text-black">{{ totalEmployees }}</div>
-    <p class="text-sm">Current headcount across departments.</p>
-  </article>
-
-  <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
-    <h3 class="text-sm font-semibold mb-3">Attendance Today</h3>
-    <div class="text-3xl font-semibold text-black">{{ attendanceToday }}</div>
-    <p class="text-sm">Check-ins recorded for today.</p>
-  </article>
-
-  <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
-    <h3 class="text-sm font-semibold mb-3">Leave Requests Pending</h3>
-    <p class="text-3xl font-semibold text-black">{{ pendingLeaves }}</p>
-    <p class="text-sm">Awaiting approval.</p>
-  </article>
-
-  <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
-    <h3 class="text-sm font-semibold mb-3">Training Sessions This Month</h3>
-    <div class="text-3xl font-semibold text-black">-</div>
-    <p class="text-sm">Planned or completed.</p>
-  </article>
-
-  <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70">
-    <h3 class="text-sm font-semibold mb-3">Top Performers</h3>
-    <div class="text-3xl font-semibold text-black" *ngIf="!topPerformers.length">-</div>
-    <ul *ngIf="topPerformers.length" class="text-sm space-y-1">
-      <li *ngFor="let p of topPerformers">{{ p.name }} <span class="text-slate-500">(rating: {{ p.rating }})</span></li>
-    </ul>
-    <p class="text-sm" *ngIf="!topPerformers.length">Based on latest reviews.</p>
-  </article>
-
-  <article class="rounded-2xl bg-white text-slate-900 p-6 shadow-md ring-1 ring-slate-200/70 md:col-span-2 xl:col-span-1">
-    <h3 class="text-sm font-semibold mb-3">AI Insights (Coming Soon)</h3>
-    <ul class="text-sm space-y-2">
-      <li>Attrition Risk: <span class="text-black">-</span></li>
-      <li>Training Needs: <span class="text-black">-</span></li>
-    </ul>
+<section class="mt-6">
+  <article class="rounded-2xl bg-white p-3 shadow-md ring-1 ring-slate-200/70">
+    <iframe
+      title="ERP System (HR Dashboard)"
+      src="https://app.powerbi.com/reportEmbed?reportId=2999f9f0-4c3b-49a0-afdf-dbf9b9c3a10c&autoAuth=true&ctid=0bc92751-071a-4e2c-a48b-633206fef374"
+      class="w-full h-[620px] rounded-xl border-0"
+      frameborder="0"
+      allowfullscreen="true"
+    ></iframe>
   </article>
 </section>
 
 </div>
+

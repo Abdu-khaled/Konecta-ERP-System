@@ -25,11 +25,17 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: 1234
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_MAIL_HOST: host.docker.internal
-      SPRING_MAIL_PORT: 1025
-      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "false"
-      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "false"
-      APP_MAIL_FROM: noreply@konecta-erp.local
+      # Email delivery: override these via .env to use real SMTP
+      # Examples in docs/EMAIL_SETUP.md
+      SPRING_MAIL_HOST: ${SMTP_HOST:-host.docker.internal}
+      SPRING_MAIL_PORT: ${SMTP_PORT:-1025}
+      SPRING_MAIL_USERNAME: ${SMTP_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SMTP_PASSWORD:-}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: ${SMTP_AUTH:-false}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: ${SMTP_STARTTLS:-false}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_ENABLE: ${SMTP_SSL:-false}
+      APP_MAIL_FROM: ${MAIL_FROM:-noreply@konecta-erp.local}
+      APP_REGISTRATION_URLBASE: ${REGISTRATION_URL_BASE:-http://localhost:4200/register}
     networks:
       - erp-net
     depends_on:

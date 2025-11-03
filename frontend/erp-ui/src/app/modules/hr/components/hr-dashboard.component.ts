@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { HrApiService } from '../services/hr.api.service';
 import { Employee } from '../services/hr.types';
 import { forkJoin, of } from 'rxjs';
@@ -7,7 +8,8 @@ import { catchError, map } from 'rxjs/operators';
 @Component({
   selector: 'app-hr-dashboard',
   standalone: true,
-  templateUrl: './hr-dashboard.component.html'
+  templateUrl: './hr-dashboard.component.html',
+  imports: [CommonModule]
 })
 export class HrDashboardComponent implements OnInit {
   private readonly api = inject(HrApiService);
