@@ -2,12 +2,12 @@ name: Backend CI Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'backend/**'
 
   pull_request:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'backend/**'
   workflow_dispatch:
@@ -18,7 +18,7 @@ env:
 
 jobs:
   
-# STAGE 1: SECRET SCANNING
+  # STAGE 1: SECRET SCANNING
   secret-scan:
     name: Secret Scanning
     runs-on: ubuntu-latest
@@ -67,7 +67,7 @@ jobs:
           path: gitleaks.sarif
           retention-days: 30
 
-# STAGE 2: DETECT CHANGES
+  # STAGE 2: DETECT CHANGES
   detect-changes:
     name: Detect Changed Backend Services
     runs-on: ubuntu-latest
@@ -138,7 +138,7 @@ jobs:
           echo "Detected services matrix: $MATRIX_JSON"
 
 
-# STAGE 3: BACKEND DEPENDENCY SCANNING
+  # STAGE 3: BACKEND DEPENDENCY SCANNING
   dependency-vulnerability-scan:
     name: Dependency Vulnerability Scan (SCA)
     runs-on: ubuntu-latest
@@ -178,7 +178,7 @@ jobs:
           sarif_file: 'trivy-dependency.sarif'
 
 
-# STAGE 4: BACKEND BUILD & TEST
+  # STAGE 4: BACKEND BUILD & TEST
   backend-build-test:
     name: Backend Build & Test
     runs-on: ubuntu-latest
@@ -293,7 +293,7 @@ jobs:
           fi
 
 
-# STAGE 5: CODE QUALITY (SONARQUBE)
+  # STAGE 5: CODE QUALITY (SONARQUBE)
   sonar-scan:
     name: Code Quality (SonarQube)
     runs-on: ubuntu-latest
@@ -401,7 +401,7 @@ jobs:
           dotnet sonarscanner end /d:sonar.token="${{ env.SONAR_TOKEN }}"
           echo "SonarQube analysis completed for ${{ matrix.service }}"
 
-# STAGE 6: DOCKER BUILD & SECURITY SCAN
+  # STAGE 6: DOCKER BUILD & SECURITY SCAN
   docker-build-scan:
     name:  Docker Build & Security Scan
     runs-on: ubuntu-latest
@@ -417,20 +417,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Determine image tags
         id: vars
         env:
           SERVICE: ${{ matrix.service }}
-          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: konecta-${{ matrix.service }}
         run: |
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             VERSION=${GITHUB_REF_NAME}
@@ -440,12 +446,14 @@ jobs:
             VERSION="${BRANCH}-${SHORT_SHA}"
           fi
 
-          DOCKER_TAG="${DOCKER_USER}/konecta-${SERVICE}:${VERSION}"
-          DOCKER_LATEST="${DOCKER_USER}/konecta-${SERVICE}:latest"
+          DOCKER_TAG="${ECR_REGISTRY}/${ECR_REPOSITORY}:${VERSION}"
+          DOCKER_LATEST="${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
 
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "docker_tag=${DOCKER_TAG}" >> $GITHUB_OUTPUT
           echo "docker_latest=${DOCKER_LATEST}" >> $GITHUB_OUTPUT
+          echo "ecr_registry=${ECR_REGISTRY}" >> $GITHUB_OUTPUT
+          echo "ecr_repository=${ECR_REPOSITORY}" >> $GITHUB_OUTPUT
 
           echo "Version: $VERSION"
           echo "Tag: $DOCKER_TAG"
@@ -454,7 +462,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKER_USERNAME }}/konecta-${{ matrix.service }}
+          images: ${{ steps.vars.outputs.ecr_registry }}/${{ steps.vars.outputs.ecr_repository }}
           labels: |
             org.opencontainers.image.title=konecta-${{ matrix.service }}
             org.opencontainers.image.description=Konecta ERP System - ${{ matrix.service }}
@@ -471,8 +479,8 @@ jobs:
           load: true
           tags: ${{ steps.vars.outputs.docker_tag }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/konecta-${{ matrix.service }}:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/konecta-${{ matrix.service }}:buildcache,mode=max
+          cache-from: type=registry,ref=${{ steps.vars.outputs.ecr_registry }}/${{ steps.vars.outputs.ecr_repository }}:buildcache
+          cache-to: type=registry,ref=${{ steps.vars.outputs.ecr_registry }}/${{ steps.vars.outputs.ecr_repository }}:buildcache,mode=max
           provenance: false
 
       - name: Check image size
