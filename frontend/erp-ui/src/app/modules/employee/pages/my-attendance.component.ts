@@ -24,17 +24,37 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
   items: Array<{ date: string; present: boolean; hours?: number } > = [];
   error = '';
   todayHours: number | null = null;
+  private dailyDefaultHours: number | null = null;
   private poll?: Subscription;
 
   async ngOnInit() {
+    this.initDefaultHours();
     this.load();
+  }
+
+  private initDefaultHours() {
+    const email = this.state.profile?.email || this.state.profile?.username || '';
+    if (!email) return;
+    this.hr.getEmployeeByEmail(email).subscribe({
+      next: (emp) => {
+        const weekly = (emp?.workingHours ?? null);
+        // Convert weekly working hours → per-day (assume 5 working days)
+        const daily = weekly != null ? (Number(weekly) / 5) : 8;
+        this.dailyDefaultHours = Number.isFinite(daily) ? Math.round(daily * 100) / 100 : 8;
+        if (this.todayHours == null) this.todayHours = this.dailyDefaultHours;
+      },
+      error: () => { this.dailyDefaultHours = 8; if (this.todayHours == null) this.todayHours = 8; }
+    });
   }
 
   load() {
     this.http.get<any[]>(`${this.hrBase}/attendance/me`).subscribe({
       next: (list: any[]) => {
         const mm = this.month;
-        this.items = (list || []).filter(a => (a.date || '').startsWith(mm)).sort((a,b) => (a.date > b.date ? -1 : 1));
+        this.items = (list || [])
+          .filter(a => (a.date || '').startsWith(mm))
+          .map(a => ({ date: a.date, present: !!a.present, hours: a.workingHours }))
+          .sort((a,b) => (a.date > b.date ? -1 : 1));
       },
       error: () => this.error = 'Failed to load attendance'
     });
@@ -43,7 +63,8 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
   markTodayPresent() {
     const today = new Date().toISOString().slice(0, 10);
     const payload: any = { date: today, present: true };
-    if (this.todayHours != null) payload.workingHours = this.todayHours;
+    const hrs = (this.todayHours != null ? this.todayHours : this.dailyDefaultHours);
+    if (hrs != null) payload.workingHours = hrs;
     this.http.post<any>(`${this.hrBase}/attendance`, payload).subscribe({
       next: () => { this.toast.success('Attendance marked'); this.load(); },
       error: () => { this.toast.error('Failed to mark attendance'); }

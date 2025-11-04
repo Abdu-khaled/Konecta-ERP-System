@@ -10,4 +10,5 @@ public class EnsureEmployeeRequest {
     private String position;
     private Long departmentId;
     private Double salary;
+    private Double workingHours;
 }

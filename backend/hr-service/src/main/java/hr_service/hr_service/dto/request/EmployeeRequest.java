@@ -12,6 +12,6 @@ public class EmployeeRequest {
     private String position;
     private LocalDate hireDate;
     private Double salary;
+    private Double workingHours;
     private Long departmentId;
 }
-

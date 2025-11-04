@@ -19,7 +19,7 @@ public class EmployeeResponse {
     private String position;
     private LocalDate hireDate;
     private Double salary;
+    private Double workingHours;
     private Long departmentId;
     private String departmentName;
 }
-

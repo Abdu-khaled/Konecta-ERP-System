@@ -3,10 +3,10 @@ export interface DepartmentRequest { name: string; description?: string }
 
 export interface Employee {
   id?: number; firstName: string; lastName: string; email?: string; phone?: string;
-  position?: string; hireDate?: string; salary?: number; departmentId?: number | null; departmentName?: string | null
+  position?: string; hireDate?: string; salary?: number; workingHours?: number; departmentId?: number | null; departmentName?: string | null
 }
 export interface EmployeeRequest {
-  firstName: string; lastName: string; email: string; phone?: string; position?: string; hireDate?: string; salary?: number; departmentId?: number | null
+  firstName: string; lastName: string; email: string; phone?: string; position?: string; hireDate?: string; salary?: number; workingHours?: number; departmentId?: number | null
 }
 
 export interface Job { id?: number; title: string; description?: string; departmentId?: number | null; location?: string; employmentType?: string; status?: string }

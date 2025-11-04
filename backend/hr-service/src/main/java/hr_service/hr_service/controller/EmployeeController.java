@@ -65,7 +65,7 @@ public class EmployeeController {
         String full = req.getFullName() != null ? req.getFullName().trim() : "";
         String first = full.contains(" ") ? full.substring(0, full.indexOf(' ')).trim() : full;
         String last = full.contains(" ") ? full.substring(full.indexOf(' ') + 1).trim() : "";
-        Employee saved = employeeService.ensureByEmail(req.getEmail(), first, last, req.getPhone(), req.getPosition(), dept, req.getSalary());
+        Employee saved = employeeService.ensureByEmail(req.getEmail(), first, last, req.getPhone(), req.getPosition(), dept, req.getSalary(), req.getWorkingHours());
         return ResponseEntity.ok(toResponse(saved));
     }
 
@@ -80,7 +80,7 @@ public class EmployeeController {
         var existing = employeeService.findByEmail(username);
         if (existing == null) {
             String first = username.contains("@") ? username.substring(0, username.indexOf('@')) : username;
-            existing = employeeService.ensureByEmail(username, first, "", null, null, null, null);
+            existing = employeeService.ensureByEmail(username, first, "", null, null, null, null, null);
         }
         return ResponseEntity.ok(existing.getId());
     }
@@ -98,6 +98,7 @@ public class EmployeeController {
                 .position(r.getPosition())
                 .hireDate(r.getHireDate())
                 .salary(r.getSalary())
+                .workingHours(r.getWorkingHours())
                 .department(dept)
                 .build();
     }
@@ -112,6 +113,7 @@ public class EmployeeController {
                 .position(e.getPosition())
                 .hireDate(e.getHireDate())
                 .salary(e.getSalary())
+                .workingHours(e.getWorkingHours())
                 .departmentId(e.getDepartment() != null ? e.getDepartment().getId() : null)
                 .departmentName(e.getDepartment() != null ? e.getDepartment().getName() : null)
                 .build();

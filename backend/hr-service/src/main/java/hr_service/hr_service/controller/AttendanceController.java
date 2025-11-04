@@ -31,7 +31,7 @@ public class AttendanceController {
         Employee e = employeeService.findByEmail(username);
         if (e == null) {
             String first = username != null && username.contains("@") ? username.substring(0, username.indexOf('@')) : (username != null ? username : "");
-            e = employeeService.ensureByEmail(username, first, "", null, null, null, null);
+            e = employeeService.ensureByEmail(username, first, "", null, null, null, null, null);
         }
         Attendance a = Attendance.builder()
                 .employee(e)
@@ -54,7 +54,7 @@ public class AttendanceController {
             Employee self = employeeService.findByEmail(username);
             if (self == null) {
                 String first = username != null && username.contains("@") ? username.substring(0, username.indexOf('@')) : (username != null ? username : "");
-                self = employeeService.ensureByEmail(username, first, "", null, null, null, null);
+                self = employeeService.ensureByEmail(username, first, "", null, null, null, null, null);
             }
             employeeId = self.getId();
         }
@@ -71,7 +71,7 @@ public class AttendanceController {
         Employee self = employeeService.findByEmail(username);
         if (self == null) {
             String first = username != null && username.contains("@") ? username.substring(0, username.indexOf('@')) : (username != null ? username : "");
-            self = employeeService.ensureByEmail(username, first, "", null, null, null, null);
+            self = employeeService.ensureByEmail(username, first, "", null, null, null, null, null);
         }
         Long employeeId = self.getId();
         return ResponseEntity.ok(attendanceService.getByEmployee(employeeId).stream().map(this::toResponse).collect(Collectors.toList()));

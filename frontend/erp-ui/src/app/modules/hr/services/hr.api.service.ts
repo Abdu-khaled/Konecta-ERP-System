@@ -18,7 +18,7 @@ export class HrApiService {
   updateDepartment(id: number, payload: DepartmentRequest) { return this.http.put<Department>(`${this.base}/departments/${id}`, payload); }
   deleteDepartment(id: number) { return this.http.delete<void>(`${this.base}/departments/${id}`); }
   listEmployees() { return this.http.get<Employee[]>(`${this.base}/employees`); }
-  ensureEmployee(payload: { email: string; fullName?: string; phone?: string; position?: string; departmentId?: number | null; salary?: number | null }) {
+  ensureEmployee(payload: { email: string; fullName?: string; phone?: string; position?: string; departmentId?: number | null; salary?: number | null; workingHours?: number | null }) {
     return this.http.post<Employee>(`${this.base}/employees/ensure`, payload);
   }
   createEmployee(payload: EmployeeRequest) { return this.http.post<Employee>(`${this.base}/employees`, payload); }

@@ -37,6 +37,7 @@ import { downloadExcel } from '../../../../shared/helpers/excel';
             <th>Email</th>
             <th>Role</th>
             <th>Status</th>
+            <th>Working Hours</th>
             <th>Base Salary</th>
             <th>Department</th>
             <th class="text-right pr-2">Actions</th>
@@ -49,6 +50,7 @@ import { downloadExcel } from '../../../../shared/helpers/excel';
             <td>{{ u.email }}</td>
             <td>{{ u.role }}</td>
             <td>{{ u.status || '-' }}<span *ngIf="u.otpVerified === false" class="text-amber-700"> (pending OTP)</span></td>
+            <td>{{ (employeesByEmail[u.email.toLowerCase()]?.workingHours ?? '') === '' ? '-' : employeesByEmail[u.email.toLowerCase()]?.workingHours }}</td>
             <td>{{ (employeesByEmail[u.email.toLowerCase()]?.salary ?? '') === '' ? '-' : employeesByEmail[u.email.toLowerCase()]?.salary }}</td>
             <td>{{ departmentByEmail[u.email.toLowerCase()] || '-' }}</td>
             <td class="text-right">
@@ -89,6 +91,10 @@ import { downloadExcel } from '../../../../shared/helpers/excel';
         <label class="block text-sm text-gray-700 mb-1">Base Salary</label>
         <input class="w-full border rounded px-3 py-2" type="number" min="0" step="0.01" [(ngModel)]="editSalary" name="salary" />
       </div>
+      <div>
+        <label class="block text-sm text-gray-700 mb-1">Working Hours (per week)</label>
+        <input class="w-full border rounded px-3 py-2" type="number" min="0" step="0.1" [(ngModel)]="editWorkingHours" name="workingHours" />
+      </div>
       <div class="flex items-center justify-end gap-3 pt-2">
         <button type="button" class="px-4 py-2 rounded bg-slate-200" (click)="closeEdit()">Cancel</button>
         <button class="px-4 py-2 rounded bg-primary-600 text-white">Save</button>
@@ -120,6 +126,7 @@ export class UsersListComponent implements OnInit {
   editPhone = '';
   editDepartmentId: number | null = null;
   editSalary: number | null = null;
+  editWorkingHours: number | null = null;
   editError = '';
 
   ngOnInit() {
@@ -171,6 +178,7 @@ export class UsersListComponent implements OnInit {
     this.editPhone = (u.phone || emp?.phone || '') as string;
     this.editDepartmentId = (emp?.departmentId ?? null) as any;
     this.editSalary = (emp?.salary ?? null) as any;
+    this.editWorkingHours = (emp?.workingHours ?? null) as any;
     this.editError = '';
     this.editOpen = true;
   }
@@ -186,7 +194,7 @@ export class UsersListComponent implements OnInit {
     this.admin.updateUser(u.id, { fullName: this.editFullName, phone: this.editPhone }).subscribe({
       next: () => {
         // update HR employee (phone + department + base salary via ensure)
-        this.hrApi.ensureEmployee({ email: u.email, fullName: this.editFullName, phone: this.editPhone, departmentId: this.editDepartmentId ?? null, salary: this.editSalary ?? null }).subscribe({
+        this.hrApi.ensureEmployee({ email: u.email, fullName: this.editFullName, phone: this.editPhone, departmentId: this.editDepartmentId ?? null, salary: this.editSalary ?? null, workingHours: this.editWorkingHours ?? null }).subscribe({
           next: () => { this.closeEdit(); this.refresh(); },
           error: () => { this.closeEdit(); this.refresh(); }
         });
@@ -216,6 +224,7 @@ export class UsersListComponent implements OnInit {
       Email: u.email,
       Role: u.role,
       Status: u.status || '-',
+      WorkingHours: (this.employeesByEmail[(u.email || '').toLowerCase()]?.workingHours ?? '-') as any,
       BaseSalary: (this.employeesByEmail[(u.email || '').toLowerCase()]?.salary ?? '-') as any,
       Department: this.departmentByEmail[(u.email || '').toLowerCase()] || '-'
     }));
@@ -225,6 +234,7 @@ export class UsersListComponent implements OnInit {
       { key: 'Email', header: 'Email' },
       { key: 'Role', header: 'Role' },
       { key: 'Status', header: 'Status' },
+      { key: 'WorkingHours', header: 'Working Hours' },
       { key: 'BaseSalary', header: 'Base Salary' },
       { key: 'Department', header: 'Department' },
     ] as any;

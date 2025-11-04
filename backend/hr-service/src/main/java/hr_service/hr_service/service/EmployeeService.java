@@ -47,7 +47,7 @@ public class EmployeeService {
         employeeRepository.deleteById(id);
     }
 
-    public Employee ensureByEmail(String email, String firstName, String lastName, String phone, String position, Department dept, Double salary) {
+    public Employee ensureByEmail(String email, String firstName, String lastName, String phone, String position, Department dept, Double salary, Double workingHours) {
         return employeeRepository.findByEmail(email)
                 .map(existing -> {
                     // Update basic fields if provided; keep existing otherwise
@@ -57,6 +57,7 @@ public class EmployeeService {
                     if (position != null && !position.isBlank()) existing.setPosition(position);
                     if (dept != null) existing.setDepartment(dept);
                     if (salary != null) existing.setSalary(salary);
+                    if (workingHours != null) existing.setWorkingHours(workingHours);
                     return employeeRepository.save(existing);
                 })
                 .orElseGet(() -> employeeRepository.save(
@@ -67,6 +68,7 @@ public class EmployeeService {
                                 .phone(phone)
                                 .position(position)
                                 .salary(salary)
+                                .workingHours(workingHours)
                                 .department(dept)
                                 .build()
                 ));

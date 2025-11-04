@@ -30,6 +30,7 @@ public class Employee {
     private String position;
     private LocalDate hireDate;
     private Double salary;
+    private Double workingHours;
 
     @ManyToOne
     @JoinColumn(name = "department_id")
