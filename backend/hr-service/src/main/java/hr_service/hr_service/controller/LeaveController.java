@@ -32,7 +32,7 @@ public class LeaveController {
         Employee e = employeeService.findByEmail(username);
         if (e == null) {
             String first = username != null && username.contains("@") ? username.substring(0, username.indexOf('@')) : (username != null ? username : "");
-            e = employeeService.ensureByEmail(username, first, "", null, null, null);
+            e = employeeService.ensureByEmail(username, first, "", null, null, null, null);
         }
         LeaveRequest r = LeaveRequest.builder()
                 .employee(e)
@@ -61,7 +61,7 @@ public class LeaveController {
             Employee self = employeeService.findByEmail(username);
             if (self == null) {
                 String first = username != null && username.contains("@") ? username.substring(0, username.indexOf('@')) : (username != null ? username : "");
-                self = employeeService.ensureByEmail(username, first, "", null, null, null);
+                self = employeeService.ensureByEmail(username, first, "", null, null, null, null);
             }
             employeeId = self.getId();
         }
@@ -78,7 +78,7 @@ public class LeaveController {
         Employee self = employeeService.findByEmail(username);
         if (self == null) {
             String first = username != null && username.contains("@") ? username.substring(0, username.indexOf('@')) : (username != null ? username : "");
-            self = employeeService.ensureByEmail(username, first, "", null, null, null);
+            self = employeeService.ensureByEmail(username, first, "", null, null, null, null);
         }
         Long employeeId = self.getId();
         return ResponseEntity.ok(

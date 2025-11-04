@@ -39,6 +39,11 @@ import { Department } from '../../../hr/services/hr.types';
           </select>
           <p class="text-xs text-gray-500 mt-1">{{ role==='EMPLOYEE' ? 'Required for Employees.' : 'Optional.' }} Choose the user's department.</p>
         </div>
+        <div>
+          <label class="block text-base text-gray-600 mb-2">Base Salary</label>
+          <input [(ngModel)]="baseSalary" name="baseSalary" type="number" min="0" step="0.01" [required]="role==='EMPLOYEE'" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm"/>
+          <p class="text-xs text-gray-500 mt-1">Fixed payroll amount used as base salary for payroll calculation.</p>
+        </div>
         <button class="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-lg px-4 py-3 text-base font-medium shadow-md" [disabled]="loading()">Send Invite</button>
         <p *ngIf="message()" class="text-green-700 text-sm">{{message()}}</p>
         <p *ngIf="error()" class="text-red-600 text-sm">{{error()}}</p>
@@ -56,6 +61,7 @@ export class InviteUserComponent implements OnInit {
   role: 'EMPLOYEE' | 'HR' | 'FINANCE' = 'EMPLOYEE';
   departments: Department[] = [];
   departmentId: number | null = null;
+  baseSalary: number | null = null;
 
   loading = signal(false);
   message = signal('');
@@ -75,14 +81,14 @@ export class InviteUserComponent implements OnInit {
     const payload: InviteUserRequest = { name: this.name, email: this.email, role: this.role };
     this.admin.inviteUser(payload).subscribe({
       next: () => {
-        // Best-effort: ensure an Employee record exists with the chosen department
-        this.hrApi.ensureEmployee({ email: this.email, fullName: this.name, departmentId: this.departmentId || null }).subscribe({
+        // Best-effort: ensure an Employee record exists with department and base salary (for payroll)
+        this.hrApi.ensureEmployee({ email: this.email, fullName: this.name, departmentId: this.departmentId || null, salary: this.baseSalary ?? null }).subscribe({
           next: () => {},
           error: () => {}
         });
         this.message.set('Invitation sent. User will complete registration from email link.');
         this.loading.set(false);
-        this.name=''; this.email=''; this.role='EMPLOYEE'; this.departmentId = null;
+        this.name=''; this.email=''; this.role='EMPLOYEE'; this.departmentId = null; this.baseSalary = null;
       },
       error: (e) => {
         this.error.set(e?.error?.message || 'Failed to send invite');

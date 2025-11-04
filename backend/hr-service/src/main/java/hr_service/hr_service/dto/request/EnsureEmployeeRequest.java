@@ -9,5 +9,5 @@ public class EnsureEmployeeRequest {
     private String phone;
     private String position;
     private Long departmentId;
+    private Double salary;
 }
-

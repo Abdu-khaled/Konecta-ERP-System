@@ -37,6 +37,7 @@ import { downloadExcel } from '../../../../shared/helpers/excel';
             <th>Email</th>
             <th>Role</th>
             <th>Status</th>
+            <th>Base Salary</th>
             <th>Department</th>
             <th class="text-right pr-2">Actions</th>
           </tr>
@@ -48,6 +49,7 @@ import { downloadExcel } from '../../../../shared/helpers/excel';
             <td>{{ u.email }}</td>
             <td>{{ u.role }}</td>
             <td>{{ u.status || '-' }}<span *ngIf="u.otpVerified === false" class="text-amber-700"> (pending OTP)</span></td>
+            <td>{{ (employeesByEmail[u.email.toLowerCase()]?.salary ?? '') === '' ? '-' : employeesByEmail[u.email.toLowerCase()]?.salary }}</td>
             <td>{{ departmentByEmail[u.email.toLowerCase()] || '-' }}</td>
             <td class="text-right">
               <button class="text-blue-700 hover:underline mr-3" (click)="openEdit(u)">Edit</button>
@@ -83,6 +85,10 @@ import { downloadExcel } from '../../../../shared/helpers/excel';
           <option *ngFor="let d of departments" [ngValue]="d.id">{{ d.name }}</option>
         </select>
       </div>
+      <div>
+        <label class="block text-sm text-gray-700 mb-1">Base Salary</label>
+        <input class="w-full border rounded px-3 py-2" type="number" min="0" step="0.01" [(ngModel)]="editSalary" name="salary" />
+      </div>
       <div class="flex items-center justify-end gap-3 pt-2">
         <button type="button" class="px-4 py-2 rounded bg-slate-200" (click)="closeEdit()">Cancel</button>
         <button class="px-4 py-2 rounded bg-primary-600 text-white">Save</button>
@@ -113,6 +119,7 @@ export class UsersListComponent implements OnInit {
   editFullName = '';
   editPhone = '';
   editDepartmentId: number | null = null;
+  editSalary: number | null = null;
   editError = '';
 
   ngOnInit() {
@@ -163,6 +170,7 @@ export class UsersListComponent implements OnInit {
     const emp = this.employeesByEmail[(u.email || '').toLowerCase()];
     this.editPhone = (u.phone || emp?.phone || '') as string;
     this.editDepartmentId = (emp?.departmentId ?? null) as any;
+    this.editSalary = (emp?.salary ?? null) as any;
     this.editError = '';
     this.editOpen = true;
   }
@@ -177,8 +185,8 @@ export class UsersListComponent implements OnInit {
     // update auth user (full name + phone)
     this.admin.updateUser(u.id, { fullName: this.editFullName, phone: this.editPhone }).subscribe({
       next: () => {
-        // update HR employee (phone + department via ensure)
-        this.hrApi.ensureEmployee({ email: u.email, fullName: this.editFullName, phone: this.editPhone, departmentId: this.editDepartmentId ?? null }).subscribe({
+        // update HR employee (phone + department + base salary via ensure)
+        this.hrApi.ensureEmployee({ email: u.email, fullName: this.editFullName, phone: this.editPhone, departmentId: this.editDepartmentId ?? null, salary: this.editSalary ?? null }).subscribe({
           next: () => { this.closeEdit(); this.refresh(); },
           error: () => { this.closeEdit(); this.refresh(); }
         });
@@ -208,6 +216,7 @@ export class UsersListComponent implements OnInit {
       Email: u.email,
       Role: u.role,
       Status: u.status || '-',
+      BaseSalary: (this.employeesByEmail[(u.email || '').toLowerCase()]?.salary ?? '-') as any,
       Department: this.departmentByEmail[(u.email || '').toLowerCase()] || '-'
     }));
     const cols = [
@@ -216,6 +225,7 @@ export class UsersListComponent implements OnInit {
       { key: 'Email', header: 'Email' },
       { key: 'Role', header: 'Role' },
       { key: 'Status', header: 'Status' },
+      { key: 'BaseSalary', header: 'Base Salary' },
       { key: 'Department', header: 'Department' },
     ] as any;
     downloadExcel('system-users.xlsx', cols, rows as any);
