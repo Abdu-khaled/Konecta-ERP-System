@@ -5,6 +5,7 @@ import { LeavesComponent } from './pages/leaves.component';
 import { PerformanceComponent } from './pages/performance.component';
 import { EmployeesComponent } from './pages/employees.component';
 import { DepartmentsComponent } from './pages/departments.component';
+import { JobsComponent } from './pages/jobs.component';
 
 export const hrRoutes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -12,6 +13,7 @@ export const hrRoutes: Routes = [
   { path: 'attendance', component: AttendanceComponent },
   { path: 'employees', component: EmployeesComponent },
   { path: 'departments', component: DepartmentsComponent },
+  { path: 'jobs', component: JobsComponent },
   { path: 'leaves', component: LeavesComponent },
   { path: 'performance', component: PerformanceComponent },
 ];

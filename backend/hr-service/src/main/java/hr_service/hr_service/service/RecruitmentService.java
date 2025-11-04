@@ -13,7 +13,8 @@ public class RecruitmentService {
     private final RecruitmentRepository repo;
 
     public Recruitment save(Recruitment r) { return repo.save(r); }
-    public Recruitment findById(Long id) { return repo.findById(id).orElseThrow(() -> new RuntimeException("Recruitment not found")); }
+    public Recruitment findById(Long id) { return repo.findById(id).orElse(null); }
     public List<Recruitment> findAll() { return repo.findAll(); }
+    public List<Recruitment> findJobs() { return repo.findByType("JOB"); }
+    public void delete(Long id) { repo.deleteById(id); }
 }
-

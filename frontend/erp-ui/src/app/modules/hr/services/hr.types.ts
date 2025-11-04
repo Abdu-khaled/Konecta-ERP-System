@@ -9,3 +9,5 @@ export interface EmployeeRequest {
   firstName: string; lastName: string; email: string; phone?: string; position?: string; hireDate?: string; salary?: number; departmentId?: number | null
 }
 
+export interface Job { id?: number; title: string; description?: string; departmentId?: number | null; location?: string; employmentType?: string; status?: string }
+export interface JobRequest { title: string; description?: string; departmentId?: number | null; location?: string; employmentType?: string }

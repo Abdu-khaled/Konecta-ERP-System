@@ -59,6 +59,7 @@ export class SidebarComponent {
           { label: 'Departments', icon: 'apartment', path: '/hr/departments' },
           { label: 'Invite Users', icon: 'group_add', path: '/hr/invite' }
         ]},
+        { label: 'Jobs', icon: 'work', path: '/hr/jobs' },
         { label: 'Attendance Tracking', icon: 'schedule', path: '/hr/attendance' },
         { label: 'Performance Evaluation', icon: 'workspace_premium', path: '/hr/performance' },
         { label: 'Training Management', icon: 'school' },
