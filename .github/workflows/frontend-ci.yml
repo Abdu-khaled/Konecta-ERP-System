@@ -2,11 +2,11 @@ name: Frontend CI Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'frontend/**'
   pull_request:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'frontend/**'
   workflow_dispatch:
@@ -31,29 +31,12 @@ jobs:
 
       - name: Detect changed frontend files
         id: set-matrix
-        shell: bash
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          echo "Detecting changed frontend files..."
           git fetch origin --depth=2
-
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_SHA=${{ github.event.pull_request.base.sha }}
-          else
-            BASE_SHA=$(git rev-parse HEAD^)
-          fi
-
-          echo "Base SHA: $BASE_SHA"
-          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" HEAD || true)
-          echo "Changed files:"
-          echo "$CHANGED_FILES"
-
-          if echo "$CHANGED_FILES" | grep -q "^frontend/"; then
-            echo "Frontend files changed — proceeding with build."
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "No frontend files changed — skipping build."
-            echo "changed=false" >> $GITHUB_OUTPUT
-          fi
+          bash scripts/ci/detect-frontend-changes.sh
 
 # STAGE 2: DEPENDENCY VULNERABILITY SCANNING
   dependency-vulnerability-scan:
@@ -236,44 +219,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
       - name: Determine image tags
         id: vars
-        env:
-          SERVICE: frontend
-          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
-        run: |
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            VERSION=${GITHUB_REF_NAME}
-          else
-            SHORT_SHA=$(git rev-parse --short HEAD)
-            BRANCH=$(echo "${GITHUB_REF_NAME}" | sed 's/\//-/g')
-            VERSION="${BRANCH}-${SHORT_SHA}"
-          fi
-
-          DOCKER_TAG="${DOCKER_USER}/konecta-${SERVICE}:${VERSION}"
-          DOCKER_LATEST="${DOCKER_USER}/konecta-${SERVICE}:latest"
-
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "docker_tag=${DOCKER_TAG}" >> $GITHUB_OUTPUT
-          echo "docker_latest=${DOCKER_LATEST}" >> $GITHUB_OUTPUT
-
-          echo "Version: $VERSION"
-          echo "Tag: $DOCKER_TAG"
+        run: bash scripts/ci/determine-image-tags.sh "frontend" "${{ steps.login-ecr.outputs.registry }}"
 
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKER_USERNAME }}/konecta-frontend
+          images: ${{ steps.vars.outputs.ecr_registry }}/${{ steps.vars.outputs.ecr_repository }}
           labels: |
             org.opencontainers.image.title=konecta-frontend
             org.opencontainers.image.description=Konecta ERP System - Frontend
@@ -289,19 +257,13 @@ jobs:
           load: true
           tags: ${{ steps.vars.outputs.docker_tag }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/konecta-frontend:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/konecta-frontend:buildcache,mode=max
+          cache-from: type=registry,ref=${{ steps.vars.outputs.ecr_registry }}/${{ steps.vars.outputs.ecr_repository }}:buildcache
+          cache-to: type=registry,ref=${{ steps.vars.outputs.ecr_registry }}/${{ steps.vars.outputs.ecr_repository }}:buildcache,mode=max
           provenance: false
 
       - name: Check image size
-        run: |
-          SIZE=$(docker image inspect ${{ steps.vars.outputs.docker_tag }} --format='{{.Size}}')
-          SIZE_MB=$(($SIZE / 1024 / 1024))
-          echo "Image size: ${SIZE_MB} MB"
-          
-          if [ $SIZE_MB -gt 500 ]; then
-            echo "WARNING: Image larger than 500MB!"
-          fi
+        id: size-check
+        run: bash scripts/ci/check-image-size.sh "${{ steps.vars.outputs.docker_tag }}" 500
 
 
       - name: Scan with Trivy (detailed)
@@ -317,24 +279,7 @@ jobs:
 
           
       - name: Check vulnerabilities
-        run: |
-          echo "Security scan results:"
-          cat trivy-report.json | jq '.Results[]?.Vulnerabilities[]? | {VulnerabilityID, Severity, PkgName, InstalledVersion}'
-
-          CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' trivy-report.json)
-          HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length' trivy-report.json)
-
-          echo ""
-          echo "Summary:"
-          echo "Critical: $CRITICAL"
-          echo "High: $HIGH"
-          
-          if [ "$CRITICAL" -gt "0" ]; then
-            echo "CRITICAL vulnerabilities found in image!"
-            exit 1
-          fi
-          
-          echo "No critical vulnerabilities"
+        run: bash scripts/ci/check-docker-vulnerabilities.sh trivy-report.json
 
       - name: Generate SBOM
         uses: aquasecurity/trivy-action@0.18.0

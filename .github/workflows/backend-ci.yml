@@ -2,12 +2,12 @@ name: Backend CI Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'backend/**'
 
   pull_request:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'backend/**'
   workflow_dispatch:
@@ -18,7 +18,7 @@ env:
 
 jobs:
   
-# STAGE 1: SECRET SCANNING
+  # STAGE 1: SECRET SCANNING
   secret-scan:
     name: Secret Scanning
     runs-on: ubuntu-latest
@@ -67,7 +67,7 @@ jobs:
           path: gitleaks.sarif
           retention-days: 30
 
-# STAGE 2: DETECT CHANGES
+  # STAGE 2: DETECT CHANGES
   detect-changes:
     name: Detect Changed Backend Services
     runs-on: ubuntu-latest
@@ -83,62 +83,15 @@ jobs:
 
       - name: Detect changed backend services dynamically
         id: set-matrix
-        shell: bash
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          echo "Detecting changed backend services..."
           git fetch origin --depth=2
-
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_SHA=${{ github.event.pull_request.base.sha }}
-          else
-            BASE_SHA=$(git rev-parse HEAD^)
-          fi
-
-          echo "Base SHA: $BASE_SHA"
-          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" HEAD || true)
-          echo "Changed files:"
-          echo "$CHANGED_FILES"
-
-          SERVICES=()
-          SERVICE_TYPES=()
-          for dir in $(ls backend); do
-            if [ -d "backend/$dir" ]; then
-              if echo "$CHANGED_FILES" | grep -q "^backend/$dir/"; then
-                SERVICES+=("$dir")
-                # Detect service type
-                if [ -f "backend/$dir/pom.xml" ]; then
-                  SERVICE_TYPES+=("java")
-                elif [ -f "backend/$dir/ReportingService/ReportingService.csproj" ]; then
-                  SERVICE_TYPES+=("csharp")
-                else
-                  SERVICE_TYPES+=("unknown")
-                fi
-              fi
-            fi
-          done
-
-          if [ ${#SERVICES[@]} -eq 0 ]; then
-            echo "No changed backend services detected — skipping build."
-            MATRIX_JSON='{"include":[]}'
-            echo "changed=false" >> $GITHUB_OUTPUT
-          else
-            # Create proper matrix with service and serviceType pairs
-            MATRIX_INCLUDES=""
-            for i in "${!SERVICES[@]}"; do
-              if [ $i -gt 0 ]; then
-                MATRIX_INCLUDES="$MATRIX_INCLUDES,"
-              fi
-              MATRIX_INCLUDES="$MATRIX_INCLUDES{\"service\":\"${SERVICES[$i]}\",\"serviceType\":\"${SERVICE_TYPES[$i]}\"}"
-            done
-            MATRIX_JSON="{\"include\":[$MATRIX_INCLUDES]}"
-            echo "changed=true" >> $GITHUB_OUTPUT
-          fi
-
-          echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
-          echo "Detected services matrix: $MATRIX_JSON"
+          bash scripts/ci/detect-backend-changes.sh
 
 
-# STAGE 3: BACKEND DEPENDENCY SCANNING
+  # STAGE 3: BACKEND DEPENDENCY SCANNING
   dependency-vulnerability-scan:
     name: Dependency Vulnerability Scan (SCA)
     runs-on: ubuntu-latest
@@ -178,7 +131,7 @@ jobs:
           sarif_file: 'trivy-dependency.sarif'
 
 
-# STAGE 4: BACKEND BUILD & TEST
+  # STAGE 4: BACKEND BUILD & TEST
   backend-build-test:
     name: Backend Build & Test
     runs-on: ubuntu-latest
@@ -293,7 +246,7 @@ jobs:
           fi
 
 
-# STAGE 5: CODE QUALITY (SONARQUBE)
+  # STAGE 5: CODE QUALITY (SONARQUBE)
   sonar-scan:
     name: Code Quality (SonarQube)
     runs-on: ubuntu-latest
@@ -401,7 +354,7 @@ jobs:
           dotnet sonarscanner end /d:sonar.token="${{ env.SONAR_TOKEN }}"
           echo "SonarQube analysis completed for ${{ matrix.service }}"
 
-# STAGE 6: DOCKER BUILD & SECURITY SCAN
+  # STAGE 6: DOCKER BUILD & SECURITY SCAN
   docker-build-scan:
     name:  Docker Build & Security Scan
     runs-on: ubuntu-latest
@@ -417,44 +370,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
       - name: Determine image tags
         id: vars
-        env:
-          SERVICE: ${{ matrix.service }}
-          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
-        run: |
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            VERSION=${GITHUB_REF_NAME}
-          else
-            SHORT_SHA=$(git rev-parse --short HEAD)
-            BRANCH=$(echo "${GITHUB_REF_NAME}" | sed 's/\//-/g')
-            VERSION="${BRANCH}-${SHORT_SHA}"
-          fi
-
-          DOCKER_TAG="${DOCKER_USER}/konecta-${SERVICE}:${VERSION}"
-          DOCKER_LATEST="${DOCKER_USER}/konecta-${SERVICE}:latest"
-
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "docker_tag=${DOCKER_TAG}" >> $GITHUB_OUTPUT
-          echo "docker_latest=${DOCKER_LATEST}" >> $GITHUB_OUTPUT
-
-          echo "Version: $VERSION"
-          echo "Tag: $DOCKER_TAG"
+        run: bash scripts/ci/determine-image-tags.sh "${{ matrix.service }}" "${{ steps.login-ecr.outputs.registry }}"
 
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKER_USERNAME }}/konecta-${{ matrix.service }}
+          images: ${{ steps.vars.outputs.ecr_registry }}/${{ steps.vars.outputs.ecr_repository }}
           labels: |
             org.opencontainers.image.title=konecta-${{ matrix.service }}
             org.opencontainers.image.description=Konecta ERP System - ${{ matrix.service }}
@@ -471,19 +409,13 @@ jobs:
           load: true
           tags: ${{ steps.vars.outputs.docker_tag }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/konecta-${{ matrix.service }}:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/konecta-${{ matrix.service }}:buildcache,mode=max
+          cache-from: type=registry,ref=${{ steps.vars.outputs.ecr_registry }}/${{ steps.vars.outputs.ecr_repository }}:buildcache
+          cache-to: type=registry,ref=${{ steps.vars.outputs.ecr_registry }}/${{ steps.vars.outputs.ecr_repository }}:buildcache,mode=max
           provenance: false
 
       - name: Check image size
-        run: |
-          SIZE=$(docker image inspect ${{ steps.vars.outputs.docker_tag }} --format='{{.Size}}')
-          SIZE_MB=$(($SIZE / 1024 / 1024))
-          echo "Image size: ${SIZE_MB} MB"
-          
-          if [ $SIZE_MB -gt 1000 ]; then
-            echo "WARNING: Image larger than 1GB!"
-          fi
+        id: size-check
+        run: bash scripts/ci/check-image-size.sh "${{ steps.vars.outputs.docker_tag }}" 1000
 
       - name: Scan with Trivy (detailed)
         uses: aquasecurity/trivy-action@0.18.0
@@ -497,24 +429,7 @@ jobs:
           output: 'trivy-report.json'
 
       - name: Check vulnerabilities
-        run: |
-          echo "Security scan results:"
-          cat trivy-report.json | jq '.Results[]?.Vulnerabilities[]? | {VulnerabilityID, Severity, PkgName, InstalledVersion}'
-
-          CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' trivy-report.json)
-          HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length' trivy-report.json)
-
-          echo ""
-          echo "Summary:"
-          echo "Critical: $CRITICAL"
-          echo "High: $HIGH"
-          
-          if [ "$CRITICAL" -gt "0" ]; then
-            echo "CRITICAL vulnerabilities found in image!"
-            exit 1
-          fi
-          
-          echo "No critical vulnerabilities"
+        run: bash scripts/ci/check-docker-vulnerabilities.sh trivy-report.json
 
       - name: Generate SBOM
         uses: aquasecurity/trivy-action@0.18.0
