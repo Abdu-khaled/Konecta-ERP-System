@@ -25,7 +25,7 @@ export function buildSidebarForRole(role: string | null): SidebarItem[] {
       { label: 'Jobs', icon: 'work', path: '/hr/jobs' },
       { label: 'Attendance Tracking', icon: 'schedule', path: '/hr/attendance' },
       { label: 'Performance Evaluation', icon: 'workspace_premium', path: '/hr/performance' },
-      { label: 'Training Management', icon: 'school' },
+      { label: 'Training Management', icon: 'school', path: '/hr/training' },
       { label: 'Leave Management', icon: 'event_note', path: '/hr/leaves' },
       { label: 'Reports (HR Analytics)', icon: 'insights' }
     ];
@@ -52,7 +52,7 @@ export function buildSidebarForRole(role: string | null): SidebarItem[] {
       { label: 'My Leave Requests', icon: 'event_note', path: '/employee/my-leaves' },
       { label: 'My Performance', icon: 'workspace_premium', path: '/employee/my-performance' },
       { label: 'My Payroll', icon: 'request_quote', path: '/employee/my-payroll' },
-      { label: 'Training & Learning', icon: 'school' },
+      { label: 'Training & Learning', icon: 'school', path: '/employee/training' },
       { label: 'Help / Support', icon: 'support_agent' }
     ];
   }

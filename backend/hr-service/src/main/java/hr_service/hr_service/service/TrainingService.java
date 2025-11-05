@@ -14,5 +14,5 @@ public class TrainingService {
     public Training save(Training t) { return repo.save(t); }
     public Training findById(Long id) { return repo.findById(id).orElseThrow(() -> new RuntimeException("Training not found")); }
     public List<Training> findAll() { return repo.findAll(); }
+    public void delete(Long id) { repo.deleteById(id); }
 }
-

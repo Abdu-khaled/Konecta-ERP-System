@@ -11,3 +11,6 @@ export interface EmployeeRequest {
 
 export interface Job { id?: number; title: string; description?: string; departmentId?: number | null; location?: string; employmentType?: string; status?: string }
 export interface JobRequest { title: string; description?: string; departmentId?: number | null; location?: string; employmentType?: string }
+
+export interface Training { id?: number; title: string; description?: string; startDate?: string; endDate?: string; instructor?: string; location?: string }
+export interface TrainingRequest { title: string; description?: string; startDate?: string; endDate?: string; instructor?: string; location?: string }
