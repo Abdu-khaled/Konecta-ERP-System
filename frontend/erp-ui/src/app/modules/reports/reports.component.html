@@ -1,5 +1,110 @@
-<section class="p-4">
-  <h1 class="text-xl font-semibold">Reports</h1>
-  <p class="text-slate-600">Reports page placeholder.</p>
-</section>
+<section class="p-4 space-y-4">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-semibold">Reporting & Analytics</h1>
+    <div class="text-sm" *ngIf="loading()">Loading…</div>
+  </div>
 
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <div class="p-4 rounded-lg border bg-white">
+      <div class="text-slate-500 text-sm">Payroll ({{ (data()?.payrollSummary?.period) || 'n/a' }})</div>
+      <div class="text-2xl font-semibold">${{ (data()?.payrollSummary?.totalPayroll || 0) | number:'1.0-0' }}</div>
+      <div class="text-slate-600">Avg Salary: ${{ (data()?.payrollSummary?.averageSalary || 0) | number:'1.0-0' }}</div>
+      <div class="text-slate-600">Employees: {{ data()?.payrollSummary?.employeeCount || 0 }}</div>
+    </div>
+    <div class="p-4 rounded-lg border bg-white">
+      <div class="text-slate-500 text-sm">Attendance</div>
+      <div class="text-2xl font-semibold">{{ (data()?.attendanceSummary?.averageAttendanceRate || 0) | number:'1.0-0' }}%</div>
+      <div class="text-slate-600">Avg Hours: {{ (data()?.attendanceSummary?.averageWorkingHours || 0) | number:'1.1-1' }}</div>
+      <div class="text-slate-600">Present: {{ data()?.attendanceSummary?.totalPresentDays || 0 }} | Absent: {{ data()?.attendanceSummary?.totalAbsentDays || 0 }}</div>
+    </div>
+    <div class="p-4 rounded-lg border bg-white">
+      <div class="text-slate-500 text-sm">Finance</div>
+      <div class="text-2xl font-semibold">Net: ${{ (data()?.financialSummary?.netIncome || 0) | number:'1.0-0' }}</div>
+      <div class="text-slate-600">Revenue: ${{ (data()?.financialSummary?.totalRevenue || 0) | number:'1.0-0' }}</div>
+      <div class="text-slate-600">Expenses: ${{ (data()?.financialSummary?.totalExpenses || 0) | number:'1.0-0' }}</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="p-4 rounded-lg border bg-white">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold">Expense Trends</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="text-left text-slate-500">
+            <tr>
+              <th class="py-2">Date</th>
+              <th class="py-2">Category</th>
+              <th class="py-2">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of ((data()?.expenseTrends || []) | slice:0:10)" class="border-t">
+              <td class="py-2">{{ t.date | date:'yyyy-MM-dd' }}</td>
+              <td class="py-2">{{ t.category }}</td>
+              <td class="py-2">${{ t.value | number:'1.0-0' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="p-4 rounded-lg border bg-white">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold">Top Productivity</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="text-left text-slate-500">
+            <tr>
+              <th class="py-2">Employee</th>
+              <th class="py-2">Attendance</th>
+              <th class="py-2">Avg Hours</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let m of ((data()?.productivityMetrics || []) | slice:0:10)" class="border-t">
+              <td class="py-2">{{ m.employeeName }}</td>
+              <td class="py-2">{{ m.attendanceRate | number:'1.0-0' }}%</td>
+              <td class="py-2">{{ m.averageWorkingHours | number:'1.1-1' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="p-4 rounded-lg border bg-white">
+    <h2 class="font-semibold mb-3">Filters</h2>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <label class="text-sm">
+        <div class="text-slate-500">Period (YYYY-MM)</div>
+        <input class="border rounded px-2 py-1 w-full" placeholder="2025-01" [(ngModel)]="periodVal" (ngModelChange)="period.set($event)" />
+      </label>
+      <label class="text-sm">
+        <div class="text-slate-500">Start Date</div>
+        <input type="date" class="border rounded px-2 py-1 w-full" [(ngModel)]="startDateVal" />
+      </label>
+      <label class="text-sm">
+        <div class="text-slate-500">End Date</div>
+        <input type="date" class="border rounded px-2 py-1 w-full" [(ngModel)]="endDateVal" />
+      </label>
+      <div class="flex items-end">
+        <button class="px-3 py-2 rounded bg-blue-600 text-white" (click)="refresh()">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="p-4 rounded-lg border bg-white space-y-2">
+    <h2 class="font-semibold">Exports</h2>
+    <div class="flex flex-wrap gap-2">
+      <button class="px-3 py-2 rounded bg-slate-800 text-white hover:bg-slate-700" (click)="exportPayroll('Pdf')">Payroll (PDF)</button>
+      <button class="px-3 py-2 rounded bg-slate-800 text-white hover:bg-slate-700" (click)="exportPayroll('Excel')">Payroll (Excel)</button>
+      <button class="px-3 py-2 rounded bg-slate-800 text-white hover:bg-slate-700" (click)="exportAttendance('Pdf')">Attendance (PDF)</button>
+      <button class="px-3 py-2 rounded bg-slate-800 text-white hover:bg-slate-700" (click)="exportAttendance('Excel')">Attendance (Excel)</button>
+      <button class="px-3 py-2 rounded bg-slate-800 text-white hover:bg-slate-700" (click)="exportFinancial('Pdf')">Financial (PDF)</button>
+      <button class="px-3 py-2 rounded bg-slate-800 text-white hover:bg-slate-700" (click)="exportFinancial('Excel')">Financial (Excel)</button>
+    </div>
+    <div class="text-red-600 text-sm" *ngIf="error()">{{ error() }}</div>
+  </div>
+</section>

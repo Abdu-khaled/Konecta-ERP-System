@@ -24,6 +24,22 @@ export const routes: Routes = [
     loadComponent: () => import('./modules/auth/components/register-verify/register-verify.component').then(m => m.RegisterVerifyComponent)
   },
   {
+    path: 'profile',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN','HR','FINANCE','EMPLOYEE','MANAGER'] },
+    component: MainLayoutComponent,
+    children: [
+      { path: '', loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent) }
+    ]
+  },
+  {
+    path: 'reports',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN','MANAGER','HR','FINANCE'] },
+    component: MainLayoutComponent,
+    loadChildren: () => import('./modules/reports/reports.routes').then(m => m.reportsRoutes)
+  },
+  {
     path: 'admin/invite',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN'] },

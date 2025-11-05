@@ -48,7 +48,8 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/validate",
                                 "/api/auth/registration/**",
-                                "/api/auth/register/**")
+                                "/api/auth/register/**",
+                                "/api/auth/forgot/**")
                         .permitAll()
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())

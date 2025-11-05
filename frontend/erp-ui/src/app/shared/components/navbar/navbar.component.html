@@ -97,11 +97,12 @@
         </span>
       </button>
 
-      <div *ngIf="isProfileMenuOpen" class="absolute right-0 z-50 mt-2 w-70 rounded-2xl bg-white text-slate-900 shadow-lg ring-1 ring-black/5">
+      <div *ngIf="isProfileMenuOpen" class="absolute right-0 z-50 mt-2 w-70 rounded-2xl bg-white text-slate-900 shadow-lg ring-1 ring-black/5 nav-dropdown">
         <div class="px-4 py-3 border-b border-slate-200">
           <p class="text-sm font-medium whitespace-nowrap select-text" style="color:#000 !important" title="{{ email }}">{{ email }}</p>
         </div>
-        <div class="p-3">
+        <div class="p-3 space-y-2">
+          <a routerLink="/profile" (click)="isProfileMenuOpen=false" class="w-full block text-center rounded-lg bg-slate-100 border border-slate-200 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-200">Profile</a>
           <button type="button" (click)="onSignOutClick()" class="w-full rounded-lg bg-primary-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-primary-700">
             Sign out
           </button>

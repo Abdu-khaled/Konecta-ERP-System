@@ -38,10 +38,6 @@ export function useLogin() {
     state.setProfile(profile);
   };
 
-  const signInWithGoogle = () => {
-    // Placeholder for social login
-    console.log('Google login clicked');
-  };
 
   const submit = async (email: string, password: string, remember: boolean) => {
     const { emailError, passwordError } = validateInputs(email, password);
@@ -73,5 +69,5 @@ export function useLogin() {
     return { ok: true, message } as const;
   };
 
-  return { handleLogin, signInWithGoogle, validateInputs, submit };
+  return { handleLogin, validateInputs, submit };
 }

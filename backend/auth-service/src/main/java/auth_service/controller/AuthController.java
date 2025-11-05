@@ -299,6 +299,78 @@ public class AuthController {
                 .orElseGet(() -> ResponseEntity.status(404).build());
     }
 
+    @PutMapping("/me")
+    public ResponseEntity<?> updateMe(@Valid @RequestBody auth_service.dto.UpdateSelfRequest req) {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            return ResponseEntity.status(401).build();
+        }
+        String subject = auth.getName();
+        return userRepository.findByUsername(subject)
+                .or(() -> userRepository.findByEmail(subject))
+                .map(user -> {
+                    if (req.getUsername() != null && !req.getUsername().isBlank()) {
+                        String newUsername = req.getUsername().trim();
+                        // Allow keeping same username; block duplicates
+                        if (!newUsername.equalsIgnoreCase(user.getUsername()) && userRepository.existsByUsername(newUsername)) {
+                            return ResponseEntity.badRequest().body(Map.of("message", "username already taken"));
+                        }
+                        user.setUsername(newUsername);
+                    }
+                    if (req.getPassword() != null && !req.getPassword().isBlank()) {
+                        if (req.getConfirmPassword() == null || !req.getPassword().equals(req.getConfirmPassword())) {
+                            return ResponseEntity.badRequest().body(Map.of("message", "passwords do not match"));
+                        }
+                        user.setPassword(passwordEncoder.encode(req.getPassword()));
+                    }
+                    userRepository.save(user);
+                    return ResponseEntity.ok(new ProfileResponse(user.getId(), user.getUsername(), user.getEmail(), user.getRole()));
+                })
+                .orElseGet(() -> ResponseEntity.status(404).build());
+    }
+
+    // Forgot password flow
+    @PostMapping("/forgot/start")
+    public ResponseEntity<?> forgotStart(@Valid @RequestBody auth_service.dto.ForgotStartRequest req) {
+        var userOpt = userRepository.findByEmail(req.getEmail());
+        if (userOpt.isEmpty()) {
+            // Always respond success to avoid user enumeration
+            return ResponseEntity.ok(Map.of("message", "reset_started"));
+        }
+        var user = userOpt.get();
+        String code = otpService.generateNumericCode(6);
+        user.setOtpHash(otpService.hash(code));
+        user.setOtpExpiresAt(LocalDateTime.now().plusSeconds(otpTtlSeconds));
+        userRepository.save(user);
+        notificationService.sendOtpEmail(user.getEmail(),
+                user.getFullName() != null ? user.getFullName() : user.getUsername(), code, (int) otpTtlSeconds);
+        return ResponseEntity.ok(Map.of("message", "otp_sent", "expiresIn", otpTtlSeconds));
+    }
+
+    @PostMapping("/forgot/complete")
+    public ResponseEntity<?> forgotComplete(@Valid @RequestBody auth_service.dto.ForgotCompleteRequest req) {
+        var userOpt = userRepository.findByEmail(req.getEmail());
+        if (userOpt.isEmpty()) {
+            // Do not leak user existence
+            return ResponseEntity.ok(Map.of("message", "password_reset"));
+        }
+        var user = userOpt.get();
+        if (user.getOtpExpiresAt() == null || user.getOtpExpiresAt().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "otp expired"));
+        }
+        if (!otpService.verify(req.getOtp(), user.getOtpHash())) {
+            return ResponseEntity.status(400).body(Map.of("message", "invalid otp"));
+        }
+        if (!req.getPassword().equals(req.getConfirmPassword())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "passwords do not match"));
+        }
+        user.setPassword(passwordEncoder.encode(req.getPassword()));
+        user.setOtpHash(null);
+        user.setOtpExpiresAt(null);
+        userRepository.save(user);
+        return ResponseEntity.ok(Map.of("message", "password_reset"));
+    }
+
     @PostMapping("/validate")
     public ResponseEntity<?> validate(@RequestBody Map<String, String> body) {
         String token = body.get("token");

@@ -49,7 +49,8 @@ export class SidebarComponent {
         { label: 'System Activity Log', icon: 'history' },
         { label: 'Modules Overview', icon: 'view_module' },
         { label: 'Settings / Access Control', icon: 'settings' },
-        { label: 'Audit Reports', icon: 'assignment' }
+        { label: 'Audit Reports', icon: 'assignment' },
+        { label: 'Reports', icon: 'insights', path: '/reports' }
       ];
     }
     if (role === 'HR') {
@@ -64,7 +65,7 @@ export class SidebarComponent {
         { label: 'Performance Evaluation', icon: 'workspace_premium', path: '/hr/performance' },
         { label: 'Training Management', icon: 'school' },
         { label: 'Leave Management', icon: 'event_note', path: '/hr/leaves' },
-        { label: 'Reports (HR Analytics)', icon: 'insights' }
+        { label: 'Reports (HR Analytics)', icon: 'insights', path: '/reports' }
       ];
     }
     if (role === 'FINANCE') {
@@ -79,7 +80,8 @@ export class SidebarComponent {
           { label: 'Spending Reports', icon: 'bar_chart' }
         ]},
         { label: 'Payroll Overview (HR data)', icon: 'payments', path: '/finance/payroll' },
-        { label: 'Forecasting (AI Integration)', icon: 'trending_up' }
+        { label: 'Forecasting (AI Integration)', icon: 'trending_up' },
+        { label: 'Reports', icon: 'insights', path: '/reports' }
       ];
     }
     if (role === 'EMPLOYEE') {
@@ -91,6 +93,12 @@ export class SidebarComponent {
         { label: 'My Payroll', icon: 'request_quote', path: '/employee/my-payroll' },
         { label: 'Training & Learning', icon: 'school' },
         { label: 'Help / Support', icon: 'support_agent' }
+      ];
+    }
+    if (role === 'MANAGER') {
+      return [
+        { label: 'Dashboard', icon: 'space_dashboard', path: '/reports' },
+        { label: 'Reports', icon: 'insights', path: '/reports' }
       ];
     }
     // Default/basic sidebar

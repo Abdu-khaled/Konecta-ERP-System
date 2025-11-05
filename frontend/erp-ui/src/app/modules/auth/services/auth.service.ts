@@ -27,4 +27,17 @@ export class AuthService {
   me(): Observable<UserProfile> {
     return this.http.get<UserProfile>(`${this.baseUrl}/me`);
   }
+
+  updateMe(payload: { username?: string; password?: string; confirmPassword?: string }): Observable<UserProfile> {
+    return this.http.put<UserProfile>(`${this.baseUrl}/me`, payload);
+  }
+
+  // Forgot password flow
+  forgotStart(email: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/forgot/start`, { email });
+  }
+
+  forgotComplete(payload: { email: string; otp: string; password: string; confirmPassword: string }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/forgot/complete`, payload);
+  }
 }
