@@ -8,58 +8,101 @@
         <option value="SENT">Sent</option>
         <option value="PAID">Paid</option>
       </select>
-      <button class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700" (click)="showForm = true">Create Invoice</button>
       <button class="rounded bg-slate-200 text-slate-800 px-4 py-2 text-sm" type="button" (click)="download()">Download</button>
+      <button class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700" type="button" (click)="resetModel(); addLine(); pdfPreviewUrl=null; lastCreated=null;">New Invoice</button>
     </div>
   </header>
 
   <div *ngIf="error" class="mt-3 rounded bg-rose-50 text-rose-700 px-3 py-2 text-sm">{{ error }}</div>
 
-  <section *ngIf="showForm" class="mt-4 rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70">
-    <form (ngSubmit)="submit()" class="grid gap-3 sm:grid-cols-3">
-      <label class="text-sm">
-        <span class="block mb-1">Client name</span>
-        <input class="w-full border rounded px-3 py-2" [(ngModel)]="model.clientName" name="clientName" required />
-      </label>
-      <label class="text-sm">
-        <span class="block mb-1">Invoice date</span>
-        <input class="w-full border rounded px-3 py-2" type="date" [(ngModel)]="model.invoiceDate" name="invoiceDate" required />
-      </label>
-      <label class="text-sm">
-        <span class="block mb-1">Amount</span>
-        <input class="w-full border rounded px-3 py-2" type="number" [(ngModel)]="model.amount" name="amount" required />
-      </label>
-      <div class="sm:col-span-3 flex gap-2 mt-2">
-        <button class="rounded bg-primary-600 text-white px-4 py-2" type="submit">Create</button>
-        <button class="rounded bg-slate-200 text-slate-800 px-4 py-2" type="button" (click)="showForm = false">Cancel</button>
+  <section class="mt-4 grid gap-4 md:grid-cols-2">
+    <!-- Left: Vendor header only (no lines table here) -->
+    <div class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70">
+      <form (ngSubmit)="submit()" class="grid gap-3 sm:grid-cols-2">
+        <label class="text-sm">
+          <span class="block mb-1">Vendor</span>
+          <input class="w-full border rounded px-3 py-2" [(ngModel)]="model.clientName" name="clientName" required />
+        </label>
+        <label class="text-sm">
+          <span class="block mb-1">Bill Date</span>
+          <input class="w-full border rounded px-3 py-2" type="date" [(ngModel)]="model.invoiceDate" name="invoiceDate" required />
+        </label>
+        <!-- No lines table here -->
+      </form>
+    </div>
+
+    <!-- Right: PDF upload + viewer -->
+    <div class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70">
+      <h3 class="font-semibold mb-2">Invoice PDF</h3>
+      <div class="mb-2 text-xs text-slate-500">Selected PDF will be uploaded when you save the invoice.</div>
+      <input type="file" accept="application/pdf" (change)="onPdfSelected($event)" class="mb-3"/>
+      <div *ngIf="pdfPreviewUrl; else noPdf" class="h-[520px]">
+        <iframe [src]="pdfPreviewUrl" class="w-full h-full rounded border"></iframe>
       </div>
-    </form>
+      <ng-template #noPdf>
+        <div class="text-sm text-slate-500">Upload a PDF to preview it here.</div>
+      </ng-template>
+    </div>
   </section>
 
+  <!-- Lines table in a full-width bottom section -->
   <section class="mt-6 rounded-2xl bg-white p-4 shadow ring-1 ring-slate-200/70">
-    <table class="w-full text-sm">
-      <thead class="text-left text-slate-600">
-        <tr>
-          <th class="py-2">Client</th>
-          <th>Date</th>
-          <th>Amount</th>
-          <th>Status</th>
-          <th class="text-right">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let i of items" class="border-t border-slate-200/70">
-          <td class="py-2">{{ i.clientName }}</td>
-          <td>{{ i.invoiceDate }}</td>
-          <td>{{ i.amount | number:'1.2-2' }}</td>
-          <td>{{ i.status }}</td>
-          <td class="text-right">
-            <button class="text-blue-600 mr-2" (click)="send(i)" [disabled]="i.status==='SENT' || i.status==='PAID'">Send</button>
-            <button class="text-emerald-600" (click)="markPaid(i)" [disabled]="i.status==='PAID'">Mark Paid</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-semibold">Invoice Lines</h3>
+      <button type="button" class="text-indigo-600" (click)="addLine()">Add a line</button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm table-fixed">
+        <thead class="text-left text-slate-600 select-none">
+          <tr class="whitespace-nowrap">
+            <th class="py-2 pr-2">Product</th>
+            <th class="pr-2">Account</th>
+            <th class="pr-2">Due Date</th>
+            <th class="pr-2">Quantity</th>
+            <th class="pr-2">Price</th>
+            <th class="pr-2">Disc.%</th>
+            <th class="pr-2">Tax%</th>
+            <th class="pr-2">WH%</th>
+            <th class="text-right">Amount</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let l of model.items; let ix = index" class="border-t border-slate-200/70 whitespace-nowrap">
+            <td class="py-1 pr-2"><input class="w-full px-2 py-1 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.product" name="tbl_prod{{ix}}"/></td>
+            <td class="pr-2"><input class="w-full px-2 py-1 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.account" name="tbl_acc{{ix}}"/></td>
+            <td class="pr-2"><input type="date" class="w-full px-2 py-1 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.dueDate" name="tbl_due{{ix}}"/></td>
+            <td class="pr-2"><input type="number" class="w-20 text-right px-2 py-1 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.quantity" name="tbl_qty{{ix}}"/></td>
+            <td class="pr-2"><input type="number" class="w-24 text-right px-2 py-1 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.price" name="tbl_price{{ix}}"/></td>
+            <td class="pr-2"><input type="number" class="w-20 text-right px-2 py-1 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.discountPercent" name="tbl_disc{{ix}}"/></td>
+            <td class="pr-2"><input type="number" class="w-20 text-right px-2 py-1 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.taxPercent" name="tbl_tax{{ix}}"/></td>
+            <td class="pr-2">
+              <select class="w-20 px-2 py-1 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.whPercent" name="tbl_wh{{ix}}">
+                <option [ngValue]="0">0%</option>
+                <option [ngValue]="1">1%</option>
+                <option [ngValue]="3">3%</option>
+                <option [ngValue]="5">5%</option>
+              </select>
+            </td>
+            <td class="text-right">{{ calcLineAmount(l) | number:'1.2-2' }}</td>
+            <td><button type="button" class="text-rose-600" (click)="removeLine(ix)">Remove</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid gap-1 text-sm mt-4">
+      <div class="flex justify-end gap-4"><div class="text-slate-600">Untaxed Amount:</div><div class="w-32 text-right">{{ totalUntaxed() | number:'1.2-2' }}</div></div>
+      <div class="flex justify-end gap-4"><div class="text-slate-600">Tax:</div><div class="w-32 text-right">{{ totalTax() | number:'1.2-2' }}</div></div>
+      <div class="flex justify-end gap-4"><div class="text-slate-600">Withholding (WH):</div><div class="w-32 text-right">-{{ totalWH() | number:'1.2-2' }}</div></div>
+      <div class="flex justify-end gap-4 font-semibold"><div>Total:</div><div class="w-32 text-right">{{ grandTotal() | number:'1.2-2' }}</div></div>
+    </div>
+
+    <div class="flex gap-2 mt-3 items-center">
+      <button class="rounded bg-primary-600 text-white px-4 py-2" (click)="submit()" type="button">Save</button>
+      <button class="rounded bg-slate-200 text-slate-800 px-4 py-2" type="button" (click)="resetModel(); addLine(); pdfPreviewUrl=null; lastCreated=null;">Clear</button>
+      <span *ngIf="lastCreated" class="text-emerald-700 text-sm">Saved invoice #{{ lastCreated?.id }}</span>
+    </div>
   </section>
 </div>
 

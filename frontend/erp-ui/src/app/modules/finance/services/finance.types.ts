@@ -1,9 +1,41 @@
 export type InvoiceStatus = 'DRAFT' | 'SENT' | 'PAID';
 
-export interface Invoice {
-  id?: number; clientName: string; invoiceDate: string; amount: number; status?: InvoiceStatus; createdAt?: string;
+export interface InvoiceItem {
+  id?: number;
+  product?: string;
+  account?: string;
+  dueDate?: string; // YYYY-MM-DD
+  quantity?: number;
+  price?: number;
+  discountPercent?: number;
+  taxPercent?: number;
+  whPercent?: number; // 0 | 1 | 3 | 5
+  baseAmount?: number;
+  taxAmount?: number;
+  withholding?: number;
+  lineTotal?: number;
 }
-export interface InvoiceRequest { clientName: string; invoiceDate: string; amount: number; }
+
+export interface Invoice {
+  id?: number;
+  clientName: string;
+  invoiceDate: string;
+  amount: number;
+  status?: InvoiceStatus;
+  createdAt?: string;
+  items?: InvoiceItem[];
+  untaxedTotal?: number;
+  taxTotal?: number;
+  withholdingTotal?: number;
+  grandTotal?: number;
+  pdfAttached?: boolean;
+}
+export interface InvoiceRequest {
+  clientName: string;
+  invoiceDate: string;
+  amount?: number;
+  items?: InvoiceItem[];
+}
 
 export type ExpenseStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export interface Expense {
