@@ -79,9 +79,9 @@
     </div>
     <!-- Finance primary nav buttons (placeholders) -->
     <div *ngIf="role === 'FINANCE'" class="hidden md:flex items-center gap-6 mr-2 border-l border-white/30 pl-6">
-      <button type="button" class="text-white text-sm font-medium hover:text-white hover:underline underline-offset-4 decoration-2 decoration-white">Budgets</button>
-      <button type="button" class="text-white text-sm font-medium hover:text-white hover:underline underline-offset-4 decoration-2 decoration-white">Transactions</button>
-      <button type="button" class="text-white text-sm font-medium hover:text-white hover:underline underline-offset-4 decoration-2 decoration-white">Invoices</button>
+      <a routerLink="/finance/budgets" class="text-white text-sm font-medium hover:text-white hover:underline underline-offset-4 decoration-2 decoration-white">Budgets</a>
+      <a routerLink="/finance/transactions" class="text-white text-sm font-medium hover:text-white hover:underline underline-offset-4 decoration-2 decoration-white">Transactions</a>
+      <a routerLink="/finance/invoices-list" class="text-white text-sm font-medium hover:text-white hover:underline underline-offset-4 decoration-2 decoration-white">Invoices</a>
     </div>
 
     <!-- Profile menu -->

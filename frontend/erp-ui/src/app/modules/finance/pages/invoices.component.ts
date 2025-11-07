@@ -7,6 +7,7 @@ import { Invoice, InvoiceItem, InvoiceRequest, InvoiceStatus } from '../services
 import { downloadExcel } from '../../../shared/helpers/excel';
 import { FinanceInvoiceApiService } from '../services/finance.invoice.api.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-finance-invoices',
@@ -19,6 +20,7 @@ export class InvoicesComponent implements OnInit {
   private readonly invApi = inject(FinanceInvoiceApiService);
   private readonly toast = inject(ToastService);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly route = inject(ActivatedRoute);
   items: Invoice[] = [];
   error = '';
   model: InvoiceRequest = { clientName: '', invoiceDate: '', items: [] };
@@ -27,7 +29,32 @@ export class InvoicesComponent implements OnInit {
   lastCreated: Invoice | null = null;
   filter: InvoiceStatus | '' = '';
 
-  ngOnInit(): void { this.resetModel(); this.addLine(); this.refresh(); }
+  ngOnInit(): void {
+    this.resetModel();
+    this.addLine();
+    this.refresh();
+    const id = Number(this.route.snapshot.queryParamMap.get('id'));
+    if (id) {
+      this.invApi.get(id).subscribe({
+        next: (i) => {
+          this.lastCreated = i;
+          this.model.clientName = i.clientName || '';
+          this.model.invoiceDate = (i.invoiceDate as any) || '';
+          this.model.items = (i.items || []).map(it => ({
+            product: it.product,
+            account: it.account,
+            dueDate: it.dueDate as any,
+            quantity: it.quantity,
+            price: it.price,
+            discountPercent: it.discountPercent,
+            taxPercent: it.taxPercent,
+            whPercent: it.whPercent
+          }));
+          if (i.pdfAttached && i.id) this.loadPdfPreview(i.id);
+        }
+      });
+    }
+  }
   refresh() {
     this.api.listInvoices(this.filter || undefined).subscribe({ next: d => this.items = d, error: () => this.error = 'Failed to load invoices' });
   }

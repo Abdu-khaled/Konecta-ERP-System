@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { FinanceDashboardComponent } from './components/finance-dashboard.component';
 import { InvoicesComponent } from './pages/invoices.component';
+import { InvoicesListComponent } from './pages/invoices-list.component';
 import { ExpensesComponent } from './pages/expenses.component';
 import { PayrollComponent } from './pages/payroll.component';
 import { BudgetsComponent } from './pages/budgets.component';
@@ -9,6 +10,7 @@ export const financeRoutes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   { path: 'dashboard', component: FinanceDashboardComponent },
   { path: 'invoices', component: InvoicesComponent },
+  { path: 'invoices-list', component: InvoicesListComponent },
   { path: 'expenses', component: ExpensesComponent },
   { path: 'payroll', component: PayrollComponent },
   { path: 'budgets', component: BudgetsComponent },
