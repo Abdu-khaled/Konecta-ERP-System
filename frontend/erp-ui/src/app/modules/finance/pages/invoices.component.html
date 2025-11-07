@@ -15,28 +15,105 @@
 
   <div *ngIf="error" class="mt-3 rounded bg-rose-50 text-rose-700 px-3 py-2 text-sm">{{ error }}</div>
 
-  <section class="mt-4 grid gap-4 md:grid-cols-2">
-    <!-- Left: Vendor header only (no lines table here) -->
-    <div class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70">
-      <form (ngSubmit)="submit()" class="grid gap-3 sm:grid-cols-2">
-        <label class="text-sm">
-          <span class="block mb-1">Vendor</span>
-          <input class="w-full border rounded px-3 py-2" [(ngModel)]="model.clientName" name="clientName" required />
-        </label>
-        <label class="text-sm">
-          <span class="block mb-1">Bill Date</span>
-          <input class="w-full border rounded px-3 py-2" type="date" [(ngModel)]="model.invoiceDate" name="invoiceDate" required />
-        </label>
-        <!-- No lines table here -->
+  <section class="mt-4 grid gap-4 md:grid-cols-3">
+    <!-- Left: Vendor + Lines (two sections stacked) -->
+    <div class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70 md:col-span-2 h-[calc(100vh-180px)] flex flex-col">
+      <form (ngSubmit)="submit()" class="grid gap-3 sm:grid-cols-2 flex-1 min-h-0">
+        <div class="text-sm flex items-center gap-3">
+          <span class="whitespace-nowrap">Vendor</span>
+          <input class="flex-1 bg-transparent border-0 border-b border-slate-300/50 rounded-none px-0 py-2 focus:outline-none focus:border-primary-400"
+                 [(ngModel)]="model.clientName" name="clientName" required />
+        </div>
+        <div class="text-sm flex items-center gap-3">
+          <span class="whitespace-nowrap">Bill Date</span>
+          <input class="flex-1 bg-transparent border-0 border-b border-slate-300/50 rounded-none px-0 py-2 focus:outline-none focus:border-primary-400"
+                 type="date" placeholder=" " [(ngModel)]="model.invoiceDate" name="invoiceDate" required />
+        </div>
+
+        <!-- Invoice Lines within the vendor card -->
+        <div class="sm:col-span-2 mt-10 flex flex-col min-h-0 flex-1">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-semibold">Invoice Lines</h3>
+            <!-- removed right-top add button per request -->
+          </div>
+          <!-- Keep table anchored; scroll after ~4 rows. Add-line sits inside this scroller below the table -->
+          <div class="overflow-x-hidden min-h-[160px] max-h-[220px] overflow-y-auto">
+            <table class="w-full text-xs table-fixed">
+              <thead class="text-left text-slate-600 select-none">
+                <tr class="whitespace-nowrap">
+                  <th class="py-2 pr-2">Product</th>
+                  <th class="pr-2">Account</th>
+                  <th class="pr-2">Due Date</th>
+                  <th class="pr-2">Qty</th>
+                  <th class="pr-2">Price</th>
+                  <th class="pr-2">Disc.%</th>
+                  <th class="pr-2">Tax%</th>
+                  <th class="pr-2">WH%</th>
+                  <th class="text-right">Amount</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let l of model.items; let ix = index" class="border-t border-slate-200/70 whitespace-nowrap">
+                  <td class="py-1 pr-2"><input class="w-full px-1 py-0.5 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.product" name="prodL{{ix}}"/></td>
+                  <td class="pr-2"><input class="w-full px-1 py-0.5 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.account" name="accL{{ix}}"/></td>
+                  <td class="pr-2"><input type="date" placeholder="mm/dd/yyyy" class="w-full min-w-[92px] px-1 py-0.5 bg-transparent border-0 outline-none focus:ring-0 text-[11px] leading-4" [(ngModel)]="l.dueDate" name="dueL{{ix}}"/></td>
+                  <td class="pr-2"><input type="number" class="w-16 text-right px-1 py-0.5 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.quantity" name="qtyL{{ix}}"/></td>
+                  <td class="pr-2"><input type="number" class="w-20 text-right px-1 py-0.5 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.price" name="priceL{{ix}}"/></td>
+                  <td class="pr-2"><input type="number" class="w-16 text-right px-1 py-0.5 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.discountPercent" name="discL{{ix}}"/></td>
+                  <td class="pr-2"><input type="number" class="w-16 text-right px-1 py-0.5 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.taxPercent" name="taxL{{ix}}"/></td>
+                  <td class="pr-2">
+                    <select class="w-16 px-1 py-0.5 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.whPercent" name="whL{{ix}}">
+                      <option [ngValue]="0">0%</option>
+                      <option [ngValue]="1">1%</option>
+                      <option [ngValue]="3">3%</option>
+                      <option [ngValue]="5">5%</option>
+                    </select>
+                  </td>
+                  <td class="text-right">{{ calcLineAmount(l) | number:'1.2-2' }}</td>
+                  <td class="pl-4"><button type="button" class="text-rose-600" (click)="removeLine(ix)">Remove</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="mt-2">
+              <button type="button" class="text-indigo-600" (click)="addLine()">Add a line</button>
+            </div>
+          </div>
+
+          <!-- Totals under the table -->
+          <div class="grid gap-1 text-sm mt-auto ml-auto w-80">
+            <div class="flex justify-end gap-6 items-center">
+              <div class="text-slate-600 whitespace-nowrap">Untaxed Amount:</div>
+              <div class="w-32 text-right">{{ totalUntaxed() | number:'1.2-2' }}</div>
+            </div>
+            <div class="flex justify-end gap-6 items-center">
+              <div class="text-slate-600 whitespace-nowrap">Tax (after WH):</div>
+              <div class="w-32 text-right">{{ (totalTax() - totalWH()) | number:'1.2-2' }}</div>
+            </div>
+            <div class="flex justify-end gap-6 items-center">
+              <div class="text-slate-600 whitespace-nowrap">Withholding (WH):</div>
+              <div class="w-32 text-right">-{{ totalWH() | number:'1.2-2' }}</div>
+            </div>
+            <div class="flex justify-end gap-6 items-center font-semibold">
+              <div class="whitespace-nowrap">Total:</div>
+              <div class="w-32 text-right">{{ grandTotal() | number:'1.2-2' }}</div>
+            </div>
+          </div>
+          <div class="flex gap-2 mt-3 items-center">
+            <button class="rounded bg-primary-600 text-white px-4 py-2" (click)="submit()" type="button">Save</button>
+            <button class="rounded bg-slate-200 text-slate-800 px-4 py-2" type="button" (click)="resetModel(); addLine(); pdfPreviewUrl=null; lastCreated=null;">Clear</button>
+            <span *ngIf="lastCreated" class="text-emerald-700 text-sm">Saved invoice #{{ lastCreated?.id }}</span>
+          </div>
+        </div>
       </form>
     </div>
 
     <!-- Right: PDF upload + viewer -->
-    <div class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70">
+    <div class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70 h-[calc(100vh-180px)] flex flex-col">
       <h3 class="font-semibold mb-2">Invoice PDF</h3>
       <div class="mb-2 text-xs text-slate-500">Selected PDF will be uploaded when you save the invoice.</div>
       <input type="file" accept="application/pdf" (change)="onPdfSelected($event)" class="mb-3"/>
-      <div *ngIf="pdfPreviewUrl; else noPdf" class="h-[520px]">
+      <div *ngIf="pdfPreviewUrl; else noPdf" class="flex-1 min-h-0">
         <iframe [src]="pdfPreviewUrl" class="w-full h-full rounded border"></iframe>
       </div>
       <ng-template #noPdf>
@@ -45,64 +122,6 @@
     </div>
   </section>
 
-  <!-- Lines table in a full-width bottom section -->
-  <section class="mt-6 rounded-2xl bg-white p-4 shadow ring-1 ring-slate-200/70">
-    <div class="flex items-center justify-between mb-2">
-      <h3 class="font-semibold">Invoice Lines</h3>
-      <button type="button" class="text-indigo-600" (click)="addLine()">Add a line</button>
-    </div>
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm table-fixed">
-        <thead class="text-left text-slate-600 select-none">
-          <tr class="whitespace-nowrap">
-            <th class="py-2 pr-2">Product</th>
-            <th class="pr-2">Account</th>
-            <th class="pr-2">Due Date</th>
-            <th class="pr-2">Quantity</th>
-            <th class="pr-2">Price</th>
-            <th class="pr-2">Disc.%</th>
-            <th class="pr-2">Tax%</th>
-            <th class="pr-2">WH%</th>
-            <th class="text-right">Amount</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let l of model.items; let ix = index" class="border-t border-slate-200/70 whitespace-nowrap">
-            <td class="py-1 pr-2"><input class="w-full px-2 py-1 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.product" name="tbl_prod{{ix}}"/></td>
-            <td class="pr-2"><input class="w-full px-2 py-1 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.account" name="tbl_acc{{ix}}"/></td>
-            <td class="pr-2"><input type="date" class="w-full px-2 py-1 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.dueDate" name="tbl_due{{ix}}"/></td>
-            <td class="pr-2"><input type="number" class="w-20 text-right px-2 py-1 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.quantity" name="tbl_qty{{ix}}"/></td>
-            <td class="pr-2"><input type="number" class="w-24 text-right px-2 py-1 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.price" name="tbl_price{{ix}}"/></td>
-            <td class="pr-2"><input type="number" class="w-20 text-right px-2 py-1 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.discountPercent" name="tbl_disc{{ix}}"/></td>
-            <td class="pr-2"><input type="number" class="w-20 text-right px-2 py-1 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.taxPercent" name="tbl_tax{{ix}}"/></td>
-            <td class="pr-2">
-              <select class="w-20 px-2 py-1 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.whPercent" name="tbl_wh{{ix}}">
-                <option [ngValue]="0">0%</option>
-                <option [ngValue]="1">1%</option>
-                <option [ngValue]="3">3%</option>
-                <option [ngValue]="5">5%</option>
-              </select>
-            </td>
-            <td class="text-right">{{ calcLineAmount(l) | number:'1.2-2' }}</td>
-            <td><button type="button" class="text-rose-600" (click)="removeLine(ix)">Remove</button></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="grid gap-1 text-sm mt-4">
-      <div class="flex justify-end gap-4"><div class="text-slate-600">Untaxed Amount:</div><div class="w-32 text-right">{{ totalUntaxed() | number:'1.2-2' }}</div></div>
-      <div class="flex justify-end gap-4"><div class="text-slate-600">Tax:</div><div class="w-32 text-right">{{ totalTax() | number:'1.2-2' }}</div></div>
-      <div class="flex justify-end gap-4"><div class="text-slate-600">Withholding (WH):</div><div class="w-32 text-right">-{{ totalWH() | number:'1.2-2' }}</div></div>
-      <div class="flex justify-end gap-4 font-semibold"><div>Total:</div><div class="w-32 text-right">{{ grandTotal() | number:'1.2-2' }}</div></div>
-    </div>
-
-    <div class="flex gap-2 mt-3 items-center">
-      <button class="rounded bg-primary-600 text-white px-4 py-2" (click)="submit()" type="button">Save</button>
-      <button class="rounded bg-slate-200 text-slate-800 px-4 py-2" type="button" (click)="resetModel(); addLine(); pdfPreviewUrl=null; lastCreated=null;">Clear</button>
-      <span *ngIf="lastCreated" class="text-emerald-700 text-sm">Saved invoice #{{ lastCreated?.id }}</span>
-    </div>
-  </section>
+  <!-- Removed bottom table: lines are inside vendor section above -->
 </div>
 

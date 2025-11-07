@@ -134,6 +134,7 @@ public class InvoiceController {
                 .amount(r.getAmount())
                 .build();
         if (r.getItems() != null) {
+            if (i.getItems() == null) i.setItems(new java.util.ArrayList<>());
             for (var itReq : r.getItems()) {
                 var it = finance_service.finance_service.model.InvoiceItem.builder()
                         .product(itReq.getProduct())

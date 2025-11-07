@@ -72,7 +72,8 @@ public class InvoiceService {
                 double w = nz(it.getWhPercent());
                 double base = qty * price * (1 - disc / 100.0);
                 double taxAmt = base * (t / 100.0);
-                double whAmt = base * (w / 100.0);
+                // WH is a percentage of the tax (not of the base)
+                double whAmt = taxAmt * (w / 100.0);
                 double line = base + taxAmt - whAmt;
                 it.setBaseAmount(base);
                 it.setTaxAmount(taxAmt);

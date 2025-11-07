@@ -30,6 +30,7 @@ public class Invoice {
 
     // Item lines
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private java.util.List<InvoiceItem> items = new java.util.ArrayList<>();
 
     // Totals (calculated)

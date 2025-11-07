@@ -66,11 +66,14 @@ export class InvoicesComponent implements OnInit {
   removeLine(ix: number) { (this.model.items ||= []).splice(ix, 1); }
   calcLineAmount(l: InvoiceItem): number {
     const qty = Number(l.quantity||0), price = Number(l.price||0), disc = Number(l.discountPercent||0), tax = Number(l.taxPercent||0), wh = Number(l.whPercent||0);
-    const base = qty*price*(1-disc/100); const taxAmt = base*tax/100; const whAmt = base*wh/100; return Math.max(0, base + taxAmt - whAmt);
+    const base = qty*price*(1-disc/100);
+    const taxAmt = base*tax/100;
+    const whAmt = taxAmt*wh/100; // WH reduces tax by a percentage of the tax
+    return Math.max(0, base + taxAmt - whAmt);
   }
   totalUntaxed(): number { return (this.model.items||[]).reduce((s,l)=> s + Number(l.quantity||0)*Number(l.price||0)*(1-Number(l.discountPercent||0)/100), 0); }
-  totalTax(): number { return (this.model.items||[]).reduce((s,l)=> s + (Number(l.quantity||0)*Number(l.price||0)*(1-Number(l.discountPercent||0)/100))*(Number(l.taxPercent||0)/100), 0); }
-  totalWH(): number { return (this.model.items||[]).reduce((s,l)=> s + (Number(l.quantity||0)*Number(l.price||0)*(1-Number(l.discountPercent||0)/100))*(Number(l.whPercent||0)/100), 0); }
+  totalTax(): number { return (this.model.items||[]).reduce((s,l)=> { const base = Number(l.quantity||0)*Number(l.price||0)*(1-Number(l.discountPercent||0)/100); return s + base*(Number(l.taxPercent||0)/100); }, 0); }
+  totalWH(): number { return (this.model.items||[]).reduce((s,l)=> { const base = Number(l.quantity||0)*Number(l.price||0)*(1-Number(l.discountPercent||0)/100); const taxAmt = base*(Number(l.taxPercent||0)/100); return s + taxAmt*(Number(l.whPercent||0)/100); }, 0); }
   grandTotal(): number { return this.totalUntaxed() + this.totalTax() - this.totalWH(); }
 
   resetModel() { this.model = { clientName: '', invoiceDate: '', items: [] }; this.selectedPdf = null; this.pdfPreviewUrl = null; this.lastCreated = null; }
