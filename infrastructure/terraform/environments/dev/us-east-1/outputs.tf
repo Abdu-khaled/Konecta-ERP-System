@@ -45,3 +45,6 @@ output "eks_fargate_pod_execution_role_name" {
   description = "IAM role name used by Fargate pods (if available)"
   value       = try(module.eks.fargate_pod_execution_role_name, null)
 }
+output "databases_from_module" {
+  value = module.rds.created_databases
+}
