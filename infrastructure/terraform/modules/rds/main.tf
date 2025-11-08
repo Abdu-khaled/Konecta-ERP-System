@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    postgresql = {
+      source  = "cyrilgdn/postgresql"
+      version = "~> 1.21"
+    }
+  }
+}
+
 resource "random_password" "db_password" {
   length  = 16
   special = false
@@ -168,4 +177,51 @@ resource "aws_db_instance" "replica" {
     Type = "ReadReplica"
     Purpose = "DisasterRecovery"
   }
+}
+# Auto IP for Terraform provisioning
+# -----------------------------
+data "http" "terraform_executor_ip" {
+  count = var.create_replica ? 0 : 1
+  url   = "https://checkip.amazonaws.com"
+}
+
+resource "aws_security_group_rule" "terraform_provisioning" {
+  count = var.create_replica ? 0 : 1
+  type              = "ingress"
+  from_port         = 5432
+  to_port           = 5432
+  protocol          = "tcp"
+  cidr_blocks       = ["${chomp(data.http.terraform_executor_ip[0].response_body)}/32"]
+  security_group_id = aws_security_group.rds.id
+  description       = "Terraform DB provisioning access"
+}
+
+provider "postgresql" {
+  host     = module.rds.rds_endpoint
+  port     = module.rds.rds_port
+  username = module.rds.rds_username
+  password = var.db_password
+  sslmode  = "require"
+
+  depends_on = [module.rds] 
+}
+
+resource "postgresql_database" "auth_service" {
+  name = "auth-service"
+}
+
+resource "postgresql_database" "hr_service" {
+  name = "hr-service"
+}
+
+resource "postgresql_database" "finance_service" {
+  name = "finance-service"
+}
+
+resource "postgresql_database" "inventory_service" {
+  name = "inventory-service"
+}
+
+resource "postgresql_database" "reporting_service" {
+  name = "reporting-service"
 }
