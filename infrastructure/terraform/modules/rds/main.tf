@@ -1,3 +1,11 @@
+terraform {
+  required_providers {
+    postgresql = {
+      source  = "cyrilgdn/postgresql"
+      version = "~> 1.21"
+    }
+  }
+}
 resource "random_password" "db_password" {
   length  = 16
   special = false
