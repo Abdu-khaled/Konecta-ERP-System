@@ -178,6 +178,16 @@ resource "aws_db_instance" "replica" {
     Purpose = "DisasterRecovery"
   }
 }
+provider "postgresql" {
+  host     = module.rds.rds_endpoint
+  port     = module.rds.rds_port
+  username = module.rds.rds_username
+  password = var.db_password
+  sslmode  = "require"
+
+  depends_on = [module.rds] 
+}
+
 resource "postgresql_database" "auth_service" {
   name = "auth-service"
 }
