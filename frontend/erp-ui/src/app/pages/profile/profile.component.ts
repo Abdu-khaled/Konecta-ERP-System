@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../modules/auth/services/auth.service';
+import { AccountApiService } from '../../modules/finance/services/account.api.service';
 import { AuthState } from '../../core/services/auth-state.service';
 
 @Component({
@@ -55,6 +56,19 @@ import { AuthState } from '../../core/services/auth-state.service';
             </div>
           </div>
         </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Card Type</label>
+            <select class="w-full border rounded px-3 py-2" formControlName="cardType">
+              <option [ngValue]="'VISA'">Visa</option>
+              <option [ngValue]="'MASTERCARD'">Mastercard</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Account Number</label>
+            <input class="w-full border rounded px-3 py-2" formControlName="accountNumber" placeholder="16-19 digits" />
+          </div>
+        </div>
         <div *ngIf="error()" class="text-red-600 text-sm">{{ error() }}</div>
         <div *ngIf="success()" class="text-green-600 text-sm" aria-live="polite">{{ success() }}</div>
         <div class="flex gap-2">
@@ -70,6 +84,7 @@ import { AuthState } from '../../core/services/auth-state.service';
 export class ProfileComponent {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(AuthService);
+  private readonly accountApi = inject(AccountApiService);
   private readonly state = inject(AuthState);
 
   saving = signal(false);
@@ -83,8 +98,25 @@ export class ProfileComponent {
   form: FormGroup = this.fb.group({
     username: [this.state.profile?.username || '', [Validators.required, Validators.minLength(3)]],
     password: [''],
-    confirmPassword: ['']
+    confirmPassword: [''],
+    cardType: ['VISA', [Validators.required]],
+    accountNumber: ['', []]
   });
+
+  constructor() {
+    // Prefill account fields for the logged-in user
+    this.accountApi.getMyAccount().subscribe({
+      next: (acc: any) => {
+        if (acc) {
+          this.form.patchValue({
+            accountNumber: acc.accountNumber || '',
+            cardType: (acc.cardType || 'VISA') as any
+          });
+        }
+      },
+      error: () => {}
+    });
+  }
 
   save() {
     this.error.set(null);
@@ -96,14 +128,33 @@ export class ProfileComponent {
       return;
     }
     this.saving.set(true);
+    // First update auth profile
     this.api.updateMe({ username, password: password || undefined, confirmPassword: confirmPassword || undefined })
       .subscribe({
         next: (profile) => {
           this.state.setProfile(profile);
-          // Clear password fields after success
-          this.form.patchValue({ password: '', confirmPassword: '' });
-          this.success.set((password || '').length > 0 ? 'Password updated successfully' : 'Profile updated');
-          this.saving.set(false);
+          // Then ensure payout account (best-effort)
+          const accNum = (this.form.value as any).accountNumber as string;
+          const cardType = (this.form.value as any).cardType as 'VISA'|'MASTERCARD';
+          if (accNum && cardType) {
+            this.accountApi.ensureAccount({ userId: profile.id, username: profile.username, email: profile.email, accountNumber: accNum, cardType }).subscribe({
+              next: () => {
+                this.form.patchValue({ password: '', confirmPassword: '' });
+                this.success.set((password || '').length > 0 ? 'Password and account updated' : 'Account updated');
+                this.saving.set(false);
+              },
+              error: () => {
+                this.form.patchValue({ password: '', confirmPassword: '' });
+                this.success.set((password || '').length > 0 ? 'Password updated (account save failed)' : 'Profile updated (account save failed)');
+                this.saving.set(false);
+              }
+            });
+          } else {
+            // No account changes
+            this.form.patchValue({ password: '', confirmPassword: '' });
+            this.success.set((password || '').length > 0 ? 'Password updated successfully' : 'Profile updated');
+            this.saving.set(false);
+          }
         },
         error: (e) => { this.error.set(e?.error?.message || e?.message || 'Failed to update'); this.saving.set(false); }
       });

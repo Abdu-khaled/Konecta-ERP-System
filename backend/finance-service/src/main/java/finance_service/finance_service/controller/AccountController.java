@@ -58,6 +58,18 @@ public class AccountController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<AccountResponse> myAccount() {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        String subject = auth != null ? auth.getName() : null;
+        if (subject == null || subject.isBlank()) return ResponseEntity.status(403).build();
+        var byEmail = accountRepository.findByEmailIgnoreCase(subject);
+        if (byEmail.isPresent()) return ResponseEntity.ok(toResponse(byEmail.get()));
+        var byUsername = accountRepository.findByUsernameIgnoreCase(subject);
+        return byUsername.map(a -> ResponseEntity.ok(toResponse(a))).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/by-emails")
     @PreAuthorize("hasAnyRole('ADMIN','FINANCE')")
     public ResponseEntity<List<AccountResponse>> byEmails(@RequestBody List<String> emails) {
@@ -79,4 +91,3 @@ public class AccountController {
                 .build();
     }
 }
-
