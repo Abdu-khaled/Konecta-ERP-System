@@ -38,3 +38,13 @@ output "replica_identifier" {
   description = "RDS replica identifier"
   value       = length(aws_db_instance.replica) > 0 ? aws_db_instance.replica[0].id : null
 }
+output "created_databases" {
+  description = "List of databases created"
+  value = [
+    postgresql_database.auth_service.name,
+    postgresql_database.hr_service.name,
+    postgresql_database.finance_service.name,
+    postgresql_database.inventory_service.name,
+    postgresql_database.reporting_service.name
+  ]
+}
