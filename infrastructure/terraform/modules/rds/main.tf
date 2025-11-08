@@ -178,6 +178,24 @@ resource "aws_db_instance" "replica" {
     Purpose = "DisasterRecovery"
   }
 }
+# Auto IP for Terraform provisioning
+# -----------------------------
+data "http" "terraform_executor_ip" {
+  count = var.create_replica ? 0 : 1
+  url   = "https://checkip.amazonaws.com"
+}
+
+resource "aws_security_group_rule" "terraform_provisioning" {
+  count = var.create_replica ? 0 : 1
+  type              = "ingress"
+  from_port         = 5432
+  to_port           = 5432
+  protocol          = "tcp"
+  cidr_blocks       = ["${chomp(data.http.terraform_executor_ip[0].response_body)}/32"]
+  security_group_id = aws_security_group.rds.id
+  description       = "Terraform DB provisioning access"
+}
+
 provider "postgresql" {
   host     = module.rds.rds_endpoint
   port     = module.rds.rds_port
