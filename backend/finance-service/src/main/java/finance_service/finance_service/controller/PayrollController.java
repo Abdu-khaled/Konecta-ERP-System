@@ -17,6 +17,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -27,6 +28,7 @@ public class PayrollController {
     private final PayrollService payrollService;
     private final PayrollRepository payrollRepository;
     private final RestTemplateBuilder restTemplateBuilder;
+    private final finance_service.finance_service.repository.AccountRepository accountRepository;
     private final JwtService jwtService;
 
     @PostMapping("/calculate")
@@ -195,5 +197,100 @@ public class PayrollController {
                 .netSalary(p.getNetSalary())
                 .processedDate(p.getProcessedDate())
                 .build();
+    }
+
+    @GetMapping("/overview")
+    @PreAuthorize("hasAnyRole('ADMIN','FINANCE')")
+    public ResponseEntity<List<finance_service.finance_service.dto.response.PayrollOverviewRow>> overview(@RequestParam String period, jakarta.servlet.http.HttpServletRequest request) {
+        try {
+            // 1) Fetch employees from HR
+            var rt = restTemplateBuilder.build();
+            java.util.List<?> employees = null;
+            // Try service DNS first then localhost (dev)
+            String[] candidates = new String[]{
+                    "http://hr-service:8082/api/hr/employees",
+                    "http://localhost:8088/api/hr/employees"
+            };
+            for (String url : candidates) {
+                try {
+                    HttpHeaders headers = new HttpHeaders();
+                    String bearer = request.getHeader(org.springframework.http.HttpHeaders.AUTHORIZATION);
+                    if (bearer != null) headers.set(org.springframework.http.HttpHeaders.AUTHORIZATION, bearer);
+                    HttpEntity<Void> entity = new HttpEntity<>(headers);
+                    var resp = rt.exchange(url, HttpMethod.GET, entity, java.util.List.class);
+                    if (resp.getStatusCode().is2xxSuccessful()) { employees = resp.getBody(); break; }
+                } catch (Exception ignored) { }
+            }
+            if (employees == null) employees = java.util.List.of();
+
+            // 2) Build map of existing payroll by employee for the period
+            Map<Long, Payroll> byEmp = payrollRepository.findByPeriod(period).stream()
+                    .collect(Collectors.toMap(Payroll::getEmployeeId, x -> x, (a, b) -> a));
+
+            // 2b) Fetch accounts by employee emails (if provided)
+            java.util.Map<String, finance_service.finance_service.model.Account> accountsByEmail = new java.util.HashMap<>();
+            try {
+                java.util.List<String> emails = new java.util.ArrayList<>();
+                for (Object o : employees) {
+                    if (o instanceof Map<?,?> m) {
+                        Object email = m.get("email");
+                        if (email != null) emails.add(email.toString());
+                    }
+                }
+                if (!emails.isEmpty()) {
+                    for (var a : accountRepository.findByEmailInIgnoreCase(emails)) {
+                        if (a.getEmail() != null) accountsByEmail.put(a.getEmail().toLowerCase(), a);
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            // 3) Merge to overview rows
+            List<finance_service.finance_service.dto.response.PayrollOverviewRow> rows = employees.stream().map(o -> {
+                Long id = null; String first = ""; String last = ""; Double sal = 0.0;
+                String email = null;
+                if (o instanceof Map<?,?> m) {
+                    Object idVal = m.get("id"); if (idVal != null) try { id = Long.valueOf(idVal.toString()); } catch (Exception ignored) {}
+                    Object f = m.get("firstName"); if (f != null) first = f.toString();
+                    Object l = m.get("lastName"); if (l != null) last = l.toString();
+                    Object s = m.get("salary"); if (s != null) try { sal = Double.valueOf(s.toString()); } catch (Exception ignored) {}
+                    Object e = m.get("email"); if (e != null) email = e.toString();
+                }
+                if (id == null) id = -1L;
+                Payroll p = byEmp.get(id);
+                double base = p != null && p.getBaseSalary() != null ? p.getBaseSalary() : (sal != null ? sal : 0.0);
+                double bonuses = p != null && p.getBonuses() != null ? p.getBonuses() : 0.0;
+                double deductions = p != null && p.getDeductions() != null ? p.getDeductions() : 0.0;
+                double net = base + bonuses - deductions;
+                String accountMasked = null; String cardType = null;
+                if (email != null) {
+                    var a = accountsByEmail.get(email.toLowerCase());
+                    if (a != null) {
+                        String acc = a.getAccountNumber();
+                        if (acc != null && acc.length() >= 4) {
+                            String last4 = acc.substring(acc.length()-4);
+                            accountMasked = "**** **** **** " + last4;
+                        } else {
+                            accountMasked = acc;
+                        }
+                        cardType = a.getCardType() != null ? a.getCardType().name() : null;
+                    }
+                }
+                return finance_service.finance_service.dto.response.PayrollOverviewRow.builder()
+                        .employeeId(id)
+                        .name((first + " " + last).trim())
+                        .base(base)
+                        .bonuses(bonuses)
+                        .deductions(deductions)
+                        .net(net)
+                        .paid(p != null)
+                        .accountMasked(accountMasked)
+                        .cardType(cardType)
+                        .build();
+            }).collect(Collectors.toList());
+
+            return ResponseEntity.ok(rows);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).build();
+        }
     }
 }

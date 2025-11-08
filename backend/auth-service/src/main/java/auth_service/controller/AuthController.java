@@ -10,6 +10,12 @@ import auth_service.service.NotificationService;
 import auth_service.service.OtpService;
 import auth_service.util.TokenGenerator;
 import jakarta.validation.Valid;
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,6 +39,7 @@ public class AuthController {
     private final long otpTtlSeconds;
     private final long verificationTtlMinutes;
     private final String registrationUrlBase;
+    private final RestTemplateBuilder restTemplateBuilder;
 
     public AuthController(UserRepository userRepository,
             PasswordEncoder passwordEncoder,
@@ -41,7 +48,8 @@ public class AuthController {
             OtpService otpService,
             @Value("${app.otp.ttl-seconds:300}") long otpTtlSeconds,
             @Value("${app.verification.ttl-minutes:1440}") long verificationTtlMinutes,
-            @Value("${app.registration.urlBase:http://localhost:4200/register}") String registrationUrlBase) {
+            @Value("${app.registration.urlBase:http://localhost:4200/register}") String registrationUrlBase,
+            RestTemplateBuilder restTemplateBuilder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -50,6 +58,7 @@ public class AuthController {
         this.otpTtlSeconds = otpTtlSeconds;
         this.verificationTtlMinutes = verificationTtlMinutes;
         this.registrationUrlBase = registrationUrlBase;
+        this.restTemplateBuilder = restTemplateBuilder;
     }
 
     @PostMapping("/users/invite")
@@ -172,6 +181,33 @@ public class AuthController {
         user.setOtpHash(null);
         user.setOtpExpiresAt(null);
         userRepository.save(user);
+        // If account info provided, upsert to finance-service (best-effort)
+        try {
+            String acc = req.getAccountNumber();
+            String type = req.getCardType();
+            if (acc != null && !acc.isBlank() && type != null && !type.isBlank()) {
+                RestTemplate rt = restTemplateBuilder.build();
+                var payload = new java.util.HashMap<String,Object>();
+                payload.put("userId", user.getId());
+                payload.put("username", user.getUsername());
+                payload.put("email", user.getEmail());
+                payload.put("accountNumber", acc.replaceAll("\\s+", ""));
+                payload.put("cardType", type.toUpperCase());
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                HttpEntity<java.util.Map<String,Object>> entity = new HttpEntity<>(payload, headers);
+                String[] bases = new String[]{
+                        "http://finance-service:8083",
+                        "http://localhost:8087"
+                };
+                for (String base : bases) {
+                    try {
+                        rt.exchange(base + "/api/finance/accounts/ensure", HttpMethod.POST, entity, java.util.Map.class);
+                        break;
+                    } catch (Exception ignored) { }
+                }
+            }
+        } catch (Exception ignored) {}
         return ResponseEntity.ok(Map.of("message", "account_activated"));
     }
 

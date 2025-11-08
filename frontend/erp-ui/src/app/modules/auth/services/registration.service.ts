@@ -21,6 +21,8 @@ export interface RegistrationCompleteRequest {
 export interface VerifyOtpRequest {
   token: string;
   otp: string;
+  accountNumber?: string;
+  cardType?: 'VISA' | 'MASTERCARD';
 }
 
 @Injectable({ providedIn: 'root' })

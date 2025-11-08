@@ -30,6 +30,8 @@ export class RegisterVerifyComponent {
 
   token = this.route.snapshot.queryParamMap.get('token') || '';
   otp = '';
+  accountNumber = this.route.snapshot.queryParamMap.get('accountNumber') || '';
+  cardType: 'VISA'|'MASTERCARD' = (this.route.snapshot.queryParamMap.get('cardType') as any) || 'VISA';
   loading = signal(false);
   error = signal('');
   success = signal(false);
@@ -38,7 +40,8 @@ export class RegisterVerifyComponent {
     if (!this.token) { this.error.set('Missing token'); return; }
     this.loading.set(true);
     this.error.set('');
-    this.reg.verifyOtp({ token: this.token, otp: this.otp }).subscribe({
+    const payload = { token: this.token, otp: this.otp, accountNumber: this.accountNumber, cardType: this.cardType } as any;
+    this.reg.verifyOtp(payload).subscribe({
       next: () => {
         this.success.set(true);
         setTimeout(() => this.router.navigate(['/auth/login'], { queryParams: { activated: '1' } }), 800);
@@ -50,4 +53,3 @@ export class RegisterVerifyComponent {
     })
   }
 }
-

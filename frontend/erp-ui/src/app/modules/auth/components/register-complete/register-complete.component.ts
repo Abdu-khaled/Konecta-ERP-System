@@ -29,6 +29,18 @@ import { RegistrationService } from '../../services/registration.service';
           <label class="block text-sm font-medium">Password</label>
           <input [(ngModel)]="password" name="password" type="password" required class="w-full border rounded px-3 py-2"/>
         </div>
+        <div>
+          <label class="block text-sm font-medium">Payout Card Type</label>
+          <select [(ngModel)]="cardType" name="cardType" required class="w-full border rounded px-3 py-2">
+            <option [ngValue]="'VISA'">Visa</option>
+            <option [ngValue]="'MASTERCARD'">Mastercard</option>
+          </select>
+          <p class="text-xs text-slate-600 mt-1">Used by Finance to pay your salary.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium">Account Number</label>
+          <input [(ngModel)]="accountNumber" name="accountNumber" required class="w-full border rounded px-3 py-2" placeholder="16-19 digits"/>
+        </div>
         <button class="w-full bg-primary-600 text-white rounded px-3 py-2" [disabled]="loading()">Continue</button>
         <p *ngIf="error()" class="text-red-600 text-sm">{{error()}}</p>
         <p *ngIf="success()" class="text-green-700 text-sm">OTP sent to your email. Redirecting…</p>
@@ -55,6 +67,8 @@ export class RegisterCompleteComponent {
   phone = '';
   username = '';
   password = '';
+  accountNumber = '';
+  cardType: 'VISA'|'MASTERCARD' = 'VISA';
 
   constructor() {
     this.reg.validate(this.token).subscribe({
@@ -71,7 +85,7 @@ export class RegisterCompleteComponent {
       .subscribe({
         next: () => {
           this.success.set(true);
-          setTimeout(() => this.router.navigate(['/auth/register/verify-otp'], { queryParams: { token: this.token } }), 800);
+          setTimeout(() => this.router.navigate(['/auth/register/verify-otp'], { queryParams: { token: this.token, accountNumber: this.accountNumber, cardType: this.cardType } }), 800);
         },
         error: (e) => {
           this.error.set(e?.error?.message || 'Failed to send OTP');

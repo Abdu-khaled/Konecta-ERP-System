@@ -28,6 +28,7 @@
           <th>Bonuses</th>
           <th>Deductions</th>
           <th>Net</th>
+          <th>Account</th>
           <th>Status</th>
           <th class="text-right">Actions</th>
         </tr>
@@ -41,6 +42,10 @@
           <td><input class="w-28 border rounded px-2 py-1" type="number" [disabled]="r.paid" [(ngModel)]="r.bonuses" (ngModelChange)="onEditRow(i)"/></td>
           <td><input class="w-28 border rounded px-2 py-1" type="number" [disabled]="r.paid" [(ngModel)]="r.deductions" (ngModelChange)="onEditRow(i)"/></td>
           <td>{{ r.net | number:'1.2-2' }}</td>
+          <td>
+            <ng-container *ngIf="r.account; else noAcc">{{ r.account }}</ng-container>
+            <ng-template #noAcc><span class="text-amber-700">No account</span></ng-template>
+          </td>
           <td>
             <span *ngIf="r.paid" class="text-emerald-700">Paid</span>
             <span *ngIf="!r.paid" class="text-slate-500">Unpaid</span>

@@ -26,7 +26,7 @@ export class PayrollComponent implements OnInit {
   error = '';
 
   employees: Employee[] = [];
-  rows: Array<{ employeeId: number; name: string; base: number; bonuses: number; deductions: number; net: number; paid: boolean; selected?: boolean }>=[];
+  rows: Array<{ employeeId: number; name: string; base: number; bonuses: number; deductions: number; net: number; paid: boolean; account?: string; selected?: boolean }>=[];
   bulkPaying = false;
   search = '';
 
@@ -40,7 +40,34 @@ export class PayrollComponent implements OnInit {
   load() {
     if (!this.period) return;
     this.error = '';
-    // Load employees and existing payroll for the period, then build rows
+    // Attempt new overview API that already merges employees with payroll
+    this.api.listPayrollOverview(this.period).subscribe({
+      next: (rows) => {
+        if (rows && Array.isArray(rows) && rows.length) {
+          this.rows = rows.map(r => ({
+            employeeId: r.employeeId,
+            name: r.name,
+            base: Number(r.base) || 0,
+            bonuses: Number(r.bonuses) || 0,
+            deductions: Number(r.deductions) || 0,
+            net: Number(r.net) || this.calcNet(Number(r.base) || 0, Number(r.bonuses) || 0, Number(r.deductions) || 0),
+            paid: !!r.paid,
+            account: r.cardType && r.accountMasked ? `${r.cardType} ${r.accountMasked}` : (r.accountMasked || ''),
+            selected: false
+          }));
+          return; // success path
+        }
+        // Fallback to legacy two-call merge if empty
+        this.loadLegacy();
+      },
+      error: () => {
+        // Fallback to legacy behavior on any error (for older backends)
+        this.loadLegacy();
+      }
+    });
+  }
+
+  private loadLegacy() {
     this.hr.listEmployees().subscribe({
       next: (emps) => {
         this.employees = emps || [];
@@ -55,7 +82,7 @@ export class PayrollComponent implements OnInit {
               const bonuses = (p?.bonuses ?? 0) as number;
               const deductions = (p?.deductions ?? 0) as number;
               const net = this.calcNet(base, bonuses, deductions);
-              return { employeeId: e.id!, name: `${e.firstName} ${e.lastName}`.trim(), base, bonuses, deductions, net, paid: !!p, selected: false };
+              return { employeeId: e.id!, name: `${e.firstName} ${e.lastName}`.trim(), base, bonuses, deductions, net, paid: !!p, account: '', selected: false };
             });
           },
           error: () => { this.error = 'Failed to load payroll'; this.toast.error(this.error); }
