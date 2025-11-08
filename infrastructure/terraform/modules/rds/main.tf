@@ -6,6 +6,7 @@ terraform {
     }
   }
 }
+
 resource "random_password" "db_password" {
   length  = 16
   special = false
@@ -176,4 +177,23 @@ resource "aws_db_instance" "replica" {
     Type = "ReadReplica"
     Purpose = "DisasterRecovery"
   }
+}
+resource "postgresql_database" "auth_service" {
+  name = "auth-service"
+}
+
+resource "postgresql_database" "hr_service" {
+  name = "hr-service"
+}
+
+resource "postgresql_database" "finance_service" {
+  name = "finance-service"
+}
+
+resource "postgresql_database" "inventory_service" {
+  name = "inventory-service"
+}
+
+resource "postgresql_database" "reporting_service" {
+  name = "reporting-service"
 }
