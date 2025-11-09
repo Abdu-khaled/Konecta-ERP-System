@@ -1,10 +1,12 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { AuthState } from '../../../core/services/auth-state.service';
+import { ChatbotWidgetComponent } from '../../../shared/components/chatbot/chatbot-widget.component';
 
 @Component({
   selector: 'app-employee-dashboard',
   standalone: true,
-  templateUrl: './employee-dashboard.component.html'
+  templateUrl: './employee-dashboard.component.html',
+  imports: [ChatbotWidgetComponent]
 })
 export class EmployeeDashboardComponent {
   private readonly state = inject(AuthState);

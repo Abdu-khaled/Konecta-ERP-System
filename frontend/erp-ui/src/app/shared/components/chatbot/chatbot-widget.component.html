@@ -1,0 +1,54 @@
+<!-- Floating chat widget: semi-transparent FAB + slide-in panel -->
+<button
+  type="button"
+  aria-label="Open AI Chatbot"
+  (click)="$event.stopPropagation(); toggle()"
+  class="fixed bottom-6 right-6 z-50 inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary-600/60 text-white shadow-lg ring-1 ring-primary-600/30 hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-600 transition-colors"
+>
+  <span class="material-symbols-outlined text-[28px]">smart_toy</span>
+</button>
+
+<!-- Chat panel -->
+<section
+  *ngIf="open"
+  appClickOutside
+  (appClickOutside)="close()"
+  class="fixed bottom-24 right-6 z-50 w-80 max-w-[92vw] overflow-hidden rounded-2xl bg-white/95 text-slate-900 shadow-2xl ring-1 ring-slate-200/80 backdrop-blur-sm flex flex-col h-[28rem] max-h-[80vh]"
+  role="dialog"
+  aria-label="AI Chatbot"
+>
+  <header class="flex items-center justify-between gap-3 border-b border-slate-200/80 px-4 py-3">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary-600">smart_toy</span>
+      <h3 class="text-sm font-semibold">Sync Assistant</h3>
+    </div>
+    <button type="button" (click)="close()" class="rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+  </header>
+
+  <div class="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+    <div *ngFor="let m of messages" [class]="m.from === 'user' ? 'text-right' : 'text-left'">
+      <div
+        class="inline-block max-w-[90%] rounded-xl px-3 py-2 text-sm"
+        [ngClass]="m.from === 'user' ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-900'"
+      >
+        {{ m.text }}
+      </div>
+    </div>
+  </div>
+
+  <form (submit)="send($event)" class="flex items-center gap-2 border-t border-slate-200/80 px-3 py-2">
+    <input
+      type="text"
+      [(ngModel)]="text"
+      name="chatText"
+      placeholder="Type a message…"
+      class="flex-1 rounded-full border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-600"
+    />
+    <button type="submit" class="inline-flex items-center rounded-full bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700">
+      <span class="material-symbols-outlined text-[18px] leading-none mr-1">send</span>
+      Send
+    </button>
+  </form>
+</section>
