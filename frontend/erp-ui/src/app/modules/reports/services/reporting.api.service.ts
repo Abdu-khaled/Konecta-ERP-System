@@ -3,11 +3,8 @@ import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { DashboardAnalyticsDto, ReportRequest } from './reporting.types';
 
-// Gateway exposes reporting at /api/reporting/*
-export const REPORTING_API_BASE_URL = new InjectionToken<string>('REPORTING_API_BASE_URL', {
-  providedIn: 'root',
-  factory: () => '/api/reporting'
-});
+// Gateway exposes reporting at configured base
+export const REPORTING_API_BASE_URL = new InjectionToken<string>('REPORTING_API_BASE_URL');
 
 @Injectable({ providedIn: 'root' })
 export class ReportingApiService {
@@ -43,4 +40,3 @@ export class ReportingApiService {
     );
   }
 }
-

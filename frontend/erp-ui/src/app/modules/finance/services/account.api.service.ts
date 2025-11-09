@@ -1,10 +1,6 @@
-import { Injectable, InjectionToken, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-
-export const FINANCE_API_BASE_URL = new InjectionToken<string>('FINANCE_API_BASE_URL', {
-  providedIn: 'root',
-  factory: () => '/api/finance'
-});
+import { FINANCE_API_BASE_URL } from './finance.api.service';
 
 @Injectable({ providedIn: 'root' })
 export class AccountApiService {
@@ -17,5 +13,9 @@ export class AccountApiService {
   getAccountByEmail(email: string) {
     return this.http.get<any>(`${this.base}/accounts/by-email`, { params: { email } });
   }
-  getMyAccount() { return this.http.get<any>(`${this.base}/accounts/me`); }
+  getMyAccount(opts?: { suppressToasts?: boolean }) {
+    const headers: any = {};
+    if (opts?.suppressToasts) headers['X-Suppress-Error-Toast'] = '1';
+    return this.http.get<any>(`${this.base}/accounts/me`, { headers });
+  }
 }

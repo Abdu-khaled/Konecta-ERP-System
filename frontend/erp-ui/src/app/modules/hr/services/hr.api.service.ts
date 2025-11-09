@@ -3,10 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
 import { Department, DepartmentRequest, Employee, EmployeeRequest, Job, JobRequest } from './hr.types';
 
-export const HR_API_BASE_URL = new InjectionToken<string>('HR_API_BASE_URL', {
-  providedIn: 'root',
-  factory: () => '/api/hr'
-});
+export const HR_API_BASE_URL = new InjectionToken<string>('HR_API_BASE_URL');
 
 @Injectable({ providedIn: 'root' })
 export class HrApiService {

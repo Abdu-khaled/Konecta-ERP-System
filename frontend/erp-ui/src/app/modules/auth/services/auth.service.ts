@@ -3,10 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { UserProfile } from '../../../core/services/auth-state.service';
 
-export const AUTH_API_BASE_URL = new InjectionToken<string>('AUTH_API_BASE_URL', {
-  providedIn: 'root',
-  factory: () => '/api/auth'
-});
+export const AUTH_API_BASE_URL = new InjectionToken<string>('AUTH_API_BASE_URL');
 
 export interface LoginRequest {
   email: string;

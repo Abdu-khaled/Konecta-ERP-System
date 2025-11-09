@@ -105,7 +105,7 @@ export class ProfileComponent {
 
   constructor() {
     // Prefill account fields for the logged-in user
-    this.accountApi.getMyAccount().subscribe({
+    this.accountApi.getMyAccount({ suppressToasts: true }).subscribe({
       next: (acc: any) => {
         if (acc) {
           this.form.patchValue({

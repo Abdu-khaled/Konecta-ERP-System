@@ -2,10 +2,7 @@ import { Injectable, InjectionToken, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Expense, ExpenseRequest, ExpenseStatus, Invoice, InvoiceRequest, InvoiceStatus, Payroll, PayrollRequest } from './finance.types';
 
-export const FINANCE_API_BASE_URL = new InjectionToken<string>('FINANCE_API_BASE_URL', {
-  providedIn: 'root',
-  factory: () => '/api/finance'
-});
+export const FINANCE_API_BASE_URL = new InjectionToken<string>('FINANCE_API_BASE_URL');
 
 @Injectable({ providedIn: 'root' })
 export class FinanceApiService {
