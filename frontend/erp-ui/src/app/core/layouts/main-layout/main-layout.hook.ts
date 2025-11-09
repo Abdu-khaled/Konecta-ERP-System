@@ -4,6 +4,13 @@ export function buildSidebarForRole(role: string | null): SidebarItem[] {
   if (role === 'ADMIN') {
     return [
       { label: 'Dashboard', icon: 'space_dashboard', path: '/admin/dashboard' },
+      { label: 'Inventory', icon: 'inventory_2', children: [
+        { label: 'Dashboard', icon: 'dashboard', path: '/inventory/dashboard' },
+        { label: 'Items', icon: 'list', path: '/inventory/items' },
+        { label: 'Low Stock', icon: 'warning', path: '/inventory/low-stock' },
+        { label: 'Movements', icon: 'swap_vert', path: '/inventory/movements' },
+        { label: 'Warehouses', icon: 'warehouse', path: '/inventory/warehouses' }
+      ] },
       { label: 'Manage Users & Roles', icon: 'manage_accounts', children: [
         { label: 'Invite Users', icon: 'group_add', path: '/admin/invite' },
         { label: 'Assign Roles', icon: 'badge' }
@@ -54,6 +61,15 @@ export function buildSidebarForRole(role: string | null): SidebarItem[] {
       { label: 'My Payroll', icon: 'request_quote', path: '/employee/my-payroll' },
       { label: 'Training & Learning', icon: 'school', path: '/employee/training' },
       { label: 'Help / Support', icon: 'support_agent' }
+    ];
+  }
+  if (role === 'INVENTORY') {
+    return [
+      { label: 'Dashboard', icon: 'space_dashboard', path: '/inventory/dashboard' },
+      { label: 'Items', icon: 'list', path: '/inventory/items' },
+      { label: 'Low Stock', icon: 'warning', path: '/inventory/low-stock' },
+      { label: 'Movements', icon: 'swap_vert', path: '/inventory/movements' },
+      { label: 'Warehouses', icon: 'warehouse', path: '/inventory/warehouses' }
     ];
   }
   return [

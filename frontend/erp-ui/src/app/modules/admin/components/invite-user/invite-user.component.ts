@@ -29,6 +29,7 @@ import { Department } from '../../../hr/services/hr.types';
             <option value="EMPLOYEE">Employee</option>
             <option value="HR">HR</option>
             <option value="FINANCE">Finance</option>
+            <option value="INVENTORY">Inventory</option>
           </select>
         </div>
         <div>
@@ -63,7 +64,7 @@ export class InviteUserComponent implements OnInit {
 
   name = '';
   email = '';
-  role: 'EMPLOYEE' | 'HR' | 'FINANCE' = 'EMPLOYEE';
+  role: 'EMPLOYEE' | 'HR' | 'FINANCE' | 'INVENTORY' = 'EMPLOYEE';
   departments: Department[] = [];
   departmentId: number | null = null;
   baseSalary: number | null = null;
@@ -84,8 +85,8 @@ export class InviteUserComponent implements OnInit {
   submit() {
     this.loading.set(true);
     this.message.set(''); this.error.set('');
-    const payload: InviteUserRequest = { name: this.name, email: this.email, role: this.role };
-    this.admin.inviteUser(payload).subscribe({
+    const payload: any = { name: this.name, email: this.email, role: this.role };
+    this.admin.inviteUser(payload as any).subscribe({
       next: () => {
         // Best-effort: ensure an Employee record exists with department and base salary (for payroll)
         this.hrApi.ensureEmployee({ email: this.email, fullName: this.name, departmentId: this.departmentId || null, salary: this.baseSalary ?? null, workingHours: this.workingHours ?? null }).subscribe({

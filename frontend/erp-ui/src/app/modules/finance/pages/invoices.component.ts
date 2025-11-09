@@ -66,7 +66,12 @@ export class InvoicesComponent implements OnInit {
         this.lastCreated = i;
         this.toast.success(updating ? 'Invoice updated' : 'Invoice created');
         if (this.selectedPdf && i.id) {
-          this.invApi.uploadPdf(i.id, this.selectedPdf).subscribe({ next: () => { this.loadPdfPreview(i.id!); }, error: () => this.toast.error('Failed to upload PDF') });
+          // Only upload the PDF on save; do not call AI here.
+          // This preserves any values the user edited before saving.
+          this.invApi.uploadPdf(i.id, this.selectedPdf).subscribe({
+            next: () => { this.loadPdfPreview(i.id!); },
+            error: () => this.toast.error('Failed to upload PDF')
+          });
         }
         this.refresh();
       },
@@ -107,6 +112,27 @@ export class InvoicesComponent implements OnInit {
   onPdfSelected(evt: any) {
     const file: File | undefined = evt?.target?.files?.[0];
     if (!file) return; this.selectedPdf = file; const url = URL.createObjectURL(file); this.pdfPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    // Immediately extract fields from the selected PDF without waiting for save
+    this.invApi.extractPreview(file).subscribe({
+      next: (extracted) => {
+        this.model.clientName = extracted.clientName || this.model.clientName;
+        this.model.invoiceDate = (extracted.invoiceDate as any) || this.model.invoiceDate;
+        if (extracted.items && extracted.items.length) {
+          this.model.items = extracted.items.map(it => ({
+            product: it.product,
+            account: it.account,
+            dueDate: it.dueDate as any,
+            quantity: it.quantity,
+            price: it.price,
+            discountPercent: it.discountPercent,
+            taxPercent: it.taxPercent,
+            whPercent: it.whPercent
+          }));
+        }
+        this.toast.success('Fields auto-filled from PDF');
+      },
+      error: () => this.toast.error('Failed to extract fields from PDF')
+    });
   }
   loadPdfPreview(id: number) {
     this.invApi.downloadPdf(id).subscribe({ next: blob => { const url = URL.createObjectURL(blob); this.pdfPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url); }, error: () => this.toast.error('Failed to load PDF') });

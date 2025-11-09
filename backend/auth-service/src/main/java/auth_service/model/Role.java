@@ -4,5 +4,6 @@ public enum Role {
     ADMIN,
     HR,
     FINANCE,
-    EMPLOYEE
+    EMPLOYEE,
+    INVENTORY
 }

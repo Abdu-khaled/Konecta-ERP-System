@@ -24,6 +24,7 @@ export class HomeComponent implements AfterViewInit, OnDestroy, OnInit {
     else if (r === 'HR') this.router.navigate(['/hr/dashboard']);
     else if (r === 'FINANCE') this.router.navigate(['/finance/dashboard']);
     else if (r === 'EMPLOYEE') this.router.navigate(['/employee/dashboard']);
+    else if (r === 'INVENTORY') this.router.navigate(['/inventory/dashboard']);
   }
 
   ngAfterViewInit(): void {

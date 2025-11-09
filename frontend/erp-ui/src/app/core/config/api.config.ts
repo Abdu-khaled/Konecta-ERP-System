@@ -3,6 +3,7 @@ export type AppConfig = {
   hrBase?: string;
   financeBase?: string;
   reportingBase?: string;
+  inventoryBase?: string;
 };
 
 export function resolveApiBase(key: keyof AppConfig, fallback: string): string {
@@ -15,6 +16,6 @@ export const API_BASES = {
   auth: resolveApiBase('authBase', '/api/auth'),
   hr: resolveApiBase('hrBase', '/api/hr'),
   finance: resolveApiBase('financeBase', '/api/finance'),
-  reporting: resolveApiBase('reportingBase', '/api/reporting')
+  reporting: resolveApiBase('reportingBase', '/api/reporting'),
+  inventory: resolveApiBase('inventoryBase', '/api/inventory')
 };
-

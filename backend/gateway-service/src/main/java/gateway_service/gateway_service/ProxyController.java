@@ -22,8 +22,8 @@ public class ProxyController {
 
     public ProxyController(RestTemplateBuilder builder) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(5000);
-        factory.setReadTimeout(30000);
+        factory.setConnectTimeout(12000);
+        factory.setReadTimeout(200000);
         this.restTemplate = builder.requestFactory(() -> factory).build();
     }
 
@@ -37,8 +37,8 @@ public class ProxyController {
             RequestMethod.DELETE
     })
     public ResponseEntity<byte[]> proxyAuth(HttpMethod method,
-                                            HttpServletRequest request,
-                                            @RequestBody(required = false) byte[] body) {
+            HttpServletRequest request,
+            @RequestBody(required = false) byte[] body) {
         String upstreamBase = "http://auth-service:8081/api/auth";
         return forward(upstreamBase, method, request, body);
     }
@@ -53,8 +53,8 @@ public class ProxyController {
             RequestMethod.DELETE
     })
     public ResponseEntity<byte[]> proxyHr(HttpMethod method,
-                                          HttpServletRequest request,
-                                          @RequestBody(required = false) byte[] body) {
+            HttpServletRequest request,
+            @RequestBody(required = false) byte[] body) {
         String upstreamBase = "http://hr-service:8082/api/hr";
         return forward(upstreamBase, method, request, body);
     }
@@ -69,8 +69,8 @@ public class ProxyController {
             RequestMethod.DELETE
     })
     public ResponseEntity<byte[]> proxyFinance(HttpMethod method,
-                                               HttpServletRequest request,
-                                               @RequestBody(required = false) byte[] body) {
+            HttpServletRequest request,
+            @RequestBody(required = false) byte[] body) {
         String upstreamBase = "http://finance-service:8083/api/finance";
         return forward(upstreamBase, method, request, body);
     }
@@ -85,12 +85,11 @@ public class ProxyController {
             RequestMethod.DELETE
     })
     public ResponseEntity<byte[]> proxyInventory(HttpMethod method,
-                                                 HttpServletRequest request,
-                                                 @RequestBody(required = false) byte[] body) {
+            HttpServletRequest request,
+            @RequestBody(required = false) byte[] body) {
         String upstreamBase = "http://inventory-service:8085/api/inventory";
         return forward(upstreamBase, method, request, body);
     }
-
 
     @RequestMapping(path = "/reporting/**", method = {
             RequestMethod.GET,
@@ -102,22 +101,24 @@ public class ProxyController {
             RequestMethod.DELETE
     })
     public ResponseEntity<byte[]> proxyReporting(HttpMethod method,
-                                                 HttpServletRequest request,
-                                                 @RequestBody(required = false) byte[] body) {
+            HttpServletRequest request,
+            @RequestBody(required = false) byte[] body) {
         // Reporting service uses base route "/api/report" inside the container
         String upstreamBase = "http://reporting-service:8080/api/report";
         return forward(upstreamBase, method, request, body);
     }
 
     private ResponseEntity<byte[]> forward(String upstreamBase,
-                                           HttpMethod method,
-                                           HttpServletRequest request,
-                                           byte[] body) {
+            HttpMethod method,
+            HttpServletRequest request,
+            byte[] body) {
         String fullPath = request.getRequestURI(); // e.g. /api/auth/login
         String prefix = "/api";
-        String suffix = fullPath.startsWith(prefix) ? fullPath.substring(prefix.length()) : fullPath; // e.g. /hr/employees
+        String suffix = fullPath.startsWith(prefix) ? fullPath.substring(prefix.length()) : fullPath; // e.g.
+                                                                                                      // /hr/employees
         String query = request.getQueryString();
-        // Remove the first path segment (/auth|/hr|/finance|/reporting) to avoid duplication with upstreamBase
+        // Remove the first path segment (/auth|/hr|/finance|/reporting) to avoid
+        // duplication with upstreamBase
         String cleaned = suffix.replaceFirst("^/(auth|hr|finance|reporting|inventory)", "");
         String target = upstreamBase + cleaned + (query != null ? "?" + query : "");
 
@@ -127,7 +128,8 @@ public class ProxyController {
         headers.remove(HttpHeaders.CONTENT_LENGTH);
         headers.remove(HttpHeaders.ACCEPT_ENCODING);
 
-        // For multipart/form-data requests, Spring may not bind @RequestBody. Fallback to raw stream.
+        // For multipart/form-data requests, Spring may not bind @RequestBody. Fallback
+        // to raw stream.
         if (body == null || body.length == 0) {
             try {
                 var is = request.getInputStream();

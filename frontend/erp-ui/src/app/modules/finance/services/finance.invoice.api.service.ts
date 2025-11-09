@@ -11,7 +11,16 @@ export class FinanceInvoiceApiService {
   create(payload: InvoiceRequest) { return this.http.post<Invoice>(`${this.base}/invoices`, payload); }
   get(id: number) { return this.http.get<Invoice>(`${this.base}/invoices/${id}`); }
   update(id: number, payload: InvoiceRequest) { return this.http.put<Invoice>(`${this.base}/invoices/${id}`, payload); }
-  uploadPdf(id: number, file: File) { const form = new FormData(); form.append('file', file, file.name); return this.http.post<void>(`${this.base}/invoices/${id}/pdf`, form); }
+  // Use binary upload to avoid multipart proxy issues through the gateway
+  uploadPdf(id: number, file: File) {
+    const headers = { 'X-Filename': file.name } as any;
+    return this.http.post<void>(`${this.base}/invoices/${id}/pdf-bin`, file, { headers });
+  }
   downloadPdf(id: number) { return this.http.get(`${this.base}/invoices/${id}/pdf`, { responseType: 'blob' }); }
+  extractFromPdf(id: number, opts?: { apply?: boolean }) {
+    const q = opts?.apply ? `?apply=true` : '';
+    return this.http.post<InvoiceRequest>(`${this.base}/invoices/${id}/extract${q}`, {});
+  }
+  extractPreview(file: File) { const headers = { 'X-Filename': file.name } as any; return this.http.post<InvoiceRequest>(`${this.base}/invoices/extract-preview-bin`, file, { headers }); }
 }
 

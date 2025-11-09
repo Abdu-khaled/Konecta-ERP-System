@@ -67,22 +67,20 @@ public class InvoiceController {
     @PostMapping(value = "/{id}/pdf", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN','FINANCE')")
     public ResponseEntity<Void> uploadPdf(@PathVariable Long id, @RequestParam("file") MultipartFile file) throws java.io.IOException {
-        Invoice inv = invoiceService.findById(id);
-        inv.setPdfFileName(file.getOriginalFilename());
-        inv.setPdfContentType(file.getContentType() == null ? "application/pdf" : file.getContentType());
-        inv.setPdfData(file.getBytes());
-        invoiceService.update(id, inv);
+        invoiceService.updatePdf(id,
+                file.getOriginalFilename(),
+                file.getContentType(),
+                file.getBytes());
         return ResponseEntity.ok().build();
     }
 
     @PostMapping(value = "/{id}/pdf-bin", consumes = { MediaType.APPLICATION_OCTET_STREAM_VALUE, "application/pdf" })
     @PreAuthorize("hasAnyRole('ADMIN','FINANCE')")
     public ResponseEntity<Void> uploadPdfBinary(@PathVariable Long id, @RequestHeader(value = "X-Filename", required = false) String filename, @RequestBody byte[] body) {
-        Invoice inv = invoiceService.findById(id);
-        inv.setPdfFileName(filename == null ? "invoice.pdf" : filename);
-        inv.setPdfContentType("application/pdf");
-        inv.setPdfData(body);
-        invoiceService.update(id, inv);
+        invoiceService.updatePdf(id,
+                filename == null ? "invoice.pdf" : filename,
+                "application/pdf",
+                body);
         return ResponseEntity.ok().build();
     }
 
@@ -91,6 +89,71 @@ public class InvoiceController {
     public @ResponseBody byte[] downloadPdf(@PathVariable Long id) {
         Invoice inv = invoiceService.findById(id);
         return inv.getPdfData() == null ? new byte[0] : inv.getPdfData();
+    }
+
+    // Preview extraction without saving an invoice first (multipart)
+    @PostMapping(value = "/extract-preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN','FINANCE')")
+    public ResponseEntity<finance_service.finance_service.dto.request.InvoiceRequest> extractPreviewMultipart(
+            @RequestParam("file") MultipartFile file) throws java.io.IOException {
+        var extractor = new finance_service.finance_service.service.AiExtractionClient();
+        try {
+            var extracted = extractor.extractInvoice(null,
+                    file.getOriginalFilename() == null ? "invoice.pdf" : file.getOriginalFilename(),
+                    file.getBytes());
+            return ResponseEntity.ok(extracted);
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(501).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(502).build();
+        }
+    }
+
+    // Preview extraction without saving an invoice first (binary)
+    @PostMapping(value = "/extract-preview-bin", consumes = { MediaType.APPLICATION_OCTET_STREAM_VALUE, "application/pdf" })
+    @PreAuthorize("hasAnyRole('ADMIN','FINANCE')")
+    public ResponseEntity<finance_service.finance_service.dto.request.InvoiceRequest> extractPreviewBinary(
+            @RequestHeader(value = "X-Filename", required = false) String filename,
+            @RequestBody byte[] body) {
+        var extractor = new finance_service.finance_service.service.AiExtractionClient();
+        try {
+            var extracted = extractor.extractInvoice(null,
+                    filename == null ? "invoice.pdf" : filename,
+                    body == null ? new byte[0] : body);
+            return ResponseEntity.ok(extracted);
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(501).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(502).build();
+        }
+    }
+
+    // Send stored PDF to AI extraction service and return extracted fields (InvoiceRequest shape)
+    @PostMapping("/{id}/extract")
+    @PreAuthorize("hasAnyRole('ADMIN','FINANCE')")
+    public ResponseEntity<finance_service.finance_service.dto.request.InvoiceRequest> extractFromPdf(@PathVariable Long id,
+                                                                                                   @RequestParam(name = "apply", defaultValue = "false") boolean apply) {
+        Invoice inv = invoiceService.findById(id);
+        if (inv.getPdfData() == null || inv.getPdfData().length == 0) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        var extractor = new finance_service.finance_service.service.AiExtractionClient();
+        finance_service.finance_service.dto.request.InvoiceRequest extracted;
+        try {
+            extracted = extractor.extractInvoice(id, inv.getPdfFileName() == null ? "invoice.pdf" : inv.getPdfFileName(), inv.getPdfData());
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(501).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(502).build();
+        }
+
+        if (apply) {
+            Invoice updated = fromRequest(extracted);
+            invoiceService.update(id, updated);
+        }
+
+        return ResponseEntity.ok(extracted);
     }
 
     private InvoiceResponse toResponse(Invoice i) {

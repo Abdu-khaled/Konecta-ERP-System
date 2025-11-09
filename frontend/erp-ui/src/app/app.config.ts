@@ -10,6 +10,7 @@ import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { loaderInterceptor } from './core/interceptors/loader.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { API_BASES } from './core/config/api.config';
+import { INVENTORY_API_BASE_URL } from './modules/inventory/services/inventory.api.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -24,6 +25,7 @@ export const appConfig: ApplicationConfig = {
     { provide: AUTH_API_BASE_URL, useValue: API_BASES.auth },
     { provide: HR_API_BASE_URL, useValue: API_BASES.hr },
     { provide: FINANCE_API_BASE_URL, useValue: API_BASES.finance },
-    { provide: REPORTING_API_BASE_URL, useValue: API_BASES.reporting }
+    { provide: REPORTING_API_BASE_URL, useValue: API_BASES.reporting },
+    { provide: INVENTORY_API_BASE_URL, useValue: API_BASES.inventory }
   ]
 };

@@ -110,6 +110,13 @@ export const routes: Routes = [
     loadChildren: () => import('./modules/finance/finance.routes').then(m => m.financeRoutes)
   },
   {
+    path: 'inventory',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN','INVENTORY'] },
+    component: MainLayoutComponent,
+    loadChildren: () => import('./modules/inventory/inventory.routes').then(m => m.inventoryRoutes)
+  },
+  {
     path: 'employee',
     canActivate: [roleGuard],
     data: { roles: ['EMPLOYEE'] },

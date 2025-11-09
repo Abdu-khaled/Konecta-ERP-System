@@ -34,6 +34,7 @@ export class SidebarComponent {
       case 'HR': return '/hr/dashboard';
       case 'FINANCE': return '/finance/dashboard';
       case 'EMPLOYEE': return '/employee/dashboard';
+      case 'INVENTORY': return '/inventory/dashboard';
       default: return null;
     }
   }

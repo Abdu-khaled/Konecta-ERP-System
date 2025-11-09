@@ -61,6 +61,16 @@ public class InvoiceService {
         return invoiceRepository.save(existing);
     }
 
+    // Update only PDF metadata/data without touching items or totals
+    public Invoice updatePdf(Long id, String filename, String contentType, byte[] data) {
+        Invoice existing = invoiceRepository.findById(id).orElseThrow();
+        existing.setPdfFileName(filename);
+        existing.setPdfContentType(contentType == null ? "application/pdf" : contentType);
+        existing.setPdfData(data);
+        // Do not recalc totals here; preserve existing numbers
+        return invoiceRepository.save(existing);
+    }
+
     private void recalcTotals(Invoice inv) {
         double untaxed = 0, tax = 0, wh = 0, total = 0;
         if (inv.getItems() != null) {
