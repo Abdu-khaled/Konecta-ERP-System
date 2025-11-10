@@ -3,10 +3,15 @@ services:
     build:
       context: ./frontend/erp-ui
       dockerfile: Dockerfile
+      args:
+        - CHATBOT_URL=${CHATBOT_URL}
     image: erp-frontend:dev
     container_name: erp-frontend
     ports:
       - "4200:80"
+    environment:
+      # Inject at container runtime into assets/env.js
+      CHATBOT_URL: ${CHATBOT_URL}
     depends_on:
       - auth-service
     networks:
