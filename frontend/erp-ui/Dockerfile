@@ -26,4 +26,4 @@ RUN chmod +x /docker-entrypoint.sh
 RUN sed -i 's/\r$//' /docker-entrypoint.sh
 ENV CHATBOT_URL=""
 EXPOSE 80
-ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]
