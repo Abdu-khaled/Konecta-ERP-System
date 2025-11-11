@@ -4,12 +4,13 @@ import { HrApiService } from '../services/hr.api.service';
 import { Employee } from '../services/hr.types';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { ChatbotWidgetComponent } from '../../../shared/components/chatbot/chatbot-widget.component';
 
 @Component({
   selector: 'app-hr-dashboard',
   standalone: true,
   templateUrl: './hr-dashboard.component.html',
-  imports: [CommonModule]
+  imports: [CommonModule, ChatbotWidgetComponent]
 })
 export class HrDashboardComponent implements OnInit {
   private readonly api = inject(HrApiService);

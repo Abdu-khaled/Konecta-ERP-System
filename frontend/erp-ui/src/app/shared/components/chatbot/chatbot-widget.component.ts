@@ -27,10 +27,12 @@ export class ChatbotWidgetComponent implements OnDestroy {
   private readonly sessionKeyPrefix = 'sync_chat_session_id';
   private sessionStorageKey = this.buildSessionStorageKey(this.authState.profile);
   private sessionID = this.ensureSessionId(this.sessionStorageKey);
+  private currentProfile: UserProfile | null = this.authState.profile;
   private readonly profileSub: Subscription;
 
   constructor() {
     this.profileSub = this.authState.profile$.subscribe((profile) => {
+      this.currentProfile = profile;
       const nextKey = this.buildSessionStorageKey(profile);
       if (nextKey !== this.sessionStorageKey) {
         this.sessionStorageKey = nextKey;
@@ -92,12 +94,26 @@ export class ChatbotWidgetComponent implements OnDestroy {
       return;
     }
 
-    const pendingIndex = this.messages.push({ from: 'bot', text: '…', ts: Date.now() }) - 1;
-    this.http.post(url, { text: t, sessionID: this.sessionID }, { responseType: 'text' }).subscribe({
+    const pendingIndex = this.messages.push({ from: 'bot', text: '...', ts: Date.now() }) - 1;
+    const role = (this.currentProfile?.role || 'guest').toLowerCase();
+    const payload: Record<string, unknown> = { role };
+    if (this.currentProfile?.id != null) payload['userId'] = this.currentProfile.id;
+    if (this.currentProfile?.username) payload['username'] = this.currentProfile.username;
+
+    const body: Record<string, unknown> = {
+      text: t,
+      sessionID: this.sessionID,
+      payload
+    };
+
+    this.http.post(url, body, { responseType: 'text' }).subscribe({
       next: (res) => {
         let reply = (res || '').toString();
-        try { const j = JSON.parse(res as any); reply = j.reply || j.text || j.message || res as any; } catch {}
-        this.messages[pendingIndex] = { from: 'bot', text: String(reply || '✓'), ts: Date.now() };
+        try {
+          const parsed = JSON.parse(res as any);
+          reply = parsed.reply || parsed.text || parsed.message || (res as any);
+        } catch {}
+        this.messages[pendingIndex] = { from: 'bot', text: String(reply || '[no reply]'), ts: Date.now() };
       },
       error: (err) => {
         const msg = err?.error || err?.message || 'Sorry, I could not reach the assistant.';
