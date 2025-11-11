@@ -1,7 +1,8 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { AuthState } from '../../../../core/services/auth-state.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AdminService, SystemUser } from '../../../admin/services/admin.service';
+import { AdminService, SystemUser, InviteRole } from '../../../admin/services/admin.service';
 import { HrApiService } from '../../../hr/services/hr.api.service';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { Department, Employee } from '../../../hr/services/hr.types';
@@ -88,6 +89,19 @@ import { downloadExcel } from '../../../../shared/helpers/excel';
         </select>
       </div>
       <div>
+        <label class="block text-sm text-gray-700 mb-1">Role</label>
+        <select class="w-full border rounded px-3 py-2" [(ngModel)]="editRole" name="role" [disabled]="!isAdmin">
+          <option value="ADMIN">Admin</option>
+          <option value="HR">HR</option>
+          <option value="FINANCE">Finance</option>
+          <option value="INVENTORY">Inventory</option>
+          <option value="IT_OPERATION">IT Operations</option>
+          <option value="OPERATIONS">Operations</option>
+          <option value="SALES_ONLY">Sales</option>
+          <option value="EMPLOYEE">Employee</option>
+        </select>
+      </div>
+      <div>
         <label class="block text-sm text-gray-700 mb-1">Base Salary</label>
         <input class="w-full border rounded px-3 py-2" type="number" min="0" step="0.01" [(ngModel)]="editSalary" name="salary" />
       </div>
@@ -107,6 +121,7 @@ import { downloadExcel } from '../../../../shared/helpers/excel';
 export class UsersListComponent implements OnInit {
   private readonly admin = inject(AdminService);
   private readonly hrApi = inject(HrApiService);
+  private readonly state = inject(AuthState);
 
   users: SystemUser[] = [];
   departmentByEmail: Record<string, string> = {};
@@ -127,6 +142,7 @@ export class UsersListComponent implements OnInit {
   editDepartmentId: number | null = null;
   editSalary: number | null = null;
   editWorkingHours: number | null = null;
+  editRole: InviteRole = 'EMPLOYEE';
   editError = '';
 
   ngOnInit() {
@@ -179,6 +195,7 @@ export class UsersListComponent implements OnInit {
     this.editDepartmentId = (emp?.departmentId ?? null) as any;
     this.editSalary = (emp?.salary ?? null) as any;
     this.editWorkingHours = (emp?.workingHours ?? null) as any;
+    this.editRole = (u.role as InviteRole);
     this.editError = '';
     this.editOpen = true;
   }
@@ -190,17 +207,18 @@ export class UsersListComponent implements OnInit {
     if (!this.editTarget) return;
     const u = this.editTarget;
     this.editError = '';
-    // update auth user (full name + phone)
-    this.admin.updateUser(u.id, { fullName: this.editFullName, phone: this.editPhone }).subscribe({
-      next: () => {
-        // update HR employee (phone + department + base salary via ensure)
-        this.hrApi.ensureEmployee({ email: u.email, fullName: this.editFullName, phone: this.editPhone, departmentId: this.editDepartmentId ?? null, salary: this.editSalary ?? null, workingHours: this.editWorkingHours ?? null }).subscribe({
-          next: () => { this.closeEdit(); this.refresh(); },
-          error: () => { this.closeEdit(); this.refresh(); }
-        });
-      },
-      error: (e) => { this.editError = e?.error?.message || 'Failed to update user'; }
-    });
+    const finalize = () => {
+      this.hrApi.ensureEmployee({ email: u.email, fullName: this.editFullName, phone: this.editPhone, departmentId: this.editDepartmentId ?? null, salary: this.editSalary ?? null, workingHours: this.editWorkingHours ?? null }).subscribe({
+        next: () => { this.closeEdit(); this.refresh(); },
+        error: () => { this.closeEdit(); this.refresh(); }
+      });
+    };
+    const updateProfile = () => this.admin.updateUser(u.id, { fullName: this.editFullName, phone: this.editPhone }).subscribe({ next: finalize, error: (e) => { this.editError = e?.error?.message || 'Failed to update user'; }});
+    if ((u.role as InviteRole) !== this.editRole) {
+      this.admin.updateUserRole(u.id, this.editRole).subscribe({ next: updateProfile, error: (e) => { this.editError = e?.error?.message || 'Failed to update role'; } });
+    } else {
+      updateProfile();
+    }
   }
 
   delete(u: SystemUser) {
@@ -216,6 +234,8 @@ export class UsersListComponent implements OnInit {
       error: (e) => { this.error = e?.error?.message || 'Failed to delete user'; }
     });
   }
+
+  get isAdmin(): boolean { return (this.state.profile?.role || '').toUpperCase() === 'ADMIN'; }
 
   download() {
     const rows = (this.filtered || []).map(u => ({

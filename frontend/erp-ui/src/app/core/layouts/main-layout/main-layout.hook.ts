@@ -13,7 +13,7 @@ export function buildSidebarForRole(role: string | null): SidebarItem[] {
       ] },
       { label: 'Manage Users & Roles', icon: 'manage_accounts', children: [
         { label: 'Invite Users', icon: 'group_add', path: '/admin/invite' },
-        { label: 'Assign Roles', icon: 'badge' }
+        { label: 'Update Roles', icon: 'badge', path: '/admin/users' }
       ] },
       { label: 'System Activity Log', icon: 'history' },
       { label: 'Modules Overview', icon: 'view_module' },
@@ -70,6 +70,30 @@ export function buildSidebarForRole(role: string | null): SidebarItem[] {
       { label: 'Low Stock', icon: 'warning', path: '/inventory/low-stock' },
       { label: 'Movements', icon: 'swap_vert', path: '/inventory/movements' },
       { label: 'Warehouses', icon: 'warehouse', path: '/inventory/warehouses' }
+    ];
+  }
+  if (role === 'IT_OPERATION') {
+    return [
+      { label: 'Dashboard', icon: 'space_dashboard', path: '/itops/dashboard' },
+      { label: 'Systems', icon: 'dns', path: '/itops/systems' },
+      { label: 'Monitoring', icon: 'monitor_heart', path: '/itops/monitoring' },
+      { label: 'Tickets', icon: 'confirmation_number', path: '/itops/tickets' }
+    ];
+  }
+  if (role === 'OPERATIONS') {
+    return [
+      { label: 'Dashboard', icon: 'space_dashboard', path: '/operations/dashboard' },
+      { label: 'Processes', icon: 'precision_manufacturing', path: '/operations/processes' },
+      { label: 'Logistics', icon: 'local_shipping', path: '/operations/logistics' },
+      { label: 'Reports', icon: 'bar_chart', path: '/operations/reports' }
+    ];
+  }
+  if (role === 'SALES_ONLY') {
+    return [
+      { label: 'Dashboard', icon: 'space_dashboard', path: '/sales/dashboard' },
+      { label: 'Leads', icon: 'leaderboard', path: '/sales/leads' },
+      { label: 'Opportunities', icon: 'trending_up', path: '/sales/opportunities' },
+      { label: 'Reports', icon: 'bar_chart', path: '/sales/reports' }
     ];
   }
   return [

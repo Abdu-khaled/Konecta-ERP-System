@@ -212,6 +212,7 @@ public class AuthController {
     }
 
     @PutMapping("/users/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateUserRole(@PathVariable Long id, @RequestBody UpdateRoleRequest req) {
         if (req == null || req.getRole() == null) {
             return ResponseEntity.badRequest().body(Map.of("message", "role is required"));

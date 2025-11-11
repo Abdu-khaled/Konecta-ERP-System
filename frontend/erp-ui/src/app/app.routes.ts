@@ -47,7 +47,7 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadComponent: () => import('./modules/admin/components/invite-user/invite-user.component').then(m => m.InviteUserComponent)
+        loadComponent: () => import('./modules/admin/components/invite-user/invite-user-extended.component').then(m => m.InviteUserExtendedComponent)
       }
     ]
   },
@@ -59,7 +59,7 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadComponent: () => import('./modules/admin/components/invite-user/invite-user.component').then(m => m.InviteUserComponent)
+        loadComponent: () => import('./modules/admin/components/invite-user/invite-user-extended.component').then(m => m.InviteUserExtendedComponent)
       }
     ]
   },
@@ -78,6 +78,15 @@ export const routes: Routes = [
   { path: 'admin', redirectTo: 'admin/dashboard', pathMatch: 'full' },
   {
     path: 'admin/users',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'] },
+    component: MainLayoutComponent,
+    children: [
+      { path: '', loadComponent: () => import('./modules/admin/components/users-list/users-list.component').then(m => m.UsersListComponent) }
+    ]
+  },
+  {
+    path: 'admin/roles',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN'] },
     component: MainLayoutComponent,
@@ -124,8 +133,49 @@ export const routes: Routes = [
     loadChildren: () => import('./modules/employee/employee.routes').then(m => m.employeeRoutes)
   },
   {
+    path: 'itops',
+    canActivate: [roleGuard],
+    data: { roles: ['IT_OPERATION'] },
+    component: MainLayoutComponent,
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      { path: 'dashboard', loadComponent: () => import('./pages/itops/itops.component').then(m => m.ItOpsComponent) },
+      { path: 'systems', loadComponent: () => import('./pages/itops/itops-systems.component').then(m => m.ItOpsSystemsComponent) },
+      { path: 'monitoring', loadComponent: () => import('./pages/itops/itops-monitoring.component').then(m => m.ItOpsMonitoringComponent) },
+      { path: 'tickets', loadComponent: () => import('./pages/itops/itops-tickets.component').then(m => m.ItOpsTicketsComponent) }
+    ]
+  },
+  {
+    path: 'sales',
+    canActivate: [roleGuard],
+    data: { roles: ['SALES_ONLY'] },
+    component: MainLayoutComponent,
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      { path: 'dashboard', loadComponent: () => import('./pages/sales/sales.component').then(m => m.SalesComponent) },
+      { path: 'leads', loadComponent: () => import('./pages/sales/sales-leads.component').then(m => m.SalesLeadsComponent) },
+      { path: 'opportunities', loadComponent: () => import('./pages/sales/sales-opportunities.component').then(m => m.SalesOpportunitiesComponent) },
+      { path: 'reports', loadComponent: () => import('./pages/sales/sales-reports.component').then(m => m.SalesReportsComponent) }
+    ]
+  },
+  {
+    path: 'operations',
+    canActivate: [roleGuard],
+    data: { roles: ['OPERATIONS'] },
+    component: MainLayoutComponent,
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      { path: 'dashboard', loadComponent: () => import('./pages/operations/operations.component').then(m => m.OperationsComponent) },
+      { path: 'processes', loadComponent: () => import('./pages/operations/operations-processes.component').then(m => m.OperationsProcessesComponent) },
+      { path: 'logistics', loadComponent: () => import('./pages/operations/operations-logistics.component').then(m => m.OperationsLogisticsComponent) },
+      { path: 'reports', loadComponent: () => import('./pages/operations/operations-reports.component').then(m => m.OperationsReportsComponent) }
+    ]
+  },
+  {
     path: 'auth',
     loadChildren: () => import('./modules/auth/auth.routes').then(m => m.authRoutes)
   },
   { path: '**', redirectTo: '' },
 ];
+
+

@@ -5,5 +5,8 @@ public enum Role {
     HR,
     FINANCE,
     EMPLOYEE,
-    INVENTORY
+    INVENTORY,
+    IT_OPERATION,
+    OPERATIONS,
+    SALES_ONLY
 }

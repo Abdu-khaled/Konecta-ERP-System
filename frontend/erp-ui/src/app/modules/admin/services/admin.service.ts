@@ -3,7 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { AUTH_API_BASE_URL } from '../../auth/services/auth.service';
 import { Observable } from 'rxjs';
 
-export type InviteRole = 'ADMIN' | 'HR' | 'FINANCE' | 'EMPLOYEE';
+// Roles allowed to be invited from Admin/HR UIs
+export type InviteRole = 'ADMIN' | 'HR' | 'FINANCE' | 'EMPLOYEE' | 'INVENTORY' | 'IT_OPERATION' | 'OPERATIONS' | 'SALES_ONLY';
 
 export interface InviteUserRequest {
   name: string;
@@ -37,6 +38,10 @@ export class AdminService {
     return this.http.get<SystemUser[]>(url);
   }
 
+  updateUserRole(id: number, role: InviteRole) {
+    return this.http.put(`${this.baseUrl}/users/${id}/role`, { role });
+  }
+
   updateUser(id: number, payload: { fullName?: string; phone?: string }) {
     return this.http.put(`${this.baseUrl}/users/${id}`, payload);
   }
@@ -45,3 +50,4 @@ export class AdminService {
     return this.http.delete(`${this.baseUrl}/users/${id}`);
   }
 }
+

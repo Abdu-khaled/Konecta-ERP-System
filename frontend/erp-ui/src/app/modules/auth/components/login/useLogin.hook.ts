@@ -61,6 +61,14 @@ export function useLogin() {
           router.navigate(['/finance/dashboard']); break;
         case 'employee':
           router.navigate(['/employee/dashboard']); break;
+        case 'sales_only':
+          router.navigate(['/sales/dashboard']); break;
+        case 'it_operation':
+          router.navigate(['/itops/dashboard']); break;
+        case 'operations':
+          router.navigate(['/operations/dashboard']); break;
+        case 'inventory':
+          router.navigate(['/inventory/dashboard']); break;
         default:
           router.navigate(['/']);
       }

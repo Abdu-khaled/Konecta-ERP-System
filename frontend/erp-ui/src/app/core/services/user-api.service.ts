@@ -3,7 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AUTH_API_BASE_URL } from '../../modules/auth/services/auth.service';
 
-export type UserRole = 'ADMIN' | 'HR' | 'FINANCE' | 'EMPLOYEE';
+// All application roles as returned by auth-service
+export type UserRole = 'ADMIN' | 'HR' | 'FINANCE' | 'EMPLOYEE' | 'INVENTORY' | 'IT_OPERATION' | 'OPERATIONS' | 'SALES_ONLY';
 
 export interface SystemUser {
   id: number;
@@ -33,4 +34,5 @@ export class UserApiService {
     return this.listUsers(q, 'EMPLOYEE');
   }
 }
+
 
