@@ -4,12 +4,20 @@ import hr_service.hr_service.dto.request.TrainingRequest;
 import hr_service.hr_service.dto.response.TrainingResponse;
 import hr_service.hr_service.dto.response.TrainingEnrollmentResponse;
 import hr_service.hr_service.model.Training;
+import hr_service.hr_service.model.TrainingEnrollment;
+import hr_service.hr_service.service.TrainingCertificateService;
+import hr_service.hr_service.service.CertificateEmailService;
 import hr_service.hr_service.service.TrainingService;
 import hr_service.hr_service.service.EmployeeService;
 import hr_service.hr_service.service.TrainingEnrollmentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,6 +31,8 @@ public class TrainingController {
     private final TrainingService trainingService;
     private final TrainingEnrollmentService enrollmentService;
     private final EmployeeService employeeService;
+    private final TrainingCertificateService certificateService;
+    private final java.util.Optional<CertificateEmailService> certificateEmailService;
 
     @GetMapping
     public ResponseEntity<List<TrainingResponse>> list() {
@@ -64,7 +74,7 @@ public class TrainingController {
     @PostMapping("/{id}/enroll")
     @PreAuthorize("hasRole('EMPLOYEE')")
     public ResponseEntity<TrainingResponse> enroll(@PathVariable Long id) {
-        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        var auth = currentAuthentication();
         String username = auth != null ? auth.getName() : null;
         var employee = employeeService.findByEmail(username);
         if (employee == null) {
@@ -79,7 +89,7 @@ public class TrainingController {
     @GetMapping("/my-enrollments")
     @PreAuthorize("hasRole('EMPLOYEE')")
     public ResponseEntity<List<TrainingResponse>> myEnrollments() {
-        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        var auth = currentAuthentication();
         String username = auth != null ? auth.getName() : null;
         var emp = employeeService.findByEmail(username);
         if (emp == null) {
@@ -114,6 +124,49 @@ public class TrainingController {
         return ResponseEntity.ok(list);
     }
 
+    @GetMapping("/enrollments/{enrollmentId}/certificate")
+    @PreAuthorize("hasAnyRole('ADMIN','HR','EMPLOYEE')")
+    public ResponseEntity<byte[]> downloadCertificate(@PathVariable Long enrollmentId) {
+        var enrollment = enrollmentService.findById(enrollmentId);
+        var auth = currentAuthentication();
+        if (!canAccessEnrollment(auth, enrollment)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        byte[] pdf = certificateService.generateCertificate(enrollment);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(ContentDisposition.attachment()
+                .filename("certificate-" + enrollment.getId() + ".pdf")
+                .build());
+        return ResponseEntity.ok().headers(headers).body(pdf);
+    }
+
+    @PostMapping("/enrollments/{enrollmentId}/certificate-email")
+    @PreAuthorize("hasAnyRole('ADMIN','HR','EMPLOYEE')")
+    public ResponseEntity<Void> emailCertificate(@PathVariable Long enrollmentId) {
+        if (certificateEmailService.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        }
+        var enrollment = enrollmentService.findById(enrollmentId);
+        var auth = currentAuthentication();
+        if (!canAccessEnrollment(auth, enrollment)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (enrollment.getEmployee() == null || enrollment.getEmployee().getEmail() == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        byte[] pdf = certificateService.generateCertificate(enrollment);
+        String to = enrollment.getEmployee().getEmail();
+        String employeeName = (enrollment.getEmployee().getFirstName() != null ? enrollment.getEmployee().getFirstName() : "") +
+                (enrollment.getEmployee().getLastName() != null ? (" " + enrollment.getEmployee().getLastName()) : "");
+        String subject = "Your Training Certificate";
+        String text = "Hello " + (employeeName.isBlank() ? "there" : employeeName.trim()) + ",\n\n" +
+                "Attached is your certificate of completion.\n\nRegards,\nKonecta HR";
+        String filename = "certificate-" + enrollment.getId() + ".pdf";
+        certificateEmailService.get().sendCertificate(to, subject, text, pdf, filename);
+        return ResponseEntity.noContent().build();
+    }
+
     private Training fromRequest(TrainingRequest r) {
         return Training.builder()
                 .title(r.getTitle())
@@ -145,5 +198,25 @@ public class TrainingController {
                 .employeeId(employeeId)
                 .programId(programId)
                 .build();
+    }
+
+    private Authentication currentAuthentication() {
+        return org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+    }
+
+    private boolean canAccessEnrollment(Authentication auth, TrainingEnrollment enrollment) {
+        if (hasRole(auth, "ADMIN") || hasRole(auth, "HR")) {
+            return true;
+        }
+        if (auth == null || enrollment.getEmployee() == null) return false;
+        String username = auth.getName();
+        String employeeEmail = enrollment.getEmployee().getEmail();
+        return username != null && employeeEmail != null && employeeEmail.equalsIgnoreCase(username);
+    }
+
+    private boolean hasRole(Authentication auth, String role) {
+        if (auth == null) return false;
+        String normalized = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+        return auth.getAuthorities().stream().anyMatch(granted -> normalized.equalsIgnoreCase(granted.getAuthority()));
     }
 }

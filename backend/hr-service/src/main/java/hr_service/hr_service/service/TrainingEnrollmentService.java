@@ -27,5 +27,7 @@ public class TrainingEnrollmentService {
 
     public List<TrainingEnrollment> findByEmployee(Employee e) { return repo.findByEmployee(e); }
     public List<TrainingEnrollment> findByTraining(Training t) { return repo.findByTraining(t); }
+    public TrainingEnrollment findById(Long id) {
+        return repo.findById(id).orElseThrow(() -> new RuntimeException("Training enrollment not found"));
+    }
 }
-
