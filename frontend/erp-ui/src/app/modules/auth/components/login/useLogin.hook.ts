@@ -9,27 +9,8 @@ export function useLogin() {
   const state = inject(AuthState);
   const router = inject(Router);
 
-  const validateInputs = (email: string, password: string) => {
-    let emailError = '';
-    let passwordError = '';
-
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email.trim()) {
-      emailError = 'Email is required';
-    } else if (!emailPattern.test(email)) {
-      emailError = 'Please enter a valid email address';
-    }
-
-    const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?#&])[A-Za-z\d@$!%*?#&]{6,12}$/;
-    if (!password.trim()) {
-      passwordError = 'Password is required';
-    } else if (!passwordPattern.test(password)) {
-      passwordError =
-        'Password must be 6–12 characters long and include at least one letter, one number, and one special character (@, #, $, etc.)';
-    }
-
-    return { emailError, passwordError };
-  };
+  // No client-side validation; rely on server responses
+  const validateInputs = (_email: string, _password: string) => ({ emailError: '', passwordError: '' });
 
   const handleLogin = async (email: string, password: string, remember: boolean) => {
     const { token } = await firstValueFrom(api.login({ email, password }));
@@ -40,12 +21,18 @@ export function useLogin() {
 
 
   const submit = async (email: string, password: string, remember: boolean) => {
-    const { emailError, passwordError } = validateInputs(email, password);
-    if (emailError || passwordError) {
-      return { ok: false, errors: { emailError, passwordError } } as const;
+    try {
+      await handleLogin(email, password, remember);
+    } catch (err: any) {
+      const status = err?.status ?? err?.error?.status ?? 0;
+      if (status === 401) {
+        return { ok: false, errors: { emailError: 'Wrong email or password', passwordError: 'Wrong email or password' } } as const;
+      }
+      if (status === 403) {
+        return { ok: false, errors: { emailError: 'Account not activated. Please check your email.', passwordError: '' } } as const;
+      }
+      return { ok: false, errors: { emailError: 'Login failed. Try again.', passwordError: '' } } as const;
     }
-
-    await handleLogin(email, password, remember);
 
     const role = (state.profile?.role || '').toString().toLowerCase();
     const message = role ? `Welcome ${role}` : 'Login successful!';

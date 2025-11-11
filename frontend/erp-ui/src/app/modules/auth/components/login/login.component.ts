@@ -54,9 +54,6 @@ export class LoginComponent implements OnInit, OnDestroy {
     setTimeout(() => (this.showSuccess = false), 1200);
   }
 
-  validateLive() {
-    const validation = this.login.validateInputs(this.email, this.password);
-    this.emailError = validation.emailError;
-    this.passwordError = validation.passwordError;
-  }
+  // No live validation
+  validateLive() {}
 }
