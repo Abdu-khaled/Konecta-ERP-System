@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { InventoryApiService, InventoryItem, StockLevelResponse } from '../services/inventory.api.service';
+import { InventoryApiService, InventoryItem, StockLevelResponse, Warehouse } from '../services/inventory.api.service';
 
 @Component({
   selector: 'app-inventory-items',

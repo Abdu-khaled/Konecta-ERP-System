@@ -1,8 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClickOutsideDirective } from '../../directives/click-outside.directive';
 import { HttpClient } from '@angular/common/http';
+import { Subscription } from 'rxjs';
+import { AuthState, UserProfile } from '../../../core/services/auth-state.service';
 
 type MsgFrom = 'user' | 'bot';
 interface ChatMsg { from: MsgFrom; text: string; ts: number; }
@@ -13,7 +15,7 @@ interface ChatMsg { from: MsgFrom; text: string; ts: number; }
   imports: [CommonModule, FormsModule, ClickOutsideDirective],
   templateUrl: './chatbot-widget.component.html'
 })
-export class ChatbotWidgetComponent {
+export class ChatbotWidgetComponent implements OnDestroy {
   open = false;
   text = '';
   messages: ChatMsg[] = [
@@ -21,8 +23,25 @@ export class ChatbotWidgetComponent {
   ];
 
   private readonly http = inject(HttpClient);
-  private readonly sessionKey = 'sync_chat_session_id';
-  private readonly sessionID = this.ensureSessionId();
+  private readonly authState = inject(AuthState);
+  private readonly sessionKeyPrefix = 'sync_chat_session_id';
+  private sessionStorageKey = this.buildSessionStorageKey(this.authState.profile);
+  private sessionID = this.ensureSessionId(this.sessionStorageKey);
+  private readonly profileSub: Subscription;
+
+  constructor() {
+    this.profileSub = this.authState.profile$.subscribe((profile) => {
+      const nextKey = this.buildSessionStorageKey(profile);
+      if (nextKey !== this.sessionStorageKey) {
+        this.sessionStorageKey = nextKey;
+      }
+      this.sessionID = this.ensureSessionId(this.sessionStorageKey);
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.profileSub?.unsubscribe();
+  }
 
   private get chatUrl(): string {
     const w: any = (globalThis as any) || {};
@@ -35,14 +54,22 @@ export class ChatbotWidgetComponent {
     return String(fromConfig || fromEnv || fromLS || fromMeta || '');
   }
 
-  private ensureSessionId(): string {
+  private buildSessionStorageKey(profile: UserProfile | null): string {
+    if (profile) {
+      const role = (profile.role || 'user').toLowerCase();
+      return `${this.sessionKeyPrefix}:${role}:${profile.id}`;
+    }
+    return `${this.sessionKeyPrefix}:guest`;
+  }
+
+  private ensureSessionId(storageKey: string): string {
     try {
-      const existing = localStorage.getItem(this.sessionKey);
+      const existing = localStorage.getItem(storageKey);
       if (existing) return existing;
       const id = (globalThis.crypto && 'randomUUID' in globalThis.crypto)
         ? (globalThis.crypto as any).randomUUID()
         : Math.random().toString(36).slice(2) + Date.now().toString(36);
-      localStorage.setItem(this.sessionKey, id);
+      localStorage.setItem(storageKey, id);
       return id;
     } catch {
       return Math.random().toString(36).slice(2) + Date.now().toString(36);
