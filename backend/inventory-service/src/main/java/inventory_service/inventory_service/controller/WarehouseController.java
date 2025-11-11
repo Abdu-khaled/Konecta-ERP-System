@@ -2,10 +2,12 @@ package inventory_service.inventory_service.controller;
 
 import inventory_service.inventory_service.model.Warehouse;
 import inventory_service.inventory_service.repository.WarehouseRepository;
+import inventory_service.inventory_service.repository.MovementRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -14,6 +16,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WarehouseController {
     private final WarehouseRepository warehouseRepository;
+    private final MovementRepository movementRepository;
 
     @GetMapping
     public ResponseEntity<List<Warehouse>> all() { return ResponseEntity.ok(warehouseRepository.findAll()); }
@@ -35,7 +38,11 @@ public class WarehouseController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> delete(@PathVariable Long id) { warehouseRepository.deleteById(id); return ResponseEntity.noContent().build(); }
+    @PreAuthorize("hasAnyRole('ADMIN','INVENTORY')")
+    @Transactional
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        movementRepository.deleteByWarehouse_Id(id);
+        warehouseRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
 }
-

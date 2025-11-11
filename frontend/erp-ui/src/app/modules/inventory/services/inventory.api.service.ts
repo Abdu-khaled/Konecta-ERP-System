@@ -11,6 +11,11 @@ export interface InventoryItem {
   description?: string;
   unit?: string;
   reorderLevel?: number;
+  // API convenience fields
+  quantity?: number; // aggregated on-hand
+  // Item creation helpers
+  initialQuantity?: number;
+  warehouseId?: number;
 }
 
 export interface Warehouse {
@@ -65,6 +70,9 @@ export class InventoryApiService {
 
   // Warehouses
   listWarehouses(): Observable<Warehouse[]> { return this.http.get<Warehouse[]>(`${this.base}/warehouses`); }
+  createWarehouse(payload: Warehouse): Observable<Warehouse> { return this.http.post<Warehouse>(`${this.base}/warehouses`, payload); }
+  updateWarehouse(id: number, payload: Warehouse): Observable<Warehouse> { return this.http.put<Warehouse>(`${this.base}/warehouses/${id}`, payload); }
+  deleteWarehouse(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/warehouses/${id}`); }
 
   // Stock & Movements
   getStock(itemId: number, warehouseId?: number): Observable<StockLevelResponse> {
@@ -76,4 +84,3 @@ export class InventoryApiService {
   createMovement(payload: MovementRequest): Observable<MovementResponse> { return this.http.post<MovementResponse>(`${this.base}/movements`, payload); }
   listLowStock(): Observable<LowStockResponse[]> { return this.http.get<LowStockResponse[]>(`${this.base}/low-stock`); }
 }
-

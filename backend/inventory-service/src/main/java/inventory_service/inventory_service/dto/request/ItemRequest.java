@@ -9,5 +9,7 @@ public class ItemRequest {
     private String description;
     private String unit;
     private Double reorderLevel;
+    // Optional initial stock on create
+    private Double initialQuantity;
+    private Long warehouseId;
 }
-

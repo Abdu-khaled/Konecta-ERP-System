@@ -14,5 +14,8 @@ public interface MovementRepository extends JpaRepository<Movement, Long> {
             " and (:warehouseId is null or m.warehouse.id = :warehouseId)")
     Double sumQuantityByItemAndWarehouse(@Param("itemId") Long itemId,
                                          @Param("warehouseId") Long warehouseId);
-}
 
+    void deleteByItem_Id(Long itemId);
+
+    void deleteByWarehouse_Id(Long warehouseId);
+}

@@ -12,5 +12,5 @@ public class ItemResponse {
     private String description;
     private String unit;
     private Double reorderLevel;
+    private Double quantity; // aggregated on-hand across warehouses
 }
-
