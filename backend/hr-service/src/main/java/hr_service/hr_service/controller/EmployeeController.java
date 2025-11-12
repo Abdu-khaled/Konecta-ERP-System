@@ -24,12 +24,14 @@ public class EmployeeController {
     private final DepartmentService departmentService;
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','HR')")
     public ResponseEntity<List<EmployeeResponse>> getAll() {
         List<EmployeeResponse> body = employeeService.findAll().stream().map(this::toResponse).collect(Collectors.toList());
         return ResponseEntity.ok(body);
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','HR')")
     public ResponseEntity<EmployeeResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(toResponse(employeeService.findById(id)));
     }
@@ -104,15 +106,17 @@ public class EmployeeController {
     }
 
     private EmployeeResponse toResponse(Employee e) {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = auth != null && auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
         return EmployeeResponse.builder()
                 .id(e.getId())
                 .firstName(e.getFirstName())
                 .lastName(e.getLastName())
-                .email(e.getEmail())
-                .phone(e.getPhone())
+                .email(isAdmin ? e.getEmail() : null)
+                .phone(isAdmin ? e.getPhone() : null)
                 .position(e.getPosition())
                 .hireDate(e.getHireDate())
-                .salary(e.getSalary())
+                .salary(isAdmin ? e.getSalary() : null)
                 .workingHours(e.getWorkingHours())
                 .departmentId(e.getDepartment() != null ? e.getDepartment().getId() : null)
                 .departmentName(e.getDepartment() != null ? e.getDepartment().getName() : null)

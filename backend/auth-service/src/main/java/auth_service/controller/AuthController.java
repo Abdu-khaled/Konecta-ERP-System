@@ -51,7 +51,8 @@ public class AuthController {
             @Value("${app.otp.ttl-seconds:300}") long otpTtlSeconds,
             @Value("${app.verification.ttl-minutes:1440}") long verificationTtlMinutes,
             @Value("${app.registration.urlBase:http://localhost:4200/register}") String registrationUrlBase,
-            RestTemplateBuilder restTemplateBuilder) {
+            RestTemplateBuilder restTemplateBuilder,
+            auth_service.service.OtpRateLimiter otpRateLimiter) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -61,7 +62,10 @@ public class AuthController {
         this.verificationTtlMinutes = verificationTtlMinutes;
         this.registrationUrlBase = registrationUrlBase;
         this.restTemplateBuilder = restTemplateBuilder;
+        this.otpRateLimiter = otpRateLimiter;
     }
+
+    private final auth_service.service.OtpRateLimiter otpRateLimiter;
 
     @PostMapping("/users/invite")
     @PreAuthorize("hasAnyRole('ADMIN','HR')")
@@ -165,6 +169,11 @@ public class AuthController {
 
     @PostMapping({ "/registration/verify-otp", "/register/verify-otp" })
     public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyOtpRequest req) {
+        if (otpRateLimiter.isBlocked(req.getToken())) {
+            long retry = otpRateLimiter.getRetryAfterSeconds(req.getToken());
+            return ResponseEntity.status(429).header("Retry-After", String.valueOf(retry))
+                    .body(Map.of("message", "too many attempts, try later"));
+        }
         var userOpt = userRepository.findByVerificationToken(req.getToken());
         if (userOpt.isEmpty())
             return ResponseEntity.status(404).body(Map.of("message", "invalid token"));
@@ -173,8 +182,12 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("message", MSG_OTP_EXPIRED));
         }
         if (!otpService.verify(req.getOtp(), user.getOtpHash())) {
-            return ResponseEntity.status(400).body(Map.of("message", "invalid otp"));
+            otpRateLimiter.onFailure(req.getToken(), otpTtlSeconds);
+            long retry = otpRateLimiter.getRetryAfterSeconds(req.getToken());
+            return ResponseEntity.status(400).header("Retry-After", retry > 0 ? String.valueOf(retry) : null)
+                    .body(Map.of("message", "invalid otp"));
         }
+        otpRateLimiter.onSuccess(req.getToken());
         user.setOtpVerified(Boolean.TRUE);
         user.setStatus(UserStatus.ACTIVE);
         // Invalidate verification token after success
