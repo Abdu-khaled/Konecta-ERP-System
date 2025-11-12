@@ -169,9 +169,12 @@ public class PayrollController {
             for (String url : candidates) {
                 try {
                     org.springframework.http.ResponseEntity<java.util.Map> resp = rt.getForEntity(url, java.util.Map.class);
-                    if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null && resp.getBody().get("email") != null) {
-                        Object val = resp.getBody().get("email");
-                        return val != null ? val.toString() : null;
+                    if (resp != null && resp.getStatusCode().is2xxSuccessful()) {
+                        java.util.Map body = resp.getBody();
+                        if (body != null) {
+                            Object val = body.get("email");
+                            if (val != null) return val.toString();
+                        }
                     }
                 } catch (Exception ignored) { }
             }

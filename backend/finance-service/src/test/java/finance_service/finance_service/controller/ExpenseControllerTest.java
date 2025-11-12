@@ -33,6 +33,12 @@ class ExpenseControllerTest {
     private ExpenseService expenseService;
 
     @MockBean
+    private finance_service.finance_service.service.ExpenseImportService expenseImportService;
+
+    @MockBean
+    private finance_service.finance_service.security.JwtService jwtService;
+
+    @MockBean
     private JwtAuthFilter jwtAuthFilter; // mocked to bypass real token parsing
 
     @BeforeEach

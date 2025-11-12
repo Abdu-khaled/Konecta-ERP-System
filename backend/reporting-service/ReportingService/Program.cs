@@ -49,11 +49,13 @@ builder.Services.AddScoped<IExcelReportService, ExcelReportService>();
 // Allow frontend & other services
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    var origins = builder.Configuration.GetSection("AllowedCorsOrigins").Get<string[]>() ?? Array.Empty<string>();
+    options.AddPolicy("FrontendOrigins", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        if (origins.Length > 0)
+            policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod();
+        else
+            policy.WithOrigins("http://localhost:4200", "http://127.0.0.1:4200").AllowAnyHeader().AllowAnyMethod();
     });
 });
 
@@ -68,7 +70,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseCors("AllowAll");
+app.UseCors("FrontendOrigins");
 app.UseAuthorization();
 app.MapControllers();
 app.Run();

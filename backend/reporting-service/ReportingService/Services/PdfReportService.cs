@@ -2,175 +2,207 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using ReportingService.Models.Dtos;
+using Microsoft.Extensions.Logging;
 
 namespace ReportingService.Services;
 
 public class PdfReportService : IPdfReportService
 {
-    public PdfReportService()
+    private readonly ILogger<PdfReportService> _logger;
+
+    public PdfReportService(ILogger<PdfReportService> logger)
     {
+        _logger = logger;
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
     public Task<byte[]> GeneratePayrollReportAsync(List<PayrollDto> payrolls, string period)
     {
-        var document = Document.Create(container =>
+        try
         {
-            container.Page(page =>
+            var safeList = payrolls ?? new List<PayrollDto>();
+            var document = Document.Create(container =>
             {
-                page.Size(PageSizes.A4);
-                page.Margin(2, Unit.Centimetre);
-                page.PageColor(Colors.White);
-                page.DefaultTextStyle(x => x.FontSize(10));
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(2, Unit.Centimetre);
+                    page.PageColor(Colors.White);
+                    page.DefaultTextStyle(x => x.FontSize(10));
 
-                page.Header()
-                    .Text($"Payroll Report - {period}")
-                    .SemiBold().FontSize(16).FontColor(Colors.Blue.Medium);
+                    page.Header()
+                        .Text($"Payroll Report - {period}")
+                        .SemiBold().FontSize(16).FontColor(Colors.Blue.Medium);
 
-                page.Content()
-                    .PaddingVertical(1, Unit.Centimetre)
-                    .Column(column =>
-                    {
-                        column.Item().Text($"Period: {period}").SemiBold();
-                        column.Item().Text($"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}").FontSize(8).FontColor(Colors.Grey.Medium);
-                        column.Item().PaddingTop(10);
-
-                        // Summary
-                        var totalPayroll = payrolls.Sum(p => p.NetSalary);
-                        var avgSalary = payrolls.Any() ? payrolls.Average(p => p.NetSalary) : 0;
-                        column.Item().Text($"Total Payroll: ${totalPayroll:F2}").SemiBold();
-                        column.Item().Text($"Average Salary: ${avgSalary:F2}");
-                        column.Item().Text($"Employee Count: {payrolls.Count}");
-                        column.Item().PaddingTop(10);
-
-                        // Table
-                        column.Item().Table(table =>
+                    page.Content()
+                        .PaddingVertical(1, Unit.Centimetre)
+                        .Column(column =>
                         {
-                            table.ColumnsDefinition(columns =>
-                            {
-                                columns.RelativeColumn();
-                                columns.RelativeColumn(2);
-                                columns.RelativeColumn();
-                                columns.RelativeColumn();
-                                columns.RelativeColumn();
-                                columns.RelativeColumn();
-                            });
+                            column.Item().Text($"Period: {period}").SemiBold();
+                            column.Item().Text($"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}").FontSize(8).FontColor(Colors.Grey.Medium);
+                            column.Item().PaddingTop(10);
 
-                            table.Header(header =>
-                            {
-                                header.Cell().Element(CellStyle).Text("Employee ID").SemiBold();
-                                header.Cell().Element(CellStyle).Text("Base Salary").SemiBold();
-                                header.Cell().Element(CellStyle).Text("Bonuses").SemiBold();
-                                header.Cell().Element(CellStyle).Text("Deductions").SemiBold();
-                                header.Cell().Element(CellStyle).Text("Net Salary").SemiBold();
-                                header.Cell().Element(CellStyle).Text("Date").SemiBold();
-                            });
+                            // Summary
+                            var totalPayroll = safeList.Sum(p => p.NetSalary);
+                            var avgSalary = safeList.Any() ? safeList.Average(p => p.NetSalary) : 0;
+                            column.Item().Text($"Total Payroll: ${totalPayroll:F2}").SemiBold();
+                            column.Item().Text($"Average Salary: ${avgSalary:F2}");
+                            column.Item().Text($"Employee Count: {safeList.Count}");
+                            column.Item().PaddingTop(10);
 
-                            foreach (var payroll in payrolls)
-                            {
-                                table.Cell().Element(CellStyle).Text(payroll.EmployeeId.ToString());
-                                table.Cell().Element(CellStyle).Text($"${payroll.BaseSalary:F2}");
-                                table.Cell().Element(CellStyle).Text($"${payroll.Bonuses:F2}");
-                                table.Cell().Element(CellStyle).Text($"${payroll.Deductions:F2}");
-                                table.Cell().Element(CellStyle).Text($"${payroll.NetSalary:F2}").SemiBold();
-                                table.Cell().Element(CellStyle).Text(payroll.ProcessedDate?.ToString("yyyy-MM-dd") ?? "N/A");
-                            }
-                        });
-                    });
-
-                page.Footer()
-                    .AlignCenter()
-                    .Text(x =>
-                    {
-                        x.Span("Page ");
-                        x.CurrentPageNumber();
-                        x.Span(" of ");
-                        x.TotalPages();
-                    });
-            });
-        });
-
-        return Task.FromResult(document.GeneratePdf());
-    }
-
-    public Task<byte[]> GenerateAttendanceReportAsync(List<AttendanceDto> attendance, DateTime startDate, DateTime endDate)
-    {
-        var document = Document.Create(container =>
-        {
-            container.Page(page =>
-            {
-                page.Size(PageSizes.A4);
-                page.Margin(2, Unit.Centimetre);
-                page.PageColor(Colors.White);
-                page.DefaultTextStyle(x => x.FontSize(10));
-
-                page.Header()
-                    .Text($"Attendance Report")
-                    .SemiBold().FontSize(16).FontColor(Colors.Blue.Medium);
-
-                page.Content()
-                    .PaddingVertical(1, Unit.Centimetre)
-                    .Column(column =>
-                    {
-                        column.Item().Text($"Period: {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}").SemiBold();
-                        column.Item().Text($"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}").FontSize(8).FontColor(Colors.Grey.Medium);
-                        column.Item().PaddingTop(10);
-
-                        // Summary
-                        var presentDays = attendance.Count(a => a.Present);
-                        var totalDays = attendance.Count;
-                        var avgHours = attendance.Any() ? attendance.Where(a => a.WorkingHours.HasValue).Select(a => (double)a.WorkingHours!.Value).DefaultIfEmpty(0).Average() : 0;
-                        column.Item().Text($"Total Records: {totalDays}").SemiBold();
-                        column.Item().Text($"Present Days: {presentDays}");
-                        column.Item().Text($"Average Working Hours: {avgHours:F2}");
-                        column.Item().PaddingTop(10);
-
-                        // Group by employee
-                        var grouped = attendance.GroupBy(a => a.EmployeeId).ToList();
-                        
-                        foreach (var group in grouped)
-                        {
-                            column.Item().PaddingTop(5).Text($"Employee ID: {group.Key}").SemiBold();
+                            // Table
                             column.Item().Table(table =>
                             {
                                 table.ColumnsDefinition(columns =>
                                 {
+                                    columns.RelativeColumn();
                                     columns.RelativeColumn(2);
+                                    columns.RelativeColumn();
+                                    columns.RelativeColumn();
                                     columns.RelativeColumn();
                                     columns.RelativeColumn();
                                 });
 
                                 table.Header(header =>
                                 {
+                                    header.Cell().Element(CellStyle).Text("Employee ID").SemiBold();
+                                    header.Cell().Element(CellStyle).Text("Base Salary").SemiBold();
+                                    header.Cell().Element(CellStyle).Text("Bonuses").SemiBold();
+                                    header.Cell().Element(CellStyle).Text("Deductions").SemiBold();
+                                    header.Cell().Element(CellStyle).Text("Net Salary").SemiBold();
                                     header.Cell().Element(CellStyle).Text("Date").SemiBold();
-                                    header.Cell().Element(CellStyle).Text("Present").SemiBold();
-                                    header.Cell().Element(CellStyle).Text("Hours").SemiBold();
                                 });
 
-                                foreach (var record in group.OrderBy(a => a.Date))
+                                foreach (var payroll in safeList)
                                 {
-                                    table.Cell().Element(CellStyle).Text(record.Date.ToString("yyyy-MM-dd"));
-                                    table.Cell().Element(CellStyle).Text(record.Present ? "Yes" : "No");
-                                    table.Cell().Element(CellStyle).Text((record.WorkingHours ?? 0m).ToString("F2"));
+                                    table.Cell().Element(CellStyle).Text(payroll.EmployeeId.ToString());
+                                    table.Cell().Element(CellStyle).Text($"${payroll.BaseSalary:F2}");
+                                    table.Cell().Element(CellStyle).Text($"${payroll.Bonuses:F2}");
+                                    table.Cell().Element(CellStyle).Text($"${payroll.Deductions:F2}");
+                                    table.Cell().Element(CellStyle).Text($"${payroll.NetSalary:F2}").SemiBold();
+                                    table.Cell().Element(CellStyle).Text(payroll.ProcessedDate?.ToString("yyyy-MM-dd") ?? "N/A");
                                 }
                             });
-                            column.Item().PaddingBottom(10);
-                        }
-                    });
+                        });
 
-                page.Footer()
-                    .AlignCenter()
-                    .Text(x =>
-                    {
-                        x.Span("Page ");
-                        x.CurrentPageNumber();
-                        x.Span(" of ");
-                        x.TotalPages();
-                    });
+                    page.Footer()
+                        .AlignCenter()
+                        .Text(x =>
+                        {
+                            x.Span("Page ");
+                            x.CurrentPageNumber();
+                            x.Span(" of ");
+                            x.TotalPages();
+                        });
+                });
             });
-        });
 
-        return Task.FromResult(document.GeneratePdf());
+            return Task.FromResult(document.GeneratePdf());
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Invalid operation while generating payroll PDF for period {Period}", period);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error generating payroll PDF for period {Period}", period);
+            throw;
+        }
+    }
+
+    public Task<byte[]> GenerateAttendanceReportAsync(List<AttendanceDto> attendance, DateTime startDate, DateTime endDate)
+    {
+        try
+        {
+            var safeList = attendance ?? new List<AttendanceDto>();
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(2, Unit.Centimetre);
+                    page.PageColor(Colors.White);
+                    page.DefaultTextStyle(x => x.FontSize(10));
+
+                    page.Header()
+                        .Text($"Attendance Report")
+                        .SemiBold().FontSize(16).FontColor(Colors.Blue.Medium);
+
+                    page.Content()
+                        .PaddingVertical(1, Unit.Centimetre)
+                        .Column(column =>
+                        {
+                            column.Item().Text($"Period: {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}").SemiBold();
+                            column.Item().Text($"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}").FontSize(8).FontColor(Colors.Grey.Medium);
+                            column.Item().PaddingTop(10);
+
+                            // Summary
+                            var presentDays = attendance.Count(a => a.Present);
+                            var totalDays = attendance.Count;
+                            var avgHours = attendance.Any() ? attendance.Where(a => a.WorkingHours.HasValue).Select(a => (double)a.WorkingHours!.Value).DefaultIfEmpty(0).Average() : 0;
+                            column.Item().Text($"Total Records: {totalDays}").SemiBold();
+                            column.Item().Text($"Present Days: {presentDays}");
+                            column.Item().Text($"Average Working Hours: {avgHours:F2}");
+                            column.Item().PaddingTop(10);
+
+                            // Group by employee
+                            var grouped = attendance.GroupBy(a => a.EmployeeId).ToList();
+                            
+                            foreach (var group in grouped)
+                            {
+                                column.Item().PaddingTop(5).Text($"Employee ID: {group.Key}").SemiBold();
+                                column.Item().Table(table =>
+                                {
+                                    table.ColumnsDefinition(columns =>
+                                    {
+                                        columns.RelativeColumn(2);
+                                        columns.RelativeColumn();
+                                        columns.RelativeColumn();
+                                    });
+
+                                    table.Header(header =>
+                                    {
+                                        header.Cell().Element(CellStyle).Text("Date").SemiBold();
+                                        header.Cell().Element(CellStyle).Text("Present").SemiBold();
+                                        header.Cell().Element(CellStyle).Text("Hours").SemiBold();
+                                    });
+
+                                    foreach (var record in group.OrderBy(a => a.Date))
+                                    {
+                                        table.Cell().Element(CellStyle).Text(record.Date.ToString("yyyy-MM-dd"));
+                                        table.Cell().Element(CellStyle).Text(record.Present ? "Yes" : "No");
+                                        table.Cell().Element(CellStyle).Text((record.WorkingHours ?? 0m).ToString("F2"));
+                                    }
+                                });
+                                column.Item().PaddingBottom(10);
+                            }
+                        });
+
+                    page.Footer()
+                        .AlignCenter()
+                        .Text(x =>
+                        {
+                            x.Span("Page ");
+                            x.CurrentPageNumber();
+                            x.Span(" of ");
+                            x.TotalPages();
+                        });
+                });
+            });
+
+            return Task.FromResult(document.GeneratePdf());
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Invalid operation while generating attendance PDF {Start} - {End}", startDate, endDate);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error generating attendance PDF {Start} - {End}", startDate, endDate);
+            throw;
+        }
     }
 
     public Task<byte[]> GenerateFinancialReportAsync(FinancialSummaryDto summary, List<InvoiceDto> invoices, List<ExpenseDto> expenses)

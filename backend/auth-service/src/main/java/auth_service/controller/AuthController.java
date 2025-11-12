@@ -31,6 +31,8 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 public class AuthController {
 
+    private static final String MSG_OTP_EXPIRED = "otp expired";
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -168,7 +170,7 @@ public class AuthController {
             return ResponseEntity.status(404).body(Map.of("message", "invalid token"));
         var user = userOpt.get();
         if (user.getOtpExpiresAt() == null || user.getOtpExpiresAt().isBefore(LocalDateTime.now())) {
-            return ResponseEntity.badRequest().body(Map.of("message", "otp expired"));
+            return ResponseEntity.badRequest().body(Map.of("message", MSG_OTP_EXPIRED));
         }
         if (!otpService.verify(req.getOtp(), user.getOtpHash())) {
             return ResponseEntity.status(400).body(Map.of("message", "invalid otp"));
@@ -393,7 +395,7 @@ public class AuthController {
         }
         var user = userOpt.get();
         if (user.getOtpExpiresAt() == null || user.getOtpExpiresAt().isBefore(LocalDateTime.now())) {
-            return ResponseEntity.badRequest().body(Map.of("message", "otp expired"));
+            return ResponseEntity.badRequest().body(Map.of("message", MSG_OTP_EXPIRED));
         }
         if (!otpService.verify(req.getOtp(), user.getOtpHash())) {
             return ResponseEntity.status(400).body(Map.of("message", "invalid otp"));

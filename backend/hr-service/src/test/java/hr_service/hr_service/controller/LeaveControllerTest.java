@@ -53,10 +53,10 @@ class LeaveControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = { "HR" })
+    @WithMockUser(username = "e@x.com", roles = { "EMPLOYEE" })
     void create_leave_pending() throws Exception {
         Employee e = Employee.builder().id(1L).firstName("A").lastName("B").email("e@x.com").build();
-        given(employeeService.findById(1L)).willReturn(e);
+        given(employeeService.findByEmail("e@x.com")).willReturn(e);
         LeaveRequest saved = LeaveRequest.builder().id(2L).employee(e).status(LeaveStatus.PENDING).build();
         given(leaveService.create(any(LeaveRequest.class))).willReturn(saved);
 

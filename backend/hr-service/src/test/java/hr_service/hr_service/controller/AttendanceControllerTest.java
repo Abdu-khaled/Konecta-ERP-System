@@ -53,10 +53,10 @@ class AttendanceControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = { "HR" })
-    void mark_attendance_allowed_for_hr() throws Exception {
+    @WithMockUser(username = "e@x.com", roles = { "EMPLOYEE" })
+    void mark_attendance_allowed_for_employee() throws Exception {
         Employee e = Employee.builder().id(1L).firstName("A").lastName("B").email("e@x.com").build();
-        given(employeeService.findById(1L)).willReturn(e);
+        given(employeeService.findByEmail("e@x.com")).willReturn(e);
         Attendance saved = Attendance.builder().id(5L).employee(e).date(LocalDate.parse("2025-01-15")).present(true)
                 .workingHours(8.0).build();
         given(attendanceService.markAttendance(any(Attendance.class))).willReturn(saved);
@@ -70,7 +70,7 @@ class AttendanceControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = { "EMPLOYEE" })
+    @WithMockUser(roles = { "HR" })
     void mark_attendance_forbidden_for_employee() throws Exception {
         mvc.perform(post("/api/hr/attendance")
                 .contentType(MediaType.APPLICATION_JSON)

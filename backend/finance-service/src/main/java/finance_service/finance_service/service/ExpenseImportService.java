@@ -68,49 +68,50 @@ public class ExpenseImportService {
 
     private ImportSummary importFromExcel(InputStream in, String dateFormat, ExpenseStatus defaultStatus, String mode, String fileName, Long importerId) throws IOException {
         ImportSummary summary = new ImportSummary(0,0,0,new ArrayList<>());
-        Workbook wb = WorkbookFactory.create(in);
-        Sheet sheet = wb.getNumberOfSheets() > 0 ? wb.getSheetAt(0) : null;
-        if (sheet == null) return summary;
+        try (Workbook wb = WorkbookFactory.create(in)) {
+            Sheet sheet = wb.getNumberOfSheets() > 0 ? wb.getSheetAt(0) : null;
+            if (sheet == null) return summary;
 
-        Map<String, Integer> idx = new HashMap<>();
-        DataFormatter fmt = new DataFormatter();
-        Row header = sheet.getRow(sheet.getFirstRowNum());
-        for (Cell c : header) {
-            idx.put(fmt.formatCellValue(c).trim().toLowerCase(), c.getColumnIndex());
-        }
-        int iMonth = firstOf(idx, "month", "date");
-        int iDept = firstOf(idx, "department");
-        int iType = firstOf(idx, "expense type", "category", "type");
-        int iAmount = firstOf(idx, "amount", "value");
-        DateTimeFormatter df = DateTimeFormatter.ofPattern(dateFormat);
-
-        for (int r = sheet.getFirstRowNum() + 1; r <= sheet.getLastRowNum(); r++) {
-            Row row = sheet.getRow(r);
-            if (row == null) continue;
-            try {
-                String sMonth = fmt.formatCellValue(row.getCell(iMonth)).trim();
-                String dept = fmt.formatCellValue(row.getCell(iDept)).trim();
-                String cat = fmt.formatCellValue(row.getCell(iType)).trim();
-                String sAmt = fmt.formatCellValue(row.getCell(iAmount)).trim();
-                if (sMonth.isEmpty() || dept.isEmpty() || cat.isEmpty() || sAmt.isEmpty()) { summary.setSkipped(summary.getSkipped()+1); continue; }
-
-                LocalDate parsed;
-                Cell monthCell = row.getCell(iMonth);
-                if (monthCell != null && DateUtil.isCellDateFormatted(monthCell)) {
-                    parsed = monthCell.getLocalDateTimeCellValue().toLocalDate();
-                } else {
-                    parsed = parseDateFlexible(sMonth, df);
-                }
-                parsed = parsed.withDayOfMonth(1);
-                double amount = parseAmountFlexible(sAmt);
-
-                upsertExpense(summary, dept, cat, parsed, amount, defaultStatus, mode, fileName, importerId);
-            } catch (Exception ex) {
-                summary.getErrors().add("Row " + (r+1) + ": " + ex.getMessage());
-                summary.setSkipped(summary.getSkipped()+1);
+            Map<String, Integer> idx = new HashMap<>();
+            DataFormatter fmt = new DataFormatter();
+            Row header = sheet.getRow(sheet.getFirstRowNum());
+            for (Cell c : header) {
+                idx.put(fmt.formatCellValue(c).trim().toLowerCase(), c.getColumnIndex());
             }
+            int iMonth = firstOf(idx, "month", "date");
+            int iDept = firstOf(idx, "department");
+            int iType = firstOf(idx, "expense type", "category", "type");
+            int iAmount = firstOf(idx, "amount", "value");
+            DateTimeFormatter df = DateTimeFormatter.ofPattern(dateFormat);
+
+            for (int r = sheet.getFirstRowNum() + 1; r <= sheet.getLastRowNum(); r++) {
+                Row row = sheet.getRow(r);
+                if (row == null) continue;
+                try {
+                    String sMonth = fmt.formatCellValue(row.getCell(iMonth)).trim();
+                    String dept = fmt.formatCellValue(row.getCell(iDept)).trim();
+                    String cat = fmt.formatCellValue(row.getCell(iType)).trim();
+                    String sAmt = fmt.formatCellValue(row.getCell(iAmount)).trim();
+                    if (sMonth.isEmpty() || dept.isEmpty() || cat.isEmpty() || sAmt.isEmpty()) { summary.setSkipped(summary.getSkipped()+1); continue; }
+
+                    LocalDate parsed;
+                    Cell monthCell = row.getCell(iMonth);
+                    if (monthCell != null && DateUtil.isCellDateFormatted(monthCell)) {
+                        parsed = monthCell.getLocalDateTimeCellValue().toLocalDate();
+                    } else {
+                        parsed = parseDateFlexible(sMonth, df);
+                    }
+                    parsed = parsed.withDayOfMonth(1);
+                    double amount = parseAmountFlexible(sAmt);
+
+                    upsertExpense(summary, dept, cat, parsed, amount, defaultStatus, mode, fileName, importerId);
+                } catch (Exception ex) {
+                    summary.getErrors().add("Row " + (r+1) + ": " + ex.getMessage());
+                    summary.setSkipped(summary.getSkipped()+1);
+                }
+            }
+            return summary;
         }
-        return summary;
     }
 
     private ImportSummary importFromCsv(InputStream in, String dateFormat, ExpenseStatus defaultStatus, String mode, String fileName, Long importerId) throws IOException {

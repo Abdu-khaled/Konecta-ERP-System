@@ -33,23 +33,23 @@ public class DataAggregationService : IDataAggregationService
             // Aggregate payroll data
             if (!string.IsNullOrEmpty(period))
             {
-                var payrolls = await _financeClient.GetPayrollByPeriodAsync(period, authToken);
+                var payrolls = await _financeClient.GetPayrollByPeriodAsync(period, authToken) ?? new List<PayrollDto>();
                 analytics.PayrollSummary = CalculatePayrollSummary(payrolls, period);
             }
 
             // Aggregate attendance data
-            var attendance = await _hrClient.GetAttendanceByDateRangeAsync(startDate.Value, endDate.Value, authToken);
+            var attendance = await _hrClient.GetAttendanceByDateRangeAsync(startDate.Value, endDate.Value, authToken) ?? new List<AttendanceDto>();
             analytics.AttendanceSummary = CalculateAttendanceSummary(attendance, startDate.Value, endDate.Value);
 
             // Aggregate financial data
             analytics.FinancialSummary = await AggregateFinancialDataAsync(startDate.Value, endDate.Value, authToken);
 
             // Calculate expense trends
-            var expenses = await _financeClient.GetExpensesAsync(null, authToken);
+            var expenses = await _financeClient.GetExpensesAsync(null, authToken) ?? new List<ExpenseDto>();
             analytics.ExpenseTrends = CalculateExpenseTrends(expenses, startDate.Value, endDate.Value);
 
             // Calculate productivity metrics
-            var employees = await _hrClient.GetAllEmployeesAsync(authToken);
+            var employees = await _hrClient.GetAllEmployeesAsync(authToken) ?? new List<EmployeeDto>();
             analytics.ProductivityMetrics = await CalculateProductivityMetrics(employees, attendance, authToken);
         }
         catch (Exception ex)
@@ -69,17 +69,17 @@ public class DataAggregationService : IDataAggregationService
     {
         if (employeeId.HasValue)
         {
-            var attendance = await _hrClient.GetAttendanceByEmployeeAsync(employeeId.Value, authToken);
+            var attendance = await _hrClient.GetAttendanceByEmployeeAsync(employeeId.Value, authToken) ?? new List<AttendanceDto>();
             return attendance.Where(a => a.Date >= startDate && a.Date <= endDate).ToList();
         }
 
-        return await _hrClient.GetAttendanceByDateRangeAsync(startDate, endDate, authToken);
+        return (await _hrClient.GetAttendanceByDateRangeAsync(startDate, endDate, authToken)) ?? new List<AttendanceDto>();
     }
 
     public async Task<FinancialSummaryDto> AggregateFinancialDataAsync(DateTime startDate, DateTime endDate, string? authToken = null)
     {
-        var invoices = await _financeClient.GetInvoicesAsync(null, authToken);
-        var expenses = await _financeClient.GetExpensesAsync(null, authToken);
+        var invoices = (await _financeClient.GetInvoicesAsync(null, authToken)) ?? new List<InvoiceDto>();
+        var expenses = (await _financeClient.GetExpensesAsync(null, authToken)) ?? new List<ExpenseDto>();
 
         var filteredInvoices = invoices.Where(i => i.InvoiceDate >= startDate && i.InvoiceDate <= endDate).ToList();
         var filteredExpenses = expenses
@@ -88,14 +88,14 @@ public class DataAggregationService : IDataAggregationService
 
         return new FinancialSummaryDto
         {
-            TotalRevenue = filteredInvoices.Where(i => i.Status.ToUpper() == "PAID").Sum(i => i.Amount),
-            TotalExpenses = filteredExpenses.Where(e => e.Status.ToUpper() == "APPROVED").Sum(e => e.Amount),
+            TotalRevenue = filteredInvoices.Where(i => string.Equals(i.Status, "PAID", StringComparison.OrdinalIgnoreCase)).Sum(i => i.Amount),
+            TotalExpenses = filteredExpenses.Where(e => string.Equals(e.Status, "APPROVED", StringComparison.OrdinalIgnoreCase)).Sum(e => e.Amount),
             TotalInvoices = filteredInvoices.Count,
-            PendingExpenses = filteredExpenses.Count(e => e.Status.ToUpper() == "PENDING"),
+            PendingExpenses = filteredExpenses.Count(e => string.Equals(e.Status, "PENDING", StringComparison.OrdinalIgnoreCase)),
             StartDate = startDate,
             EndDate = endDate,
-            NetIncome = filteredInvoices.Where(i => i.Status.ToUpper() == "PAID").Sum(i => i.Amount) - 
-                       filteredExpenses.Where(e => e.Status.ToUpper() == "APPROVED").Sum(e => e.Amount)
+            NetIncome = filteredInvoices.Where(i => string.Equals(i.Status, "PAID", StringComparison.OrdinalIgnoreCase)).Sum(i => i.Amount) - 
+                       filteredExpenses.Where(e => string.Equals(e.Status, "APPROVED", StringComparison.OrdinalIgnoreCase)).Sum(e => e.Amount)
         };
     }
 
@@ -135,7 +135,7 @@ public class DataAggregationService : IDataAggregationService
 
     private List<TrendDataPoint> CalculateExpenseTrends(List<ExpenseDto> expenses, DateTime startDate, DateTime endDate)
     {
-        var filteredExpenses = expenses
+        var filteredExpenses = (expenses ?? new List<ExpenseDto>())
             .Where(e => (e.ExpenseDate ?? e.CreatedAt) >= startDate && (e.ExpenseDate ?? e.CreatedAt) <= endDate)
             .ToList();
         
@@ -158,9 +158,9 @@ public class DataAggregationService : IDataAggregationService
     {
         var metrics = new List<ProductivityMetricDto>();
 
-        foreach (var employee in employees)
+        foreach (var employee in (employees ?? new List<EmployeeDto>()))
         {
-            var employeeAttendance = attendance.Where(a => a.EmployeeId == employee.Id).ToList();
+            var employeeAttendance = (attendance ?? new List<AttendanceDto>()).Where(a => a.EmployeeId == employee.Id).ToList();
             var totalDays = employeeAttendance.Count;
             var presentDays = employeeAttendance.Count(a => a.Present);
 
@@ -177,4 +177,3 @@ public class DataAggregationService : IDataAggregationService
         return metrics.OrderByDescending(m => m.AttendanceRate).ToList();
     }
 }
-

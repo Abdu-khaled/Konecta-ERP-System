@@ -38,6 +38,15 @@ class PayrollControllerTest {
     @MockBean
     private PayrollRepository payrollRepository; // required by controller constructor
 
+    @MockBean
+    private org.springframework.boot.web.client.RestTemplateBuilder restTemplateBuilder;
+
+    @MockBean
+    private finance_service.finance_service.repository.AccountRepository accountRepository;
+
+    @MockBean
+    private finance_service.finance_service.security.JwtService jwtService;
+
     @BeforeEach
     void passThroughJwtFilter() throws Exception {
         doAnswer(inv -> {

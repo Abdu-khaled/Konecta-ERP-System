@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FinanceApiService } from '../services/finance.api.service';
@@ -111,7 +111,14 @@ export class InvoicesComponent implements OnInit {
   resetModel() { this.model = { clientName: '', invoiceDate: '', items: [] }; this.selectedPdf = null; this.pdfPreviewUrl = null; this.lastCreated = null; }
   onPdfSelected(evt: any) {
     const file: File | undefined = evt?.target?.files?.[0];
-    if (!file) return; this.selectedPdf = file; const url = URL.createObjectURL(file); this.pdfPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    if (!file) return;
+    // Only accept PDF files to mitigate potential XSS vectors
+    const isPdf = (file.type || '').toLowerCase() === 'application/pdf' || (file.name || '').toLowerCase().endsWith('.pdf');
+    if (!isPdf) { this.toast.error('Please select a PDF file'); return; }
+    this.selectedPdf = file;
+    const url = URL.createObjectURL(file);
+    // Blob URLs are safe to render as resource URLs
+    this.pdfPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
     // Immediately extract fields from the selected PDF without waiting for save
     this.invApi.extractPreview(file).subscribe({
       next: (extracted) => {
