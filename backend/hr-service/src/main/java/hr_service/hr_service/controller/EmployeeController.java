@@ -5,6 +5,7 @@ import hr_service.hr_service.dto.request.EnsureEmployeeRequest;
 import hr_service.hr_service.dto.response.EmployeeResponse;
 import hr_service.hr_service.model.Department;
 import hr_service.hr_service.model.Employee;
+import hr_service.hr_service.messaging.ActivityEventPublisher;
 import hr_service.hr_service.service.DepartmentService;
 import hr_service.hr_service.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
@@ -22,16 +23,17 @@ public class EmployeeController {
 
     private final EmployeeService employeeService;
     private final DepartmentService departmentService;
+    private final ActivityEventPublisher eventPublisher;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','HR','FINANCE')")
     public ResponseEntity<List<EmployeeResponse>> getAll() {
         List<EmployeeResponse> body = employeeService.findAll().stream().map(this::toResponse).collect(Collectors.toList());
         return ResponseEntity.ok(body);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','HR','FINANCE')")
     public ResponseEntity<EmployeeResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(toResponse(employeeService.findById(id)));
     }
@@ -40,20 +42,34 @@ public class EmployeeController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<EmployeeResponse> create(@RequestBody EmployeeRequest req) {
         Employee e = fromRequest(req);
-        return ResponseEntity.ok(toResponse(employeeService.create(e)));
+        Employee saved = employeeService.create(e);
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        String title = "Employee created";
+        String summary = saved.getFirstName() + " " + saved.getLastName() + " (" + saved.getEmail() + ")";
+        eventPublisher.publish("created", "Employee", String.valueOf(saved.getId()), title, summary, "pushed", auth);
+        return ResponseEntity.ok(toResponse(saved));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','HR')")
     public ResponseEntity<EmployeeResponse> update(@PathVariable Long id, @RequestBody EmployeeRequest req) {
         Employee updated = fromRequest(req);
-        return ResponseEntity.ok(toResponse(employeeService.update(id, updated)));
+        Employee saved = employeeService.update(id, updated);
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        String title = "Employee updated";
+        String summary = saved.getFirstName() + " " + saved.getLastName() + " (" + saved.getEmail() + ")";
+        eventPublisher.publish("updated", "Employee", String.valueOf(saved.getId()), title, summary, "pushed", auth);
+        return ResponseEntity.ok(toResponse(saved));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','HR')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         employeeService.delete(id);
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        String title = "Employee deleted";
+        String summary = "Employee ID " + id + " deleted";
+        eventPublisher.publish("deleted", "Employee", String.valueOf(id), title, summary, "pushed", auth);
         return ResponseEntity.noContent().build();
     }
 
@@ -68,6 +84,10 @@ public class EmployeeController {
         String first = full.contains(" ") ? full.substring(0, full.indexOf(' ')).trim() : full;
         String last = full.contains(" ") ? full.substring(full.indexOf(' ') + 1).trim() : "";
         Employee saved = employeeService.ensureByEmail(req.getEmail(), first, last, req.getPhone(), req.getPosition(), dept, req.getSalary(), req.getWorkingHours());
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        String title = "Employee ensured";
+        String summary = saved.getFirstName() + " " + saved.getLastName() + " (" + saved.getEmail() + ")";
+        eventPublisher.publish("ensured", "Employee", String.valueOf(saved.getId()), title, summary, "pushed", auth);
         return ResponseEntity.ok(toResponse(saved));
     }
 
@@ -108,15 +128,17 @@ public class EmployeeController {
     private EmployeeResponse toResponse(Employee e) {
         var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         boolean isAdmin = auth != null && auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        boolean isFinance = auth != null && auth.getAuthorities().stream().anyMatch(a -> "ROLE_FINANCE".equals(a.getAuthority()));
+        boolean isHr = auth != null && auth.getAuthorities().stream().anyMatch(a -> "ROLE_HR".equals(a.getAuthority()));
         return EmployeeResponse.builder()
                 .id(e.getId())
                 .firstName(e.getFirstName())
                 .lastName(e.getLastName())
-                .email(isAdmin ? e.getEmail() : null)
+                .email((isAdmin || isFinance || isHr) ? e.getEmail() : null)
                 .phone(isAdmin ? e.getPhone() : null)
                 .position(e.getPosition())
                 .hireDate(e.getHireDate())
-                .salary(isAdmin ? e.getSalary() : null)
+                .salary((isAdmin || isFinance || isHr) ? e.getSalary() : null)
                 .workingHours(e.getWorkingHours())
                 .departmentId(e.getDepartment() != null ? e.getDepartment().getId() : null)
                 .departmentName(e.getDepartment() != null ? e.getDepartment().getName() : null)

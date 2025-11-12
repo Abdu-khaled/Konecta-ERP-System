@@ -103,8 +103,8 @@ public class ProxyController {
     public ResponseEntity<byte[]> proxyReporting(HttpMethod method,
             HttpServletRequest request,
             @RequestBody(required = false) byte[] body) {
-        // Reporting service uses base route "/api/report" inside the container
-        String upstreamBase = "http://reporting-service:8080/api/report";
+        // Reporting service base route
+        String upstreamBase = "http://reporting-service:8080/api/reporting";
         return forward(upstreamBase, method, request, body);
     }
 

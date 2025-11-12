@@ -14,6 +14,15 @@ export const routes: Routes = [
       }
     ]
   },
+  {
+    path: 'activity',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN','MANAGER','HR','FINANCE','EMPLOYEE','INVENTORY','IT_OPERATION','SALES_ONLY','OPERATIONS'] },
+    component: MainLayoutComponent,
+    children: [
+      { path: '', loadComponent: () => import('./pages/activity/activity-feed.component').then(m => m.ActivityFeedComponent) }
+    ]
+  },
   // Public registration deep links from email
   {
     path: 'register',

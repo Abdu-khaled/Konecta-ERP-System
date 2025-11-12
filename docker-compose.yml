@@ -30,6 +30,9 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: 1234
       SPRING_PROFILES_ACTIVE: docker
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-guest}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASS:-guest}
       # Email delivery to real SMTP (no MailHog). Values required in .env
       SPRING_MAIL_HOST: ${SMTP_HOST}
       SPRING_MAIL_PORT: ${SMTP_PORT}
@@ -94,6 +97,9 @@ services:
       AI_EXTRACTION_STATUS: ${AI_EXTRACTION_STATUS:-Invoice}
       AI_EXTRACTION_IS_LINK: ${AI_EXTRACTION_IS_LINK:-false}
       AI_EXTRACTION_LINK: ${AI_EXTRACTION_LINK:-}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-guest}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASS:-guest}
     networks:
       - erp-net
 
@@ -164,6 +170,21 @@ services:
       ConnectionStrings__DefaultConnection: Host=host.docker.internal;Port=5432;Database=reporting_service;Username=postgres;Password=1234
       ServiceUrls__HrService: http://hr-service:8082
       ServiceUrls__FinanceService: http://finance-service:8083
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USER:-guest}
+      RabbitMQ__Password: ${RABBITMQ_PASS:-guest}
+    networks:
+      - erp-net
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: erp-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
     networks:
       - erp-net
 

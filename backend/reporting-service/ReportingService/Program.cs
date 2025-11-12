@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using ReportingService.Data;
 using ReportingService.Services;
+using ReportingService.Services.Messaging;
+using ReportingService.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +47,7 @@ builder.Services.AddHttpClient<IFinanceServiceClient, FinanceServiceClient>(clie
 builder.Services.AddScoped<IDataAggregationService, DataAggregationService>();
 builder.Services.AddScoped<IPdfReportService, PdfReportService>();
 builder.Services.AddScoped<IExcelReportService, ExcelReportService>();
+builder.Services.AddHostedService<RabbitConsumer>();
 
 // Allow frontend & other services
 builder.Services.AddCors(options =>
@@ -60,6 +63,30 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Ensure DB is created (no migrations required for this lightweight feed)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    try { db.Database.EnsureCreated(); } catch { }
+    try
+    {
+        // Lightweight schema upgrade for ActivityEvents table
+        db.Database.ExecuteSqlRaw(@"
+            ALTER TABLE ""ActivityEvents"" ADD COLUMN IF NOT EXISTS ""Role"" text;
+            ALTER TABLE ""ActivityEvents"" ADD COLUMN IF NOT EXISTS ""ActorId"" text;
+            ALTER TABLE ""ActivityEvents"" ADD COLUMN IF NOT EXISTS ""ActorName"" text;
+            ALTER TABLE ""ActivityEvents"" ADD COLUMN IF NOT EXISTS ""Action"" text;
+            ALTER TABLE ""ActivityEvents"" ADD COLUMN IF NOT EXISTS ""EntityType"" text;
+            ALTER TABLE ""ActivityEvents"" ADD COLUMN IF NOT EXISTS ""EntityId"" text;
+            ALTER TABLE ""ActivityEvents"" ADD COLUMN IF NOT EXISTS ""Title"" text;
+            ALTER TABLE ""ActivityEvents"" ADD COLUMN IF NOT EXISTS ""Summary"" text;
+            ALTER TABLE ""ActivityEvents"" ADD COLUMN IF NOT EXISTS ""Status"" text;
+            ALTER TABLE ""ActivityEvents"" ADD COLUMN IF NOT EXISTS ""MonthKey"" text;
+        ");
+    }
+    catch { }
+}
 
 if (app.Environment.IsDevelopment())
 {

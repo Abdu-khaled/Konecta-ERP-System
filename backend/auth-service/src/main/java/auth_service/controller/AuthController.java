@@ -9,6 +9,7 @@ import auth_service.security.JwtService;
 import auth_service.service.NotificationService;
 import auth_service.service.OtpService;
 import auth_service.util.TokenGenerator;
+import auth_service.messaging.UserEventsPublisher;
 import jakarta.validation.Valid;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
@@ -42,6 +43,7 @@ public class AuthController {
     private final long verificationTtlMinutes;
     private final String registrationUrlBase;
     private final RestTemplateBuilder restTemplateBuilder;
+    private final UserEventsPublisher userEventsPublisher;
 
     public AuthController(UserRepository userRepository,
             PasswordEncoder passwordEncoder,
@@ -52,6 +54,7 @@ public class AuthController {
             @Value("${app.verification.ttl-minutes:1440}") long verificationTtlMinutes,
             @Value("${app.registration.urlBase:http://localhost:4200/register}") String registrationUrlBase,
             RestTemplateBuilder restTemplateBuilder,
+            UserEventsPublisher userEventsPublisher,
             auth_service.service.OtpRateLimiter otpRateLimiter) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -62,6 +65,7 @@ public class AuthController {
         this.verificationTtlMinutes = verificationTtlMinutes;
         this.registrationUrlBase = registrationUrlBase;
         this.restTemplateBuilder = restTemplateBuilder;
+        this.userEventsPublisher = userEventsPublisher;
         this.otpRateLimiter = otpRateLimiter;
     }
 
@@ -196,6 +200,8 @@ public class AuthController {
         user.setOtpHash(null);
         user.setOtpExpiresAt(null);
         userRepository.save(user);
+        // Publish user activation event
+        try { userEventsPublisher.publishUserActivated(user); } catch (Exception ignored) {}
         // If account info provided, upsert to finance-service (best-effort)
         try {
             String acc = req.getAccountNumber();

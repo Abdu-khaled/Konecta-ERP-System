@@ -37,17 +37,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers(
-                                "/actuator/**",
-                                "/api/auth/register",
-                                "/api/auth/login",
-                                "/api/auth/validate",
-                                "/api/auth/registration/**",
-                                "/api/auth/register/**",
-                                "/api/auth/forgot/**"
-                        )
-                )
+                .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth

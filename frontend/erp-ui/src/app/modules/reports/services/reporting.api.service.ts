@@ -39,4 +39,14 @@ export class ReportingApiService {
       })
     );
   }
+
+  // Cross-service activity feed
+  feed(params?: { service?: string; routingKey?: string; since?: string; limit?: number }): Observable<any[]> {
+    let httpParams = new HttpParams();
+    if (params?.service) httpParams = httpParams.set('service', params.service);
+    if (params?.routingKey) httpParams = httpParams.set('routingKey', params.routingKey);
+    if (params?.since) httpParams = httpParams.set('since', params.since);
+    if (params?.limit) httpParams = httpParams.set('limit', String(params.limit));
+    return this.http.get<any[]>(`${this.baseUrl}/feed`, { params: httpParams });
+  }
 }

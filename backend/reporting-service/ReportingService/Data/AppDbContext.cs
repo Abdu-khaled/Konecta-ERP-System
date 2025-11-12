@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ReportingService.Models;
 
 namespace ReportingService.Data
 {
@@ -8,7 +9,7 @@ namespace ReportingService.Data
         {
         }
 
-        // TODO: Add your DbSet<TEntity> properties here, e.g.:
-        // public DbSet<Report> Reports { get; set; } = null!;
+       
+        public DbSet<ActivityEvent> ActivityEvents { get; set; } = null!;
     }
 }

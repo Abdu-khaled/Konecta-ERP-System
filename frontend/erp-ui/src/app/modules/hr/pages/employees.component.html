@@ -65,6 +65,8 @@
           <th class="py-2">Name</th>
           <th>Email</th>
           <th>Position</th>
+          <th>Working Hours</th>
+          <th>Base Salary</th>
           <th>Department</th>
           <th class="text-right">Actions</th>
         </tr>
@@ -74,6 +76,8 @@
           <td class="py-2">{{ e.firstName }} {{ e.lastName }}</td>
           <td>{{ e.email }}</td>
           <td>{{ e.position }}</td>
+          <td>{{ e.workingHours ?? '-' }}</td>
+          <td>{{ e.salary != null ? (e.salary | number:'1.2-2') : '-' }}</td>
           <td>{{ e.departmentName || '-' }}</td>
           <td class="text-right">
             <button class="text-blue-600 mr-2" (click)="startEdit(e)">Edit</button>
