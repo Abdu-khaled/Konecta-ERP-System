@@ -39,4 +39,9 @@ export class FinanceApiService {
     const headers = { 'X-Filename': file.name } as any;
     return this.http.post<{ inserted: number; updated: number; skipped: number; errors: string[] }>(`${this.base}/expenses/import-bin${q}`, file, { headers });
   }
+
+  // Accounts lookup (used by HR to prepare payroll shares)
+  accountsByEmails(emails: string[]) {
+    return this.http.post<any[]>(`${this.base}/accounts/by-emails`, emails);
+  }
 }

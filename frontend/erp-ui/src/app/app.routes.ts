@@ -44,7 +44,7 @@ export const routes: Routes = [
   {
     path: 'reports',
     canActivate: [roleGuard],
-    data: { roles: ['ADMIN','MANAGER','HR','FINANCE'] },
+    data: { roles: ['ADMIN','MANAGER','HR','FINANCE','INVENTORY','EMPLOYEE','IT_OPERATION','SALES_ONLY','OPERATIONS'] },
     component: MainLayoutComponent,
     loadChildren: () => import('./modules/reports/reports.routes').then(m => m.reportsRoutes)
   },
@@ -186,5 +186,4 @@ export const routes: Routes = [
   },
   { path: '**', redirectTo: '' },
 ];
-
 

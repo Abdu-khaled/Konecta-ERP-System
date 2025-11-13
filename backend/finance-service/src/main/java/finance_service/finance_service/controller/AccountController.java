@@ -51,7 +51,7 @@ public class AccountController {
     }
 
     @GetMapping("/by-email")
-    @PreAuthorize("hasAnyRole('ADMIN','FINANCE')")
+    @PreAuthorize("hasAnyRole('ADMIN','FINANCE','HR')")
     public ResponseEntity<AccountResponse> byEmail(@RequestParam String email) {
         return accountRepository.findByEmailIgnoreCase(email)
                 .map(a -> ResponseEntity.ok(toResponse(a)))
@@ -71,7 +71,7 @@ public class AccountController {
     }
 
     @PostMapping("/by-emails")
-    @PreAuthorize("hasAnyRole('ADMIN','FINANCE')")
+    @PreAuthorize("hasAnyRole('ADMIN','FINANCE','HR')")
     public ResponseEntity<List<AccountResponse>> byEmails(@RequestBody List<String> emails) {
         List<AccountResponse> list = accountRepository.findByEmailInIgnoreCase(emails).stream()
                 .map(this::toResponse)

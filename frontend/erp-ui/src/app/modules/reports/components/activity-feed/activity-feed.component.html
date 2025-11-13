@@ -1,32 +1,136 @@
 <div class="mt-6">
   <header class="flex items-center justify-between">
     <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Activity Feed</h1>
-    <form class="flex items-center gap-2" (ngSubmit)="refresh()">
-      <input class="border rounded px-3 py-2 text-sm w-44" type="text" [(ngModel)]="service" name="service" placeholder="auth | hr | finance | inventory" />
-      <input class="border rounded px-3 py-2 text-sm w-64" type="text" [(ngModel)]="routingKey" name="routingKey" placeholder="e.g. auth.user.activated" />
-      <input class="border rounded px-3 py-2 text-sm" type="datetime-local" [(ngModel)]="since" name="since" />
-      <input class="border rounded px-3 py-2 text-sm w-24" type="number" [(ngModel)]="limit" name="limit" min="1" max="500" placeholder="limit" />
-      <button class="rounded bg-primary-600 text-white px-4 py-2 text-sm" type="submit">Refresh</button>
-    </form>
+    <div class="flex items-center gap-2">
+      <button class="rounded bg-primary-600 text-white px-3 py-1 text-sm" (click)="toggleShare()">{{ shareOpen ? 'Close' : 'Share Data' }}</button>
+    </div>
   </header>
 
   <div *ngIf="error()" class="mt-3 rounded bg-rose-50 text-rose-700 px-3 py-2 text-sm">{{ error() }}</div>
   <div *ngIf="loading()" class="mt-4 text-slate-500 text-sm">Loading…</div>
 
-  <section class="mt-6 rounded-2xl bg-white p-4 shadow ring-1 ring-slate-200/70" *ngIf="!loading()">
-    <ul class="divide-y divide-slate-200">
-      <li *ngFor="let it of items()" class="py-3">
-        <div class="flex items-start justify-between">
-          <div class="flex items-center gap-2">
-            <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">{{ it.service }}</span>
-            <span class="inline-flex items-center rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700">{{ it.routingKey }}</span>
-          </div>
-          <div class="text-xs text-slate-500">{{ it.createdAt | date:'medium' }}</div>
-        </div>
-        <pre class="mt-2 max-h-40 overflow-auto rounded bg-slate-50 px-3 py-2 text-xs text-slate-700">{{ it.payload }}</pre>
-      </li>
-    </ul>
+  <!-- Removed ticketing; only Share Data remains -->
 
-    <div *ngIf="!items().length" class="text-sm text-slate-500">No activity found.</div>
+  <!-- Share data panel -->
+  <section *ngIf="shareOpen" class="mt-4 rounded-2xl bg-white p-4 shadow ring-1 ring-slate-200/70">
+    <div class="flex items-center justify-between">
+      <h2 class="font-semibold mb-3">Share Data</h2>
+      <button class="rounded bg-slate-200 text-slate-800 px-3 py-2 text-sm" (click)="toggleShare()">Close</button>
+    </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+        <div>
+          <label class="text-xs block mb-1">Data Type</label>
+        <select class="w-full border rounded px-3 py-2 text-sm" [(ngModel)]="dataType" name="dataType" (ngModelChange)="onTypeChange($event)">
+          <option value="employees" *ngIf="isDataTypeAllowed('employees')">Employees</option>
+          <option value="departments" *ngIf="isDataTypeAllowed('departments')">Departments</option>
+          <option value="jobs" *ngIf="isDataTypeAllowed('jobs')">Jobs</option>
+          <option value="invoices" *ngIf="isDataTypeAllowed('invoices')">Invoices</option>
+          <option value="expenses" *ngIf="isDataTypeAllowed('expenses')">Expenses</option>
+          <option value="payroll" *ngIf="isDataTypeAllowed('payroll')">Payroll</option>
+          <option value="items" *ngIf="isDataTypeAllowed('items')">Inventory Items</option>
+        </select>
+        </div>
+      <div class="md:col-span-2">
+          <label class="text-xs block mb-1">Include Fields</label>
+          <div class="flex flex-wrap gap-2">
+          <label *ngFor="let f of fieldsConfig[dataType]" class="inline-flex items-center gap-1 text-xs">
+            <input type="checkbox" [checked]="selectedFields.indexOf(f.key) >= 0" (change)="onFieldToggle(f.key, $any($event.target).checked)" /> {{ f.label }}
+          </label>
+          </div>
+        </div>
+        <div>
+          <label class="text-xs block mb-1">Push now?</label>
+          <select class="w-full border rounded px-3 py-2 text-sm" [(ngModel)]="sharePushNow" name="sharePushNow">
+            <option [ngValue]="true">Yes</option>
+            <option [ngValue]="false">No (save as draft)</option>
+          </select>
+        </div>
+        <div>
+        <button class="rounded bg-primary-600 text-white px-3 py-1 text-sm" (click)="loadData()" [disabled]="!isDataTypeAllowed(dataType)">Load</button>
+        </div>
+      </div>
+
+    <div class="mt-4 overflow-auto">
+      <table class="min-w-full text-sm">
+        <thead class="text-left text-slate-600">
+          <tr>
+            <th class="py-2 pr-3">Select</th>
+            <th class="py-2 pr-3" *ngFor="let f of displayFields()">{{ f.label }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200" *ngIf="dataItems.length; else emptyData">
+          <tr *ngFor="let it of dataItems">
+            <td class="py-2 pr-3"><input type="checkbox" (change)="toggleRow(it.id, $any($event.target).checked)" /></td>
+            <td class="py-2 pr-3" *ngFor="let f of displayFields()">{{ it[f.key] }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <ng-template #emptyData>
+        <div class="text-sm text-slate-500">No data loaded yet.</div>
+      </ng-template>
+    </div>
+
+    <div class="mt-4">
+      <label class="text-xs block mb-1">Target Roles</label>
+      <div class="flex flex-wrap gap-2">
+        <label *ngFor="let r of availableRoles" class="inline-flex items-center gap-1 text-xs">
+          <input type="checkbox" (change)="onShareRoleToggle(r, $any($event.target).checked)" /> {{ r }}
+        </label>
+      </div>
+    </div>
+    <div class="mt-3 flex items-center gap-2">
+      <button class="rounded bg-slate-200 text-slate-800 px-3 py-2 text-sm" (click)="openPreviewSelected()">Preview Selected</button>
+      <button class="rounded bg-emerald-600 text-white px-4 py-2 text-sm" (click)="shareSelectedData()" [disabled]="!selectedIds.size || !shareRoles.length">Share Selected</button>
+    </div>
   </section>
+
+  <!-- Minimal received shares list (non-table) -->
+  <section class="mt-6" *ngIf="!shareOpen">
+    <h2 class="font-semibold mb-2">Recent Shares To You</h2>
+    <div class="space-y-2">
+      <div *ngFor="let it of receivedItems" class="rounded border border-slate-200 p-3">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="text-xs text-slate-500">{{ it.createdAt | date:'short' }} • {{ it.role }}</div>
+            <div class="font-medium">{{ it.title || it.routingKey }}</div>
+            <div class="text-sm text-slate-600">{{ it.summary || '' }}</div>
+          </div>
+          <button class="rounded bg-primary-600 text-white px-3 py-1 text-sm" (click)="openView(it)">View</button>
+        </div>
+      </div>
+      <div *ngIf="!receivedItems.length" class="text-sm text-slate-500">No shares found.</div>
+    </div>
+  </section>
+
+  <!-- View modal -->
+  <div *ngIf="viewOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div class="max-h-[80vh] w-[90vw] max-w-4xl overflow-auto rounded-xl bg-white p-4 shadow ring-1 ring-slate-200">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold">{{ viewItem?.title || 'Shared Data' }}</h3>
+        <button class="rounded bg-slate-200 text-slate-800 px-3 py-1 text-sm" (click)="closeView()">Close</button>
+      </div>
+      <p class="mt-1 text-sm text-slate-500" *ngIf="viewItem?.summary">{{ viewItem?.summary }}</p>
+
+      <div class="mt-4 overflow-auto" *ngIf="viewFields.length && viewRows.length; else rawPayload">
+        <table class="min-w-full text-sm">
+          <thead class="text-left text-slate-600">
+            <tr>
+              <th class="py-2 pr-3" *ngFor="let f of viewFields">{{ f }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200">
+            <tr *ngFor="let r of viewRows">
+              <td class="py-2 pr-3" *ngFor="let f of viewFields">{{ r[f] }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ng-template #rawPayload>
+        <pre class="mt-4 max-h-64 overflow-auto rounded bg-slate-50 px-3 py-2 text-xs text-slate-700">{{ viewItem?.payload }}</pre>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- Removed feed table/list -->
 </div>

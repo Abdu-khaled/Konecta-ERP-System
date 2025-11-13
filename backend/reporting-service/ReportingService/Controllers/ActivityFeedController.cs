@@ -37,6 +37,14 @@ namespace ReportingService.Controllers
             if (!string.IsNullOrWhiteSpace(entityType)) q = q.Where(e => e.EntityType == entityType);
             if (!string.IsNullOrWhiteSpace(month)) q = q.Where(e => e.MonthKey == month);
             if (since.HasValue) q = q.Where(e => e.CreatedAt >= since.Value);
+
+            // Restrict visibility by caller role only (admins/managers do NOT see others' shares)
+            var token = Request.Headers["Authorization"].FirstOrDefault();
+            var userRole = JwtHelper.GetRoleFromToken(token)?.Replace("ROLE_", "");
+            if (!string.IsNullOrWhiteSpace(userRole))
+            {
+                q = q.Where(e => e.Role == userRole);
+            }
             var items = await q.Take(limit).ToListAsync();
             return Ok(items);
         }
@@ -71,44 +79,18 @@ namespace ReportingService.Controllers
         }
 
         [HttpPatch("{id}/push")]
-        [RoleAuthorization("ADMIN","MANAGER","HR","FINANCE","EMPLOYEE")] // approvers checked below
-        public async Task<IActionResult> Push(long id)
+        [RoleAuthorization("ADMIN","MANAGER","HR","FINANCE","EMPLOYEE")]
+        public IActionResult Push(long id)
         {
-            var ev = await _db.ActivityEvents.FirstOrDefaultAsync(x => x.Id == id);
-            if (ev == null) return NotFound();
-            if (ev.Status == "pushed") return Ok(ev);
-            var token = Request.Headers["Authorization"].FirstOrDefault();
-            var username = JwtHelper.GetUsernameFromToken(token);
-            var role = JwtHelper.GetRoleFromToken(token)?.Replace("ROLE_", "");
-            var isApprover = string.Equals(role, "ADMIN", StringComparison.OrdinalIgnoreCase) ||
-                             string.Equals(role, "MANAGER", StringComparison.OrdinalIgnoreCase);
-            var isOwner = !string.IsNullOrWhiteSpace(username) && string.Equals(username, ev.ActorId, StringComparison.OrdinalIgnoreCase);
-            if (!(isOwner || isApprover)) return new ForbidResult();
-            ev.Status = "pushed";
-            await _db.SaveChangesAsync();
-            return Ok(ev);
+            // Push workflow removed. Kept for backward compatibility.
+            return StatusCode(410); // Gone
         }
 
         [HttpGet("summary/monthly")]
-        public async Task<IActionResult> MonthlySummary([FromQuery] string? month = null)
+        public IActionResult MonthlySummary([FromQuery] string? month = null)
         {
-            var q = _db.ActivityEvents.AsNoTracking().AsQueryable();
-            if (!string.IsNullOrWhiteSpace(month)) q = q.Where(e => e.MonthKey == month);
-            var data = await q
-                .GroupBy(e => new { e.MonthKey, e.Role, e.Action })
-                .Select(g => new MonthlySummaryItem
-                {
-                    Month = g.Key.MonthKey ?? "",
-                    Role = g.Key.Role ?? "",
-                    Action = g.Key.Action ?? "",
-                    Count = g.Count(),
-                    LatestAt = g.Max(x => x.CreatedAt)
-                })
-                .OrderByDescending(x => x.Month)
-                .ThenBy(x => x.Role)
-                .ThenBy(x => x.Action)
-                .ToListAsync();
-            return Ok(data);
+            // Summary analytics removed.
+            return Ok(Array.Empty<MonthlySummaryItem>());
         }
 
         public class CreateActivityEventDto
