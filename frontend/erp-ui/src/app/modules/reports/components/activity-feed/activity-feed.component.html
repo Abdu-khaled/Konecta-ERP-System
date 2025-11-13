@@ -62,7 +62,7 @@
         <tbody class="divide-y divide-slate-200" *ngIf="dataItems.length; else emptyData">
           <tr *ngFor="let it of dataItems">
             <td class="py-2 pr-3"><input type="checkbox" (change)="toggleRow(it.id, $any($event.target).checked)" /></td>
-            <td class="py-2 pr-3" *ngFor="let f of displayFields()">{{ it[f.key] }}</td>
+            <td class="py-2 pr-3" *ngFor="let f of displayFields()">{{ it[f.key] || '—' }}</td>
           </tr>
         </tbody>
       </table>
@@ -121,7 +121,7 @@
           </thead>
           <tbody class="divide-y divide-slate-200">
             <tr *ngFor="let r of viewRows">
-              <td class="py-2 pr-3" *ngFor="let f of viewFields">{{ r[f] }}</td>
+              <td class="py-2 pr-3" *ngFor="let f of viewFields">{{ r[f] || '—' }}</td>
             </tr>
           </tbody>
         </table>

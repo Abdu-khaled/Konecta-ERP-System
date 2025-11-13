@@ -178,6 +178,9 @@ export class ActivityFeedComponent {
   onFieldToggle(key: string, checked: boolean) {
     if (checked) { if (!this.selectedFields.includes(key)) this.selectedFields.push(key); }
     else { this.selectedFields = this.selectedFields.filter(x => x !== key); }
+    if (this.dataType === 'employees' && key === 'accountMasked' && checked) {
+      this.enrichAccountsForEmployees();
+    }
   }
 
   displayFields() { return (this.fieldsConfig[this.dataType] || []).filter(f => this.selectedFields.includes(f.key)); }
@@ -207,16 +210,38 @@ export class ActivityFeedComponent {
 
   private enrichAccountsForEmployees() {
     try {
-      const emails = (this.dataItems || []).map((e: any) => (e.email || '').toString()).filter((x: string) => !!x);
+      if (this.dataType !== 'employees') return;
+      const emails = Array.from(new Set((this.dataItems || [])
+        .map((e: any) => (e.email || '').toString().trim().toLowerCase())
+        .filter((x: string) => !!x)));
       if (!emails.length) return;
       this.fin.accountsByEmails(emails).subscribe({
         next: (list: any[]) => {
           const map: Record<string, any> = {};
           (list || []).forEach(a => { if (a?.email) map[String(a.email).toLowerCase()] = a; });
+          const missing: string[] = [];
           this.dataItems = (this.dataItems || []).map((e: any) => {
             const key = String(e.email || '').toLowerCase();
             const acc = map[key]?.accountNumber || null;
+            if (!acc) missing.push(key);
             return { ...e, accountMasked: this.maskAccount(acc) };
+          });
+          // Fallback: fetch individually for any emails not returned by bulk endpoint
+          Array.from(new Set(missing)).forEach(em => {
+            if (!em) return;
+            this.fin.accountByEmail(em).subscribe({
+              next: (a: any) => {
+                if (!a) return;
+                const acc = a.accountNumber || null;
+                this.dataItems = (this.dataItems || []).map((e: any) => {
+                  if (String(e.email || '').toLowerCase() === em) {
+                    return { ...e, accountMasked: this.maskAccount(acc) };
+                  }
+                  return e;
+                });
+              },
+              error: () => {}
+            });
           });
         },
         error: () => {
