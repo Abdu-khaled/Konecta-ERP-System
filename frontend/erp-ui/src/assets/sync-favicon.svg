@@ -1,0 +1,5 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="12" fill="#2800C8"/>
+  <!-- Curved brand-style N with rounded caps/joins -->
+  <path d="M14 44 L24 20 Q32 38 40 44 L50 20" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
