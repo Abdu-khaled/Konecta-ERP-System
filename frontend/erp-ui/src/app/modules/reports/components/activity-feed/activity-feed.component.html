@@ -1,4 +1,4 @@
-<div class="mt-6">
+﻿<div class="mt-6">
   <header class="flex items-center justify-between">
     <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Activity Feed</h1>
     <div class="flex items-center gap-2">
@@ -52,7 +52,7 @@
       </div>
 
     <div class="mt-4 overflow-auto">
-      <table class="min-w-full text-sm">
+      <table class="k-table min-w-full text-sm">
         <thead class="text-left text-slate-600">
           <tr>
             <th class="py-2 pr-3">Select</th>
@@ -113,7 +113,7 @@
       <p class="mt-1 text-sm text-slate-500" *ngIf="viewItem?.summary">{{ viewItem?.summary }}</p>
 
       <div class="mt-4 overflow-auto" *ngIf="viewFields.length && viewRows.length; else rawPayload">
-        <table class="min-w-full text-sm">
+        <table class="k-table min-w-full text-sm">
           <thead class="text-left text-slate-600">
             <tr>
               <th class="py-2 pr-3" *ngFor="let f of viewFields">{{ f }}</th>

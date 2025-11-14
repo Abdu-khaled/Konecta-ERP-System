@@ -67,4 +67,17 @@
 
 /* Anchor section offsets so headings aren’t hidden under navbar */
 #about { scroll-margin-top: var(--navbar-height); }
-/* Poppins primary font with Arial fallback (loaded via index.html) */
+/* Poppins primary font with Arial fallback (loaded via index.html) *//* Mobile: hide global search input in top nav */
+@media (max-width: 639px){
+  nav[aria-label="Global navigation"] label[for="global-search"]{ display:none !important; }
+}
+
+/* Responsive tables: allow horizontal scroll on mobile */
+@layer components {
+  @media (max-width: 767px) {
+    .k-table { display:block; overflow-x:auto; -webkit-overflow-scrolling:touch; min-width:900px; }
+  }
+  @media (min-width: 768px) {
+    .k-table { display:table; min-width:0; }
+  }
+}

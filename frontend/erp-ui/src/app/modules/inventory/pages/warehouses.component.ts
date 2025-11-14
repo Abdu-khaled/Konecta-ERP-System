@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+﻿import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InventoryApiService, Warehouse } from '../services/inventory.api.service';
@@ -41,7 +41,7 @@ import { InventoryApiService, Warehouse } from '../services/inventory.api.servic
     </section>
 
     <section class="mt-4 rounded-2xl bg-white p-4 shadow ring-1 ring-slate-200/70">
-      <table class="w-full text-sm">
+      <table class="k-table w-full text-sm">
         <thead class="text-left text-slate-600">
           <tr>
             <th class="py-2">Name</th>

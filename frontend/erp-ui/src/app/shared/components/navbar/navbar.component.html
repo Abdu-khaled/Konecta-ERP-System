@@ -1,8 +1,8 @@
-<nav
-  class="fixed inset-x-0 top-0 z-50 grid items-center gap-x-5 px-6 py-3 shadow-sm border-b w-full"
+﻿<nav
+  class="fixed inset-x-0 top-0 z-50 grid items-center gap-x-5 px-4 md:px-6 py-3 shadow-sm border-b w-full"
   [ngClass]="[
     brandOn ? 'bg-primary-600 text-white nav--brand border-primary-600' : 'bg-white text-slate-900 border-slate-100',
-    role ? 'grid-cols-[auto_minmax(280px,520px)_auto]' : 'grid-cols-[auto_1fr]'
+    role ? 'grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_minmax(280px,520px)_auto]' : 'grid-cols-[auto_1fr]'
   ]"
   aria-label="Global navigation"
 >

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+﻿import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { InventoryApiService, LowStockResponse, MovementResponse } from '../services/inventory.api.service';
@@ -27,7 +27,7 @@ import { InventoryApiService, LowStockResponse, MovementResponse } from '../serv
           <a class="text-sm text-indigo-600" [routerLink]="['/inventory/low-stock']">View all</a>
         </div>
         <div class="mt-2">
-          <table class="w-full text-sm">
+          <table class="k-table w-full text-sm">
             <thead class="text-left text-slate-600">
               <tr>
                 <th class="py-2">SKU</th>
@@ -56,7 +56,7 @@ import { InventoryApiService, LowStockResponse, MovementResponse } from '../serv
           <a class="text-sm text-indigo-600" [routerLink]="['/inventory/movements']">View all</a>
         </div>
         <div class="mt-2">
-          <table class="w-full text-sm">
+          <table class="k-table w-full text-sm">
             <thead class="text-left text-slate-600">
               <tr>
                 <th class="py-2">Type</th>

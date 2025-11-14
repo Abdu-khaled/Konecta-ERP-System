@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+﻿import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FinanceApiService } from '../services/finance.api.service';
@@ -11,15 +11,15 @@ import { Invoice } from '../services/finance.types';
   imports: [CommonModule, RouterLink],
   template: `
   <div class="mt-6">
-    <header class="flex items-center justify-between">
+    <header class=\"flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between\">
       <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Invoices</h1>
-      <div class="flex items-center gap-2">
-        <button class="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700" [routerLink]="['/finance/invoices/new']">New Invoice</button>
+      <div class=\"flex items-center gap-2 flex-wrap\">
+        <button class="rounded-full bg-primary-600 text-white font-semibold shadow-sm hover:bg-primary-700 text-xs sm:text-sm px-3 py-1.5 sm:px-4 sm:py-2" [routerLink]="['/finance/invoices/new']">New Invoice</button>
       </div>
     </header>
 
     <section class="mt-4 rounded-2xl bg-white p-4 shadow ring-1 ring-slate-200/70">
-      <table class="w-full text-sm">
+      <table class="k-table w-full text-sm">
         <thead class="text-left text-slate-600">
           <tr>
             <th class="py-2">Vendor</th>
