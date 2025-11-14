@@ -22,4 +22,7 @@ public class EmployeeResponse {
     private Double workingHours;
     private Long departmentId;
     private String departmentName;
+    // Enriched from Finance for HR view/sharing
+    private String accountMasked;
+    private String cardType; // e.g. VISA/MASTERCARD
 }

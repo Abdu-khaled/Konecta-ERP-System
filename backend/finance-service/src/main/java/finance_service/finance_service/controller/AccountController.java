@@ -79,6 +79,15 @@ public class AccountController {
         return ResponseEntity.ok(list);
     }
 
+    @PostMapping("/by-usernames")
+    @PreAuthorize("hasAnyRole('ADMIN','FINANCE','HR')")
+    public ResponseEntity<List<AccountResponse>> byUsernames(@RequestBody List<String> usernames) {
+        List<AccountResponse> list = accountRepository.findByUsernameInIgnoreCase(usernames).stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(list);
+    }
+
     private AccountResponse toResponse(Account a) {
         return AccountResponse.builder()
                 .id(a.getId())

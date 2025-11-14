@@ -49,4 +49,8 @@ export class FinanceApiService {
     const q = `?email=${encodeURIComponent(email)}`;
     return this.http.get<any>(`${this.base}/accounts/by-email${q}`);
   }
+
+  accountsByUsernames(usernames: string[]) {
+    return this.http.post<any[]>(`${this.base}/accounts/by-usernames`, usernames);
+  }
 }

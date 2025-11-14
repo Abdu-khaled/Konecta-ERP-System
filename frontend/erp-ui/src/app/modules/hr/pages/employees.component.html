@@ -67,6 +67,7 @@
           <th>Position</th>
           <th>Working Hours</th>
           <th>Base Salary</th>
+          <th>Account</th>
           <th>Department</th>
           <th class="text-right">Actions</th>
         </tr>
@@ -78,6 +79,12 @@
           <td>{{ e.position }}</td>
           <td>{{ e.workingHours ?? '-' }}</td>
           <td>{{ e.salary != null ? (e.salary | number:'1.2-2') : '-' }}</td>
+          <td>
+            <ng-container *ngIf="e.accountMasked; else noAcc">
+              {{ e.cardType ? (e.cardType + ' ' + e.accountMasked) : e.accountMasked }}
+            </ng-container>
+            <ng-template #noAcc>-</ng-template>
+          </td>
           <td>{{ e.departmentName || '-' }}</td>
           <td class="text-right">
             <button class="text-blue-600 mr-2" (click)="startEdit(e)">Edit</button>
