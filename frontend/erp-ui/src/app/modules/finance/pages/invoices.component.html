@@ -1,4 +1,4 @@
-﻿<div class="mt-6">
+﻿<div class="mt-6 invoices-page">
   <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Invoices</h1>
     <div class="flex flex-wrap items-center gap-2">
@@ -54,7 +54,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let l of model.items; let ix = index" class="border-t border-slate-200/70 whitespace-nowrap">
+                <tr *ngFor="let l of model.items; let ix = index" class="border-t border-slate-200/70 md:whitespace-nowrap">
                   <td class="py-1 pr-2"><input class="w-full px-1 py-0.5 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.product" name="prodL{{ix}}"/></td>
                   <td class="pr-2"><input class="w-full px-1 py-0.5 bg-transparent border-0 outline-none focus:ring-0" [(ngModel)]="l.account" name="accL{{ix}}"/></td>
                   <td class="pr-2"><input type="date" placeholder="mm/dd/yyyy" class="w-full min-w-[92px] px-1 py-0.5 bg-transparent border-0 outline-none focus:ring-0 text-[11px] leading-4" [(ngModel)]="l.dueDate" name="dueL{{ix}}"/></td>
@@ -109,7 +109,7 @@
     </div>
 
     <!-- Right: PDF upload + viewer -->
-    <div class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70 h-[calc(100vh-180px)] flex flex-col">
+    <div class="rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-200/70 h-[calc(100vh-180px)] flex flex-col mt-6 md:mt-0">
       <h3 class="font-semibold mb-2">Invoice PDF</h3>
       <div class="mb-2 text-xs text-slate-500">Selected PDF will be uploaded when you save the invoice.</div>
       <input type="file" accept="application/pdf" (change)="onPdfSelected($event)" class="mb-3"/>
@@ -124,4 +124,5 @@
 
   <!-- Removed bottom table: lines are inside vendor section above -->
 </div>
+
 
