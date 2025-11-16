@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+﻿import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
 @Component({
@@ -21,3 +21,4 @@ export class AppComponent {
     else if (!fromConfig && (fromEnv || fromLS)) w.__APP_CONFIG__.chatbotUrl = fromEnv || fromLS;
   }
 }
+

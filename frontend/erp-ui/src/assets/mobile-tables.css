@@ -1,0 +1,32 @@
+@media (max-width: 767px){
+  /* Variables control bleed and label width (characters) */
+  :root{ --k-mobile-bleed: 1rem; --k-label-ch: 12; }
+
+  table.k-table{display:block;width:100%;table-layout:fixed}
+  .k-table{display:block;width:100% !important;min-width:100% !important;max-width:100% !important;margin:0}
+  /* Offset common p-4 padding so table fills card */
+  .k-table{margin-left:calc(var(--k-mobile-bleed) * -1);margin-right:calc(var(--k-mobile-bleed) * -1);width:calc(100% + (var(--k-mobile-bleed) * 2))}
+  .k-table thead{display:none}
+  .k-table tr,.k-table td{display:block;width:100% !important;min-width:100% !important;box-sizing:border-box}
+  .k-table tr{border:1px solid #e5e7eb;border-radius:.5rem;margin:0 0 .75rem 0;overflow:hidden}
+  /* Padding-left equals label block width + small gap */
+  .k-table td{position:relative;padding-left:calc((var(--k-label-ch) * 1ch) + .75rem) !important;border:0;border-bottom:1px solid #eee;min-height:2.5rem;text-align:left !important}
+  .k-table td{word-break:normal;overflow-wrap:break-word;white-space:normal}
+  .k-table td:last-child{border-bottom:0}
+  /* Field name block uses a character-based width so full words fit */
+  .k-table td>.k-label{position:absolute;left:.75rem;top:.5rem;width:calc(var(--k-label-ch) * 1ch);padding-right:.25rem;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25;font-weight:600;color:#4b5563;text-align:left;display:inline-block}
+  .k-table td :where(input,select,textarea){width:100%;max-width:100%}
+
+  /* Page-specific: wider bleed and/or wider labels where needed */
+  body.page-hr-jobs .k-table,
+  body.page-hr-training .k-table,
+  body.page-hr-leaves .k-table,
+  body.page-employee-performance .k-table,
+  body.page-employee-my-performance .k-table { margin-left:-1.5rem; margin-right:-1.5rem; width:calc(100% + 3rem); }
+  body.page-hr-jobs,
+  body.page-hr-training { --k-label-ch: 10; }
+  body.page-hr-leaves { --k-label-ch: 11; }
+  body.page-employee-performance,
+  body.page-employee-my-performance { --k-label-ch: 12; }
+}
+@media (min-width: 768px){ .k-table td>.k-label{ display:none } }
