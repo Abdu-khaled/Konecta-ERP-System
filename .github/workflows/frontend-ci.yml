@@ -147,6 +147,14 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_URL }}
+        with:
+          projectBaseDir: frontend/erp-ui
+          args: >
+            -Dsonar.projectKey=konecta-frontend
+            -Dsonar.projectName="Konecta Frontend"
+            -Dsonar.sources=src
+            -Dsonar.exclusions=**/*.spec.ts,**/*.test.ts,**/node_modules/**
+            -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info
 
 # STAGE 5: DOCKER BUILD & SECURITY SCAN
   docker-build-scan:
