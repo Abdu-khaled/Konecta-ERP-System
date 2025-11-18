@@ -6,4 +6,3 @@ import { initResponsiveTables } from './app/shared/helpers/responsive-tables';
 bootstrapApplication(AppComponent, appConfig)
   .then(() => { try { setTimeout(() => initResponsiveTables()); } catch {} })
   .catch((err) => console.error(err));
-  
