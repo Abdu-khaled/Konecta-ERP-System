@@ -105,7 +105,7 @@ jobs:
         run: npm run lint || echo "Linting script not found, skipping..."
 
       - name: Check for test files
-        run: bash scripts/ci/check-frontend-tests.sh
+        run: sh scripts/ci/check-frontend-tests.sh
         id: test-check
 
       - name: Upload test results
