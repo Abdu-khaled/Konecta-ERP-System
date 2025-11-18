@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Frontend Test Detection and Execution Script
 # Checks for test files and runs them if found
