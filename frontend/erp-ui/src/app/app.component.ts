@@ -21,4 +21,3 @@ export class AppComponent {
     else if (!fromConfig && (fromEnv || fromLS)) w.__APP_CONFIG__.chatbotUrl = fromEnv || fromLS;
   }
 }
-

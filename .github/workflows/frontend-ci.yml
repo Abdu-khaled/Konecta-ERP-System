@@ -62,7 +62,7 @@ jobs:
         run: npm ci
 
       - name: Run Trivy SCA on Source Code
-        uses: aquasecurity/trivy-action@0.18.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: 'fs'
           scan-ref: ./frontend/erp-ui
@@ -73,7 +73,7 @@ jobs:
           exit-code: '0'
 
       - name: Generate SARIF report
-        uses: aquasecurity/trivy-action@0.18.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: 'fs'
           scan-ref: ./frontend/erp-ui
@@ -85,7 +85,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload Trivy SARIF to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-dependency-frontend.sarif'
 
@@ -117,21 +117,8 @@ jobs:
         run: npm run lint || echo "Linting script not found, skipping..."
 
       - name: Check for test files
-        working-directory: ./frontend/erp-ui
-        run: |
-          if find src -name "*.spec.ts" -o -name "*.test.ts" | grep -q .; then
-            echo "Test files found - running tests"
-            npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
-            echo "has_tests=true" >> $GITHUB_OUTPUT
-          else
-            echo "No test files found - skipping test execution"
-            echo "has_tests=false" >> $GITHUB_OUTPUT
-          fi
+        run: bash scripts/ci/check-frontend-tests.sh
         id: test-check
-
-      - name: Build application
-        working-directory: ./frontend/erp-ui
-        run: npm run build
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -141,19 +128,13 @@ jobs:
           path: frontend/erp-ui/coverage/
           retention-days: 7
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts-frontend
-          path: frontend/erp-ui/dist/
-          retention-days: 7
-
 # STAGE 4: CODE QUALITY (SONARQUBE)
   sonar-scan:
     name: Code Quality (SonarQube)
     runs-on: ubuntu-latest
     needs: [detect-changes, frontend-build-test]
     if: ${{ needs.detect-changes.outputs.changed == 'true' }}
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
@@ -161,51 +142,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: frontend/erp-ui/package-lock.json
-
-      - name: Install dependencies
-        working-directory: ./frontend/erp-ui
-        run: npm ci
-
-      - name: Download test results
-        uses: actions/download-artifact@v4
-        with:
-          name: test-results-frontend
-          path: frontend/erp-ui/coverage/
-        continue-on-error: true
-
-      - name: Ensure coverage file exists
-        run: |
-          COVERAGE_PATH="frontend/erp-ui/coverage"
-          if [ ! -d "$COVERAGE_PATH" ]; then
-            echo "No coverage report found (no tests exist), creating empty one..."
-            mkdir -p "$COVERAGE_PATH"
-            echo '{"total":{"lines":{"total":0,"covered":0,"skipped":0,"pct":0}}}' > "$COVERAGE_PATH/coverage-summary.json"
-            # Create a minimal lcov.info file for SonarQube
-            echo "TN:" > "$COVERAGE_PATH/lcov.info"
-            echo "end_of_record" >> "$COVERAGE_PATH/lcov.info"
-          fi
-
-      - name: SonarQube analysis
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_URL: ${{ secrets.SONAR_URL }}
-        run: |
-          echo "Analyzing frontend application..."
-          npx sonar-scanner \
-            -Dsonar.projectKey=konecta-erp-frontend \
-            -Dsonar.host.url=${{ env.SONAR_URL }} \
-            -Dsonar.token=${{ env.SONAR_TOKEN }} \
-            -Dsonar.sources=frontend/erp-ui/src \
-            -Dsonar.javascript.lcov.reportPaths=frontend/erp-ui/coverage/lcov.info \
-            -Dsonar.sonar.exclusions="**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.test.ts,**/*.spec.js,**/*.test.js" \
-            -Dsonar.qualitygate.wait=false
-          echo "SonarQube analysis completed for frontend"
+          SONAR_HOST_URL: ${{ secrets.SONAR_URL }}
+        with:
+          projectBaseDir: frontend/erp-ui
+          args: >
+            -Dsonar.projectKey=konecta-frontend
+            -Dsonar.projectName="Konecta Frontend"
+            -Dsonar.sources=src
+            -Dsonar.exclusions=**/*.spec.ts,**/*.test.ts,**/node_modules/**
+            -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info
 
 # STAGE 5: DOCKER BUILD & SECURITY SCAN
   docker-build-scan:
@@ -265,9 +214,8 @@ jobs:
         id: size-check
         run: bash scripts/ci/check-image-size.sh "${{ steps.vars.outputs.docker_tag }}" 500
 
-
       - name: Scan with Trivy (detailed)
-        uses: aquasecurity/trivy-action@0.18.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: ${{ steps.vars.outputs.docker_tag }}
           format: 'json'
@@ -277,12 +225,11 @@ jobs:
           severity: 'CRITICAL,HIGH,MEDIUM'
           output: 'trivy-report.json'
 
-          
       - name: Check vulnerabilities
         run: bash scripts/ci/check-docker-vulnerabilities.sh trivy-report.json
 
       - name: Generate SBOM
-        uses: aquasecurity/trivy-action@0.18.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: ${{ steps.vars.outputs.docker_tag }}
           format: 'spdx-json'
@@ -297,7 +244,7 @@ jobs:
 
       - name: Generate SARIF
         if: always()
-        uses: aquasecurity/trivy-action@0.18.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: ${{ steps.vars.outputs.docker_tag }}
           format: 'sarif'
@@ -305,7 +252,7 @@ jobs:
 
       - name: Upload SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-results.sarif'
           category: trivy-frontend
