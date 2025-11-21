@@ -9,4 +9,6 @@ public class AttendanceRequest {
     private LocalDate date;
     private Boolean present;
     private Double workingHours;
+    private Double latitude;
+    private Double longitude;
 }

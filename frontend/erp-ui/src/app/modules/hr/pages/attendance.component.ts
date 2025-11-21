@@ -65,7 +65,17 @@ export class AttendanceComponent implements OnInit, OnDestroy {
     const payload = { employeeId: row.id, date: this.selectedDate, present: row.present, workingHours: row.hours ?? undefined };
     this.api.markAttendance(payload).subscribe({
       next: () => { row.saving = false; this.toast.success('Attendance saved'); },
-      error: () => { this.error = 'Failed to save'; this.toast.error(this.error); row.saving = false; }
+      error: (err) => {
+        let message = 'Failed to save';
+        if (err?.status === 403) {
+          message = 'You are not in the office';
+        } else if (err?.error?.detail || err?.error?.message) {
+          message = err.error.detail || err.error.message;
+        }
+        this.error = message;
+        this.toast.error(message);
+        row.saving = false;
+      }
     });
   }
 

@@ -64,7 +64,14 @@ class AttendanceControllerTest {
         mvc.perform(post("/api/hr/attendance")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
-                        "{\n  \"employeeId\": 1, \n \"date\": \"2025-01-15\", \n \"present\": true, \n \"workingHours\": 8\n}"))
+                        "{\n" +
+                                "  \"employeeId\": 1,\n" +
+                                "  \"date\": \"2025-01-15\",\n" +
+                                "  \"present\": true,\n" +
+                                "  \"workingHours\": 8,\n" +
+                                "  \"latitude\": 30.03015869278751,\n" +
+                                "  \"longitude\": 31.454971192763708\n" +
+                                "}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(5));
     }

@@ -27,7 +27,7 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
   private dailyDefaultHours: number | null = null;
   private poll?: Subscription;
 
-  async ngOnInit() {
+  ngOnInit() {
     this.initDefaultHours();
     this.load();
   }
@@ -60,14 +60,39 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
     });
   }
 
-  markTodayPresent() {
+  async markTodayPresent() {
     const today = new Date().toISOString().slice(0, 10);
     const payload: any = { date: today, present: true };
     const hrs = (this.todayHours != null ? this.todayHours : this.dailyDefaultHours);
     if (hrs != null) payload.workingHours = hrs;
+
+    if (!('geolocation' in navigator)) {
+      this.toast.error('Location is required to mark attendance, but your browser does not support it.');
+      return;
+    }
+
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 });
+      });
+      payload.latitude = position.coords.latitude;
+      payload.longitude = position.coords.longitude;
+    } catch {
+      this.toast.error('Unable to get your location. Please allow location access and try again.');
+      return;
+    }
+
     this.http.post<any>(`${this.hrBase}/attendance`, payload).subscribe({
       next: () => { this.toast.success('Attendance marked'); this.load(); },
-      error: () => { this.toast.error('Failed to mark attendance'); }
+      error: (err) => {
+        let message = 'Failed to mark attendance';
+        if (err?.status === 403) {
+          message = 'You are not in the office';
+        } else if (err?.error?.detail || err?.error?.message) {
+          message = err.error.detail || err.error.message;
+        }
+        this.toast.error(message);
+      }
     });
   }
   ngAfterViewInit() { this.poll = interval(30000).subscribe(() => this.load()); }

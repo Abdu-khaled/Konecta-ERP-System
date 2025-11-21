@@ -7,9 +7,12 @@ import hr_service.hr_service.model.Employee;
 import hr_service.hr_service.service.AttendanceService;
 import hr_service.hr_service.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,6 +24,7 @@ public class AttendanceController {
 
     private final AttendanceService attendanceService;
     private final EmployeeService employeeService;
+    private final Environment environment;
 
     @PostMapping
     @PreAuthorize("hasRole('EMPLOYEE')")
@@ -32,6 +36,9 @@ public class AttendanceController {
         if (e == null) {
             String first = username != null && username.contains("@") ? username.substring(0, username.indexOf('@')) : (username != null ? username : "");
             e = employeeService.ensureByEmail(username, first, "", null, null, null, null, null);
+        }
+        if (!isWithinOfficeRadius(req.getLatitude(), req.getLongitude())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not in the office");
         }
         Attendance a = Attendance.builder()
                 .employee(e)
@@ -85,5 +92,40 @@ public class AttendanceController {
                 .present(a.getPresent())
                 .workingHours(a.getWorkingHours())
                 .build();
+    }
+
+    private boolean isWithinOfficeRadius(Double latitude, Double longitude) {
+        String officeLatStr = environment.getProperty("app.attendance.office.latitude");
+        String officeLonStr = environment.getProperty("app.attendance.office.longitude");
+        String radiusStr = environment.getProperty("app.attendance.office.radius-meters");
+        if (officeLatStr == null || officeLonStr == null || radiusStr == null) {
+            // Geofencing disabled if office location is not configured
+            return true;
+        }
+        if (latitude == null || longitude == null) {
+            // When geofencing is enabled, location is required
+            return false;
+        }
+        try {
+            double officeLat = Double.parseDouble(officeLatStr);
+            double officeLon = Double.parseDouble(officeLonStr);
+            double radiusMeters = Double.parseDouble(radiusStr);
+            double distance = distanceInMeters(latitude, longitude, officeLat, officeLon);
+            return distance <= radiusMeters;
+        } catch (NumberFormatException ex) {
+            // If configuration is invalid, fail open
+            return true;
+        }
+    }
+
+    private double distanceInMeters(double lat1, double lon1, double lat2, double lon2) {
+        double R = 6371000.0; // Earth radius in meters
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 }

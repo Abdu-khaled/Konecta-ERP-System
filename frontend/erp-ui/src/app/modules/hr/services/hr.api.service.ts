@@ -23,7 +23,7 @@ export class HrApiService {
   deleteEmployee(id: number) { return this.http.delete<void>(`${this.base}/employees/${id}`); }
   getEmployeeByEmail(email: string) { return this.listEmployees().pipe(map(list => list.find(e => (e.email || '').toLowerCase() === email.toLowerCase()) || null)); }
   listAttendanceByEmployee(employeeId: number) { return this.http.get<any[]>(`${this.base}/attendance/${employeeId}`); }
-  markAttendance(payload: { employeeId: number; date: string; present: boolean; workingHours?: number }) { return this.http.post<any>(`${this.base}/attendance`, payload); }
+  markAttendance(payload: { employeeId: number; date: string; present: boolean; workingHours?: number; latitude?: number; longitude?: number }) { return this.http.post<any>(`${this.base}/attendance`, payload); }
   listLeavesByEmployee(employeeId: number) { return this.http.get<any[]>(`${this.base}/leaves/${employeeId}`); }
   createLeave(payload: { employeeId: number; startDate: string; endDate: string; reason?: string }) { return this.http.post<any>(`${this.base}/leaves`, payload); }
   approveLeave(id: number) { return this.http.put<any>(`${this.base}/leaves/${id}/approve`, {}); }
