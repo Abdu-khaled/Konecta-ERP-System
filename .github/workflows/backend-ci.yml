@@ -24,48 +24,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the code
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # Install Gitleaks
-      - name: Install Gitleaks
-        run: |
-          echo "Installing Gitleaks..."
-          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.18.4/gitleaks_8.18.4_linux_x64.tar.gz -o gitleaks.tar.gz
-          tar -xzf gitleaks.tar.gz
-          sudo mv gitleaks /usr/local/bin/
-          gitleaks version
-
-      # Run Gitleaks scan
       - name: Run Gitleaks scan
-        run: |
-          echo "Running Gitleaks secret scan..."
-          gitleaks detect -v \
-            --source . \
-            --no-git \
-            --redact \
-            --report-format sarif \
-            --report-path gitleaks.sarif \
-            --exit-code 0
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_SUMMARY: true
 
-      # Upload SARIF to GitHub Security 
-      - name: Upload SARIF to GitHub Security
+      - name: Upload SARIF report
         if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: gitleaks.sarif
-
-      # Upload Gitleaks report as artifact
-      - name: Upload Gitleaks report artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: gitleaks-report
-          path: gitleaks.sarif
-          retention-days: 30
+          sarif_file: results.sarif
+        continue-on-error: true
 
   # STAGE 2: DETECT CHANGES
   detect-changes:
