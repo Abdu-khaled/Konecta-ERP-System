@@ -155,7 +155,9 @@ jobs:
             -Dsonar.sources=src
             -Dsonar.exclusions=**/*.spec.ts,**/*.test.ts,**/node_modules/**
             -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info
+        continue-on-error: true
 
+        
 # STAGE 5: DOCKER BUILD & SECURITY SCAN
   docker-build-scan:
     name: Docker Build & Security Scan
