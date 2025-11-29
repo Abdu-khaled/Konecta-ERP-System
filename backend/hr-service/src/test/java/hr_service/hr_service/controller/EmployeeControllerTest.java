@@ -42,6 +42,8 @@ class EmployeeControllerTest {
     private DepartmentService departmentService;
     @MockBean
     private JwtAuthFilter jwtAuthFilter;
+    @MockBean
+    private hr_service.hr_service.messaging.ActivityEventPublisher activityEventPublisher;
 
     @BeforeEach
     void passThroughJwtFilter() throws Exception {
