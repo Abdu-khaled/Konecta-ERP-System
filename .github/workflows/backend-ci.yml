@@ -36,7 +36,7 @@ jobs:
 
       - name: Upload SARIF report
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: results.sarif
         continue-on-error: true
@@ -101,7 +101,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload Trivy SARIF to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-dependency.sarif'
 
@@ -139,7 +139,7 @@ jobs:
         if: matrix.serviceType == 'java'
         id: build-java
         run: |
-          echo "🔨 Building Java service ${{ matrix.service }}..."
+          echo "Building Java service ${{ matrix.service }}..."
           cd backend/${{ matrix.service }}
           if mvn -B clean verify -DskipTests=false -Dspring.profiles.active=test; then
             echo "✅ Build successful for ${{ matrix.service }}"
@@ -155,7 +155,7 @@ jobs:
         if: matrix.serviceType == 'csharp'
         id: build-csharp
         run: |
-          echo "🔨 Building C# service ${{ matrix.service }}..."
+          echo " Building C# service ${{ matrix.service }}..."
           dotnet restore backend/${{ matrix.service }}/ReportingService/ReportingService.csproj
           
           if dotnet build backend/${{ matrix.service }}/ReportingService/ReportingService.csproj --configuration Release --no-restore; then
@@ -169,7 +169,7 @@ jobs:
         if: matrix.serviceType == 'csharp'
         id: test-csharp
         run: |
-          echo "🧪 Running tests for ${{ matrix.service }}..."
+          echo "Running tests for ${{ matrix.service }}..."
           if dotnet test backend/${{ matrix.service }}/ReportingService/ReportingService.csproj --configuration Release --no-build --collect:"XPlat Code Coverage" --logger "trx" --results-directory backend/${{ matrix.service }}/ReportingService/TestResults; then
             echo "✅ All tests passed for ${{ matrix.service }}"
           else
