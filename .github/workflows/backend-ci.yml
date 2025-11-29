@@ -215,11 +215,21 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Download build artifacts
+      - name: Download build artifacts (Java)
+        if: matrix.serviceType == 'java'
         uses: actions/download-artifact@v4
         with:
           name: build-${{ matrix.service }}
-          path: backend/${{ matrix.service }}/
+          path: backend/${{ matrix.service }}/target/
+        continue-on-error: true
+
+      - name: Download build artifacts (C#)
+        if: matrix.serviceType == 'csharp'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-${{ matrix.service }}
+          path: backend/${{ matrix.service }}/ReportingService/
+        continue-on-error: true
 
       - name: SonarQube Scan (Java)
         if: matrix.serviceType == 'java'
@@ -227,12 +237,13 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_URL }}
         run: |
-          cd backend/${{ matrix.service }}
-          mvn -B sonar:sonar \
+          mvn -B -f backend/${{ matrix.service }}/pom.xml clean verify sonar:sonar \
             -Dsonar.projectKey=konecta-backend-${{ matrix.service }} \
             -Dsonar.projectName="Konecta Backend - ${{ matrix.service }}" \
             -Dsonar.host.url=${{ secrets.SONAR_URL }} \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+            -DskipTests
         continue-on-error: true
 
       - name: Install SonarScanner for .NET
@@ -249,8 +260,9 @@ jobs:
             /k:"konecta-backend-${{ matrix.service }}" \
             /n:"Konecta Backend - ${{ matrix.service }}" \
             /d:sonar.host.url="${{ secrets.SONAR_URL }}" \
-            /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
-          dotnet build backend/${{ matrix.service }}/ReportingService/ReportingService.csproj
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.cs.opencover.reportsPaths="backend/${{ matrix.service }}/ReportingService/TestResults/**/coverage.opencover.xml"
+          dotnet build backend/${{ matrix.service }}/ReportingService/ReportingService.csproj --configuration Release
           dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
         continue-on-error: true
 
