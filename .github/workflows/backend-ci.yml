@@ -137,21 +137,45 @@ jobs:
 
       - name: Build Java Service
         if: matrix.serviceType == 'java'
-        continue-on-error: true
+        id: build-java
         run: |
-          echo "Building Java service ${{ matrix.service }}..."
+          echo "🔨 Building Java service ${{ matrix.service }}..."
           cd backend/${{ matrix.service }}
-          mvn -B clean verify -DskipTests=false -Dspring.profiles.active=test
+          if mvn -B clean verify -DskipTests=false -Dspring.profiles.active=test; then
+            echo "✅ Build successful for ${{ matrix.service }}"
+            echo "build_status=success" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Build failed for ${{ matrix.service }}"
+            echo "build_status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
           cd ../..
 
       - name: Build C# Service
         if: matrix.serviceType == 'csharp'
-        continue-on-error: true
+        id: build-csharp
         run: |
-          echo "Building C# service ${{ matrix.service }}..."
+          echo "🔨 Building C# service ${{ matrix.service }}..."
           dotnet restore backend/${{ matrix.service }}/ReportingService/ReportingService.csproj
-          dotnet build backend/${{ matrix.service }}/ReportingService/ReportingService.csproj --configuration Release --no-restore
-          dotnet test backend/${{ matrix.service }}/ReportingService/ReportingService.csproj --configuration Release --no-build --collect:"XPlat Code Coverage" --logger "trx" --results-directory backend/${{ matrix.service }}/ReportingService/TestResults
+          
+          if dotnet build backend/${{ matrix.service }}/ReportingService/ReportingService.csproj --configuration Release --no-restore; then
+            echo "✅ Build successful for ${{ matrix.service }}"
+          else
+            echo "❌ Build failed for ${{ matrix.service }}"
+            exit 1
+          fi
+
+      - name: Test C# Service
+        if: matrix.serviceType == 'csharp'
+        id: test-csharp
+        run: |
+          echo "🧪 Running tests for ${{ matrix.service }}..."
+          if dotnet test backend/${{ matrix.service }}/ReportingService/ReportingService.csproj --configuration Release --no-build --collect:"XPlat Code Coverage" --logger "trx" --results-directory backend/${{ matrix.service }}/ReportingService/TestResults; then
+            echo "✅ All tests passed for ${{ matrix.service }}"
+          else
+            echo "❌ Tests failed for ${{ matrix.service }}"
+            exit 1
+          fi
 
       - name: Publish test report
         if: always()
@@ -164,24 +188,6 @@ jobs:
           reporter: ${{ matrix.serviceType == 'java' && 'java-junit' || 'dotnet-trx' }}
           fail-on-error: false
         continue-on-error: true
-
-      - name: Upload build artifacts (Java)
-        if: matrix.serviceType == 'java'
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-${{ matrix.service }}
-          path: backend/${{ matrix.service }}/target/
-          retention-days: 1
-
-      - name: Upload build artifacts (C#)
-        if: matrix.serviceType == 'csharp'
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-${{ matrix.service }}
-          path: |
-            backend/${{ matrix.service }}/ReportingService/bin/
-            backend/${{ matrix.service }}/ReportingService/obj/
-          retention-days: 1
 
 
   # STAGE 5: CODE QUALITY (SONARQUBE)
@@ -215,22 +221,6 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Download build artifacts (Java)
-        if: matrix.serviceType == 'java'
-        uses: actions/download-artifact@v4
-        with:
-          name: build-${{ matrix.service }}
-          path: backend/${{ matrix.service }}/target/
-        continue-on-error: true
-
-      - name: Download build artifacts (C#)
-        if: matrix.serviceType == 'csharp'
-        uses: actions/download-artifact@v4
-        with:
-          name: build-${{ matrix.service }}
-          path: backend/${{ matrix.service }}/ReportingService/
-        continue-on-error: true
-
       - name: SonarQube Scan (Java)
         if: matrix.serviceType == 'java'
         env:
@@ -244,7 +234,7 @@ jobs:
             -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
             -DskipTests
-        continue-on-error: true
+        continue-on-error: ${{ github.ref != 'refs/heads/main' }}
 
       - name: Install SonarScanner for .NET
         if: matrix.serviceType == 'csharp'
@@ -264,7 +254,7 @@ jobs:
             /d:sonar.cs.opencover.reportsPaths="backend/${{ matrix.service }}/ReportingService/TestResults/**/coverage.opencover.xml"
           dotnet build backend/${{ matrix.service }}/ReportingService/ReportingService.csproj --configuration Release
           dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
-        continue-on-error: true
+        continue-on-error: ${{ github.ref != 'refs/heads/main' }}
 
   # # STAGE 6: DOCKER BUILD & SECURITY SCAN
   # docker-build-scan:
