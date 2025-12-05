@@ -42,6 +42,10 @@ class EmployeeControllerTest {
     private DepartmentService departmentService;
     @MockBean
     private JwtAuthFilter jwtAuthFilter;
+    @MockBean
+    private hr_service.hr_service.messaging.ActivityEventPublisher activityEventPublisher;
+    @MockBean
+    private org.springframework.boot.web.client.RestTemplateBuilder restTemplateBuilder;
 
     @BeforeEach
     void passThroughJwtFilter() throws Exception {
