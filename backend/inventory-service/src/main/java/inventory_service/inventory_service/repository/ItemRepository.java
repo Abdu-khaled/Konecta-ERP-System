@@ -1,11 +1,18 @@
 package inventory_service.inventory_service.repository;
 
 import inventory_service.inventory_service.model.Item;
-import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
-public interface ItemRepository extends JpaRepository<Item, Long> {
-    Optional<Item> findBySku(String sku);
-}
+public interface ItemRepository {
+    List<Item> findAll();
 
+    Optional<Item> findById(Long id);
+
+    Optional<Item> findBySku(String sku);
+
+    Item save(Item item);
+
+    void deleteById(Long id);
+}
