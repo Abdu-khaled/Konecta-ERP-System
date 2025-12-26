@@ -60,11 +60,8 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: 1234
       SPRING_PROFILES_ACTIVE: prod
-      # External AI webhook used by hr-service adapter endpoint
-      # Set this in your shell or .env file. Example:
-      # AI_WEBHOOK_URL=https://urolithic-naoma-pseudoeditorially.ngrok-free.dev/webhook/0ac19068-2965-42cb-b6ae-5a275c4c49c1
+    
       AI_WEBHOOK_URL: ${AI_WEBHOOK_URL:-}
-      # SMTP settings (read from repo-level .env like auth-service)
       SPRING_MAIL_HOST: ${SMTP_HOST}
       SPRING_MAIL_PORT: ${SMTP_PORT}
       SPRING_MAIL_USERNAME: ${SMTP_USERNAME}
