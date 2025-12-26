@@ -1435,7 +1435,7 @@ kubectl exec -it -n konecta-dev <pod-name> -- nc -zv <rds-endpoint> 5432
 
 *Enterprise-grade automation for modern development and deployment*
 
-**Version**: 3.0 | **Last Updated**: December 2024 | **Maintainer**: DevOps Team
+**Version**: 1.0 | **Last Updated**: December 2025 | **Maintainer**: DevOps Team
 
 [![Pipeline Status](https://img.shields.io/badge/Pipeline-Enterprise%20Ready-brightgreen)](https://github.com/konecta/erp-system/actions)
 [![Security](https://img.shields.io/badge/Security-Scanning%20Enabled-red)](https://github.com/konecta/erp-system/security)
