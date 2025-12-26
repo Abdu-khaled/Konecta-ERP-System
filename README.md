@@ -347,7 +347,6 @@ Applications are automatically deployed using ArgoCD:
 - **[Frontend Guide](frontend/README.md)**: Angular application documentation
 - **[Backend Guide](backend/README.md)**: Microservices documentation
 - **[AI/ML Components](ai-ml/README.md)**: AI integration documentation
-- **[API Documentation](docs/API.md)**: REST API endpoints and usage (Coming Soon)
 
 ## Contributing
 
@@ -376,18 +375,9 @@ We welcome contributions! Please follow these steps:
 - Regular security scanning in CI/CD
 - RBAC for fine-grained access control
 
-To report security vulnerabilities, please email security@konecta.com
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Spring Boot and Spring Cloud teams
-- Angular team
-- AWS for cloud infrastructure
-- Open-source community for amazing tools and libraries
 
 ## Support
 
@@ -397,5 +387,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with love by the Konecta Team**
+**Built with love by the Konecta Team 4**
 
