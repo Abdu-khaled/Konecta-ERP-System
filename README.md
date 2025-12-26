@@ -346,7 +346,6 @@ Applications are automatically deployed using ArgoCD:
 - **[Infrastructure](infrastructure/terraform/README.md)**: Terraform modules and deployment guides
 - **[Frontend Guide](frontend/README.md)**: Angular application documentation
 - **[Backend Guide](backend/README.md)**: Microservices documentation
-- **[AI/ML Components](ai-ml/README.md)**: AI integration documentation
 
 ## Contributing
 
